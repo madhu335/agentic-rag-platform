@@ -1,0 +1,242 @@
+GET http://localhost:8080/api/eval/vehicles/recall/report
+
+HTTP/1.1 200
+Vary: Origin
+Vary: Access-Control-Request-Method
+Vary: Access-Control-Request-Headers
+Content-Type: application/json
+Transfer-Encoding: chunked
+Date: Mon, 13 Apr 2026 14: 22: 27 GMT
+
+{
+"overallRecall": 0.867816091954023,
+"overallPrecision": 0.5586206896551724,
+"totalPassed": 25,
+"totalEntries": 29,
+"meetsTarget": true,
+"byCategory": {
+"MAINTENANCE": {
+"recall": 0.8333333333333334,
+"precision": 1.0,
+"passed": 3,
+"total": 3
+},
+"OWNERSHIP_COST": {
+"recall": 0.75,
+"precision": 0.4375,
+"passed": 3,
+"total": 4
+},
+"SAFETY": {
+"recall": 1.0,
+"precision": 0.5555555555555555,
+"passed": 3,
+"total": 3
+},
+"PERFORMANCE": {
+"recall": 0.6666666666666666,
+"precision": 0.27777777777777773,
+"passed": 2,
+"total": 3
+},
+"CROSS_CHUNK": {
+"recall": 0.6666666666666666,
+"precision": 0.6,
+"passed": 3,
+"total": 4
+},
+"FLEET_FILTER": {
+"recall": 1.0,
+"precision": 0.4666666666666666,
+"passed": 5,
+"total": 6
+},
+"FEATURES": {
+"recall": 1.0,
+"precision": 0.625,
+"passed": 2,
+"total": 2
+},
+"RANKINGS": {
+"recall": 1.0,
+"precision": 0.625,
+"passed": 4,
+"total": 4
+}
+},
+"byDifficulty": {
+"EASY": {
+"recall": 1.0,
+"precision": 0.5499999999999999,
+"passed": 11,
+"total": 11
+},
+"MEDIUM": {
+"recall": 0.8,
+"precision": 0.35,
+"passed": 4,
+"total": 5
+},
+"EDGE_CASE": {
+"recall": 1.0,
+"precision": 0.7,
+"passed": 4,
+"total": 5
+},
+"HARD": {
+"recall": 0.6458333333333334,
+"precision": 0.6125,
+"passed": 6,
+"total": 8
+}
+},
+"bySource": {
+"LLM_ASSISTED": {
+"recall": 0.5555555555555555,
+"precision": 0.4666666666666666,
+"passed": 2,
+"total": 3
+},
+"USER_LOG": {
+"recall": 0.8333333333333334,
+"precision": 0.5416666666666666,
+"passed": 5,
+"total": 6
+},
+"DB_GENERATED": {
+"recall": 1.0,
+"precision": 0.5599999999999999,
+"passed": 5,
+"total": 5
+},
+"MANUAL": {
+"recall": 0.9,
+"precision": 0.5833333333333334,
+"passed": 13,
+"total": 15
+}
+},
+"failedEntries": [
+{
+"entryId": "S1-PERF-002",
+"query": "which car has the most torque",
+"expected": [
+"rivian-r1t-2025-adventure"
+],
+"returned": [
+"porsche-911-2025-carrera-s",
+"bmw-m3-2025-competition",
+"chevrolet-corvette-2025-z06"
+],
+"recall": 0.0,
+"analysis": {
+"primaryReason": "MISSING_CHUNK_TYPE",
+"detail": "rivian-r1t-2025-adventure: MISSING CHUNK TYPE 'performance' — vehicle only has chunks: 1(identity)",
+"chunkGaps": [
+"rivian-r1t-2025-adventure missing: performance chunk"
+],
+"returnedChunkIds": [
+"porsche-911-2025-carrera-s:1",
+"bmw-m3-2025-competition:2",
+"chevrolet-corvette-2025-z06:1",
+"bmw-m3-2025-competition:1",
+"bmw-m3-2025-competition:4"
+],
+"suggestions": [
+"Re-ingest rivian-r1t-2025-adventure via /vehicles/ingest/rich with a fully populated RichVehicleRecord including performance data"
+]
+}
+},
+{
+"entryId": "S2-002",
+"query": "good family car with low running costs",
+"expected": [
+"toyota-camry-2025-xse-hybrid",
+"honda-crv-2025-sport-hybrid"
+],
+"returned": [
+"bmw-m3-2025-competition"
+],
+"recall": 0.0,
+"analysis": {
+"primaryReason": "OUTRANKED",
+"detail": "honda-crv-2025-sport-hybrid: OUTRANKED — chunk scored 0.5591 but other vehicles scored higher and pushed it out of top-5 | toyota-camry-2025-xse-hybrid: OUTRANKED — chunk scored 0.5387 but other vehicles scored higher and pushed it out of top-5",
+"chunkGaps": [],
+"returnedChunkIds": [
+"bmw-m3-2025-competition:3",
+"bmw-m3-2025-competition:1",
+"bmw-m3-2025-competition:13",
+"bmw-m3-2025-competition:6",
+"bmw-m3-2025-competition:12"
+],
+"suggestions": [
+"Increase topK to 8 for 'CROSS_CHUNK' category queries",
+"Increase topK to 8 for 'CROSS_CHUNK' category queries"
+]
+}
+},
+{
+"entryId": "S3-003",
+"query": "vehicle with lowest total 5 year ownership cost",
+"expected": [
+"toyota-camry-2025-xse-hybrid",
+"honda-crv-2025-sport-hybrid"
+],
+"returned": [
+"bmw-m3-2025-competition"
+],
+"recall": 0.0,
+"analysis": {
+"primaryReason": "MISSING_CHUNK_TYPE",
+"detail": "honda-crv-2025-sport-hybrid: MISSING CHUNK TYPE 'ownership_cost' — vehicle only has chunks: 1(identity) | toyota-camry-2025-xse-hybrid: MISSING CHUNK TYPE 'ownership_cost' — vehicle only has chunks: 1(identity)",
+"chunkGaps": [
+"honda-crv-2025-sport-hybrid missing: ownership_cost chunk",
+"toyota-camry-2025-xse-hybrid missing: ownership_cost chunk"
+],
+"returnedChunkIds": [
+"bmw-m3-2025-competition:3",
+"bmw-m3-2025-competition:1",
+"bmw-m3-2025-competition:14",
+"bmw-m3-2025-competition:13",
+"bmw-m3-2025-competition:12"
+],
+"suggestions": [
+"Re-ingest honda-crv-2025-sport-hybrid via /vehicles/ingest/rich with a fully populated RichVehicleRecord including ownership_cost data",
+"Re-ingest toyota-camry-2025-xse-hybrid via /vehicles/ingest/rich with a fully populated RichVehicleRecord including ownership_cost data"
+]
+}
+},
+{
+"entryId": "EDGE-004",
+"query": "xyzabc vehicle",
+"expected": [],
+"returned": [
+"chevrolet-corvette-2025-z06",
+"bmw-m3-2025-competition",
+"rivian-r1t-2025-adventure"
+],
+"recall": 1.0,
+"analysis": {
+"primaryReason": "EDGE_CASE_LEAK",
+"detail": "Nonsense query 'xyzabc vehicle' returned 5 results instead of empty. All queries match something via vector similarity.",
+"chunkGaps": [],
+"returnedChunkIds": [
+"chevrolet-corvette-2025-z06:1",
+"bmw-m3-2025-competition:1",
+"rivian-r1t-2025-adventure:1",
+"bmw-m3-2025-competition:20",
+"bmw-m3-2025-competition:21"
+],
+"suggestions": [
+"Add a minimum score threshold for fleet search results",
+"Consider a query classifier that detects nonsense/out-of-domain queries",
+"Return empty if bestScore < 0.05"
+]
+}
+}
+]
+}
+Response file saved.
+> 2026-04-13T072227.200.json
+
+Response code: 200; Time: 1922ms (1 s 922 ms); Content length: 4783 bytes (4.78 kB)

@@ -1,0 +1,23 @@
+
+  {
+    "id": "q1",
+    "question": "What is @ControllerAdvice?",
+    "expectedAnswerContains": ["exception", "global", "controller"],
+    "expectedChunkIds": ["spring-boot-qa:8"]
+  },
+  {
+    "id": "q2",
+    "question": "Difference between @Bean and @Component?",
+    "expectedAnswerContains": ["control", "scan", "third-party"],
+    "expectedChunkIds": ["spring-boot-qa:9"]
+  },
+  {
+    "id": "q3",
+    "question": "How can I handle exceptions globally in Spring?",
+    "expectedChunkIds": ["spring-boot-qa:7"]
+  },
+  {
+    "id": "q4",
+    "question": "How do I define beans manually instead of auto scanning?",
+    "expectedChunkIds": ["spring-boot-qa:8"]
+  }

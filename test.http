@@ -1,0 +1,114 @@
+### Health check
+http://localhost:8080/health
+
+### Test Ingestion
+### My son Anish is going to college in Long Beach state college and he is working hard this year
+### who is working hard?
+### "why is Anish working hard?"
+### who is studying and working hard?
+
+POST http://localhost:8080/api/ingest
+Content-Type: application/json
+
+{
+    "docId": "test-doc",
+    "content": "Anish is studying at Long Beach State College. He is working hard. He also plays guitar. He is preparing for dental school. He enjoys biology and science."
+}
+
+### Ask question
+POST http://localhost:8080/ask
+Content-Type: application/json
+
+{
+  "question": "What are the possible causes of p99 spikes?"
+}
+
+### Ingest PDF
+POST http://localhost:8080/api/ingest-pdf
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="sample.pdf"
+Content-Type: application/pdf
+
+< ./sample.pdf
+--WebAppBoundary
+Content-Disposition: form-data; name="docId"
+
+test-pdf-doc
+--WebAppBoundary--
+
+
+###
+POST http://localhost:8080/ask
+Content-Type: application/json
+
+{
+  "docId": "test-pdf-doc",
+  "question": "What are the possible causes of p99 spikes?",
+  "topK": 5
+}
+
+###
+### Ingest JVM Flags PDF
+POST http://localhost:8080/api/ingest-pdf
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="JVM_Flags_Guide.pdf"
+Content-Type: application/pdf
+
+< ./JVM_Flags_Guide.pdf
+--WebAppBoundary
+Content-Disposition: form-data; name="docId"
+
+jvm-flags-guide
+--WebAppBoundary--
+
+###
+POST http://localhost:8080/ask
+Content-Type: application/json
+
+{
+  "docId": "spring-boot-qa",
+  "question": "How do you handle exceptions in Spring Boot?",
+  "topK": 5
+}
+
+### Judge test
+GET http://localhost:8080/judge-test
+
+### Retrieval Eval
+GET http://localhost:8080/api/eval/retrieval?docId=spring-boot-qa&k=5
+
+###
+GET http://localhost:8080/api/eval/debug?docId=spring-boot-qa&question=How%20do%20I%20avoid%20repeating%20try%20catch%20in%20every%20controller%3F&k=5
+
+###
+GET http://localhost:8080/api/eval/debug?docId=spring-boot-qa&question=Which%20annotation%20handles%20exceptions%20across%20controllers%3F&k=5
+
+###
+GET http://localhost:8080/api/eval/debug?docId=spring-boot-qa&question=How%20can%20I%20centralize%20error%20handling%20for%20all%20REST%20endpoints?&k=5
+
+###
+GET http://localhost:8080/api/eval/debug?docId=spring-boot-qa&question=Which%20annotation%20handles%20exceptions%20for%20all%20controllers%3F&k=5
+
+### Compare
+GET http://localhost:8080/api/eval/compare?docId=spring-boot-qa&k=5
+
+
+
+
+### Answer eval
+GET http://localhost:8080/api/eval/answer
+
+### Summary report
+GET http://localhost:8080/api/eval/report?docId=test-doc&k=5
+
+
+
+### Answer Eval
+GET http://localhost:8080/api/eval/answer
+
+### Summary Report
+GET http://localhost:8080/api/eval/report?k=5

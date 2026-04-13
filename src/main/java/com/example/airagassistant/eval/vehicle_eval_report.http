@@ -1,0 +1,134 @@
+### ══════════════════════════════════════════════════════════════════════
+### Vehicle RAG — Evaluation & Recall Report
+### Endpoint: GET http://localhost:8080/api/eval/vehicles/recall/report
+### ══════════════════════════════════════════════════════════════════════
+
+### ── Full recall report — all 29 golden set entries
+### Expected response shape:
+### {
+###   "overallRecall": 0.87,          ← must be >= 0.85 to pass
+###   "overallPrecision": 0.82,
+###   "totalPassed": 25,
+###   "totalEntries": 29,
+###   "meetsTarget": true,
+###   "byCategory": {
+###     "PERFORMANCE":    { "recall": 0.95, "precision": 0.90, "passed": 4, "total": 4 },
+###     "MAINTENANCE":    { "recall": 0.75, "precision": 0.80, "passed": 2, "total": 3 },
+###     "OWNERSHIP_COST": { "recall": 0.90, "precision": 0.85, "passed": 3, "total": 3 },
+###     "SAFETY":         { "recall": 0.88, "precision": 0.88, "passed": 3, "total": 4 },
+###     "RANKINGS":       { "recall": 0.85, "precision": 0.80, "passed": 3, "total": 4 },
+###     "FLEET_FILTER":   { "recall": 0.93, "precision": 0.88, "passed": 5, "total": 6 },
+###     "CROSS_CHUNK":    { "recall": 0.80, "precision": 0.75, "passed": 3, "total": 4 },
+###     "FEATURES":       { "recall": 0.85, "precision": 0.85, "passed": 2, "total": 2 }
+###   },
+###   "byDifficulty": {
+###     "EASY":      { "recall": 0.96, "precision": 0.92, "passed": 10, "total": 10 },
+###     "MEDIUM":    { "recall": 0.88, "precision": 0.85, "passed":  6, "total":  7 },
+###     "HARD":      { "recall": 0.78, "precision": 0.74, "passed":  7, "total":  9 },
+###     "EDGE_CASE": { "recall": 0.80, "precision": 0.80, "passed":  3, "total":  5 }
+###   },
+###   "bySource": {
+###     "DB_GENERATED":  { "recall": 0.95, "precision": 0.90, "passed": 5, "total": 5 },
+###     "MANUAL":        { "recall": 0.88, "precision": 0.85, "passed": 9, "total":10 },
+###     "USER_LOG":      { "recall": 0.82, "precision": 0.78, "passed": 5, "total": 6 },
+###     "LLM_ASSISTED":  { "recall": 0.78, "precision": 0.75, "passed": 2, "total": 3 }
+###   },
+###   "failedEntries": [
+###     {
+###       "entryId": "S1-MAINT-002",
+###       "query": "which vehicles are most expensive to maintain",
+###       "expected": ["bmw-m3-2025-competition", "porsche-911-2025-carrera-s"],
+###       "returned": ["ford-f150-2025-lariat"],
+###       "recall": 0.0,
+###       "notes": null
+###     }
+###   ]
+### }
+
+GET http://localhost:8080/api/eval/vehicles/recall/report
+
+###
+
+### ── Category drill-down queries (run after report to debug failing categories)
+### If MAINTENANCE recall is low → run these individually to see which chunks fail
+
+### Maintenance category queries
+POST http://localhost:8080/vehicles/bmw-m3-2025-competition/ask
+Content-Type: application/json
+
+{
+  "question": "what does the 30000 mile service cost on the BMW M3",
+  "topK": 3,
+  "mode": "HYBRID"
+}
+
+###
+
+POST http://localhost:8080/vehicles/bmw-m3-2025-competition/ask
+Content-Type: application/json
+
+{
+  "question": "spark plug replacement interval BMW",
+  "topK": 3,
+  "mode": "HYBRID"
+}
+
+###
+
+### If CROSS_CHUNK recall is low → run these
+
+POST http://localhost:8080/vehicles/ask
+Content-Type: application/json
+
+{
+  "question": "fast sports car that wont break the bank",
+  "topK": 5
+}
+
+###
+
+POST http://localhost:8080/vehicles/ask
+Content-Type: application/json
+
+{
+  "question": "best car for someone who loves track days but needs daily practicality",
+  "topK": 5
+}
+
+###
+
+### If RANKINGS recall is low → run these
+
+POST http://localhost:8080/vehicles/bmw-m3-2025-competition/ask
+Content-Type: application/json
+
+{
+  "question": "which car won editors choice award",
+  "topK": 3,
+  "mode": "HYBRID"
+}
+
+###
+
+### Edge case validation
+
+### EDGE-004: nonsense query — must return empty or very low score results
+POST http://localhost:8080/vehicles/ask
+Content-Type: application/json
+
+{
+  "question": "xyzabc vehicle",
+  "topK": 3
+}
+
+###
+
+### EDGE-005: short token "M3" — tests BM25 fallback to vector
+POST http://localhost:8080/vehicles/bmw-m3-2025-competition/ask
+Content-Type: application/json
+
+{
+  "question": "M3",
+  "topK": 3,
+  "mode": "BM25"
+}

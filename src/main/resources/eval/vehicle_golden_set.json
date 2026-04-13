@@ -1,0 +1,164 @@
+[
+  {
+    "entryId": "S4-001", "query": "which vehicles have over 500 horsepower",
+    "expectedVehicleIds": ["bmw-m3-2025-competition","chevrolet-corvette-2025-z06","rivian-r1t-2025-adventure"],
+    "acceptableVehicleIds": [], "category": "FLEET_FILTER", "difficulty": "EASY", "source": "DB_GENERATED", "minimumRecallCount": 3
+  },
+  {
+    "entryId": "S4-002", "query": "vehicles under $40000",
+    "expectedVehicleIds": ["toyota-camry-2025-xse-hybrid","honda-crv-2025-sport-hybrid"],
+    "acceptableVehicleIds": ["tesla-model3-2025-long-range"], "category": "FLEET_FILTER", "difficulty": "EASY", "source": "DB_GENERATED", "minimumRecallCount": 2
+  },
+  {
+    "entryId": "S4-003", "query": "electric vehicles",
+    "expectedVehicleIds": ["tesla-model3-2025-long-range","rivian-r1t-2025-adventure"],
+    "acceptableVehicleIds": [], "category": "FLEET_FILTER", "difficulty": "EASY", "source": "DB_GENERATED", "minimumRecallCount": 2
+  },
+  {
+    "entryId": "S4-004", "query": "vehicles with at least 40 mpg fuel economy",
+    "expectedVehicleIds": ["toyota-camry-2025-xse-hybrid","honda-crv-2025-sport-hybrid"],
+    "acceptableVehicleIds": [], "category": "FLEET_FILTER", "difficulty": "EASY", "source": "DB_GENERATED", "minimumRecallCount": 2
+  },
+  {
+    "entryId": "S4-005", "query": "AWD vehicles",
+    "expectedVehicleIds": ["tesla-model3-2025-long-range","rivian-r1t-2025-adventure","honda-crv-2025-sport-hybrid"],
+    "acceptableVehicleIds": [], "category": "FLEET_FILTER", "difficulty": "EASY", "source": "DB_GENERATED", "minimumRecallCount": 3
+  },
+  {
+    "entryId": "S1-PERF-001", "query": "what engine does the BMW M3 use and how fast is it",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": [],
+    "category": "PERFORMANCE", "difficulty": "EASY", "source": "MANUAL", "minimumRecallCount": 1,
+    "expectedChunkIds": ["bmw-m3-2025-competition:2"]
+  },
+  {
+    "entryId": "S1-PERF-002", "query": "which car has the most torque",
+    "expectedVehicleIds": ["rivian-r1t-2025-adventure"], "acceptableVehicleIds": ["bmw-m3-2025-competition"],
+    "category": "PERFORMANCE", "difficulty": "MEDIUM", "source": "MANUAL", "minimumRecallCount": 1
+  },
+  {
+    "entryId": "S1-COST-001", "query": "how much does it cost to own the BMW M3 over 5 years",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": [],
+    "category": "OWNERSHIP_COST", "difficulty": "EASY", "source": "MANUAL", "minimumRecallCount": 1,
+    "expectedChunkIds": ["bmw-m3-2025-competition:3"]
+  },
+  {
+    "entryId": "S1-COST-002", "query": "which vehicle has the best resale value",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": ["porsche-911-2025-carrera-s"],
+    "category": "OWNERSHIP_COST", "difficulty": "MEDIUM", "source": "MANUAL", "minimumRecallCount": 1
+  },
+  {
+    "entryId": "S1-MAINT-001", "query": "what does the 30000 mile service cost on the BMW M3",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": [],
+    "category": "MAINTENANCE", "difficulty": "EASY", "source": "MANUAL", "minimumRecallCount": 1,
+    "expectedChunkIds": ["bmw-m3-2025-competition:12"]
+  },
+  {
+    "entryId": "S1-MAINT-002", "query": "which vehicles are most expensive to maintain",
+    "expectedVehicleIds": ["bmw-m3-2025-competition","porsche-911-2025-carrera-s"],
+    "acceptableVehicleIds": ["chevrolet-corvette-2025-z06"],
+    "category": "MAINTENANCE", "difficulty": "HARD", "source": "MANUAL", "minimumRecallCount": 1
+  },
+  {
+    "entryId": "S1-SAFETY-001", "query": "what are the NHTSA safety ratings for the BMW M3",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": [],
+    "category": "SAFETY", "difficulty": "EASY", "source": "MANUAL", "minimumRecallCount": 1,
+    "expectedChunkIds": ["bmw-m3-2025-competition:5"]
+  },
+  {
+    "entryId": "S1-RANK-001", "query": "how does the BMW M3 rank compared to other sports sedans",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": [],
+    "category": "RANKINGS", "difficulty": "EASY", "source": "MANUAL", "minimumRecallCount": 1,
+    "expectedChunkIds": ["bmw-m3-2025-competition:4"]
+  },
+  {
+    "entryId": "S1-RANK-002", "query": "which car won editors choice award",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": [],
+    "category": "RANKINGS", "difficulty": "HARD", "source": "MANUAL", "minimumRecallCount": 1
+  },
+  {
+    "entryId": "S1-RECALL-001", "query": "are there any open recalls on the BMW M3",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": [],
+    "category": "SAFETY", "difficulty": "EASY", "source": "MANUAL", "minimumRecallCount": 1,
+    "expectedChunkIds": ["bmw-m3-2025-competition:20","bmw-m3-2025-competition:21"]
+  },
+  {
+    "entryId": "S2-001", "query": "fast sports car that wont break the bank",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": ["chevrolet-corvette-2025-z06"],
+    "category": "CROSS_CHUNK", "difficulty": "HARD", "source": "USER_LOG", "minimumRecallCount": 1
+  },
+  {
+    "entryId": "S2-002", "query": "good family car with low running costs",
+    "expectedVehicleIds": ["toyota-camry-2025-xse-hybrid","honda-crv-2025-sport-hybrid"],
+    "acceptableVehicleIds": [], "category": "CROSS_CHUNK", "difficulty": "HARD", "source": "USER_LOG", "minimumRecallCount": 1
+  },
+  {
+    "entryId": "S2-003", "query": "is the M3 reliable",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": [],
+    "category": "RANKINGS", "difficulty": "MEDIUM", "source": "USER_LOG", "minimumRecallCount": 1,
+    "expectedChunkIds": ["bmw-m3-2025-competition:4","bmw-m3-2025-competition:7"]
+  },
+  {
+    "entryId": "S2-004", "query": "what do experts say about the M3",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": [],
+    "category": "RANKINGS", "difficulty": "MEDIUM", "source": "USER_LOG", "minimumRecallCount": 1,
+    "expectedChunkIds": ["bmw-m3-2025-competition:7"]
+  },
+  {
+    "entryId": "S2-005", "query": "how much will I spend on gas per year",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": [],
+    "category": "OWNERSHIP_COST", "difficulty": "HARD", "source": "USER_LOG", "minimumRecallCount": 1,
+    "expectedChunkIds": ["bmw-m3-2025-competition:3"]
+  },
+  {
+    "entryId": "S2-006", "query": "truck with good off road capability",
+    "expectedVehicleIds": ["rivian-r1t-2025-adventure"], "acceptableVehicleIds": ["ford-f150-2025-lariat"],
+    "category": "FEATURES", "difficulty": "MEDIUM", "source": "USER_LOG", "minimumRecallCount": 1
+  },
+  {
+    "entryId": "S3-001", "query": "best car for someone who loves track days but needs daily practicality",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": ["chevrolet-corvette-2025-z06"],
+    "category": "CROSS_CHUNK", "difficulty": "HARD", "source": "LLM_ASSISTED", "minimumRecallCount": 1
+  },
+  {
+    "entryId": "S3-002", "query": "most environmentally friendly option with good range",
+    "expectedVehicleIds": ["tesla-model3-2025-long-range","toyota-camry-2025-xse-hybrid","honda-crv-2025-sport-hybrid"],
+    "acceptableVehicleIds": [], "category": "CROSS_CHUNK", "difficulty": "HARD", "source": "LLM_ASSISTED", "minimumRecallCount": 2
+  },
+  {
+    "entryId": "S3-003", "query": "vehicle with lowest total 5 year ownership cost",
+    "expectedVehicleIds": ["toyota-camry-2025-xse-hybrid","honda-crv-2025-sport-hybrid"],
+    "acceptableVehicleIds": [], "category": "OWNERSHIP_COST", "difficulty": "HARD", "source": "LLM_ASSISTED", "minimumRecallCount": 1
+  },
+  {
+    "entryId": "EDGE-001", "query": "vehicles with recalls",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": [],
+    "category": "SAFETY", "difficulty": "EDGE_CASE", "source": "MANUAL", "minimumRecallCount": 1,
+    "notes": "Tests whether recall chunks are indexed and retrievable"
+  },
+  {
+    "entryId": "EDGE-002", "query": "BMW M3 CS trim price",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": [],
+    "category": "FEATURES", "difficulty": "EDGE_CASE", "source": "MANUAL", "minimumRecallCount": 1,
+    "expectedChunkIds": ["bmw-m3-2025-competition:6"],
+    "notes": "Tests sub-object retrieval — trim level data inside features chunk"
+  },
+  {
+    "entryId": "EDGE-003", "query": "spark plug replacement interval BMW",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": [],
+    "category": "MAINTENANCE", "difficulty": "EDGE_CASE", "source": "MANUAL", "minimumRecallCount": 1,
+    "expectedChunkIds": ["bmw-m3-2025-competition:13"],
+    "notes": "Tests deep maintenance chunk — 60k service specifically"
+  },
+  {
+    "entryId": "EDGE-004", "query": "xyzabc vehicle",
+    "expectedVehicleIds": [], "acceptableVehicleIds": [],
+    "category": "FLEET_FILTER", "difficulty": "EDGE_CASE", "source": "MANUAL", "minimumRecallCount": 0,
+    "notes": "Nonsense query — system must return empty or fallback gracefully"
+  },
+  {
+    "entryId": "EDGE-005", "query": "M3",
+    "expectedVehicleIds": ["bmw-m3-2025-competition"], "acceptableVehicleIds": [],
+    "category": "PERFORMANCE", "difficulty": "EDGE_CASE", "source": "MANUAL", "minimumRecallCount": 1,
+    "notes": "Short token — tests BM25 fallback to vector for sub-3-char tokens"
+  }
+]

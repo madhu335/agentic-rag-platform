@@ -1,0 +1,124 @@
+The 5 strongest things to say in an interview
+
+You want lines like these:
+
+“I used a planner-executor architecture so the LLM decides workflow steps, but deterministic code owns side effects.”
+
+“I persisted session state to support resumable multi-turn workflows and continuation commands.”
+
+“I added groundedness checks and retry logic so weak retrieval results trigger replanning instead of unsafe downstream actions.”
+
+“I validated planner output against allowed step schemas and execution rules before the executor ran anything.”
+
+“I treated the LLM as a reasoning component inside a controlled runtime, not as the runtime itself.”
+
+If you can say those naturally, you’ll sound much stronger.
+
+I implemented a step-level execution ledger so every tool invocation is tracked with inputs, outputs, timestamps, and status. This enables full observability, debugging, and replay of agent workflows
+
+I built an agentic execution system with a planner–executor architecture. The planner generates multi-step plans including continuation steps like rewriting or transforming outputs. The executor enforces tool execution with state persistence and maintains a step-level execution ledger for observability and debugging
+
+We separated content generation from side effects. The email step generates content deterministically, while draft_email and send_email handle external actions. This makes the system idempotent, testable, and prevents duplicate side effects
+
+User
+ → Planner
+ → ResearchTool
+ → Divergence Check
+    ├─ pass → EmailTool
+    └─ fail → Spring Event → FallbackService → re-research → re-judge → EmailTool
+Self-correcting agent:
+    - detects weak answers
+    - auto-retries
+    - improves retrieval
+    - continues execution
+ We implemented a divergence detection layer that evaluates retrieval quality using both similarity scores and an LLM-based judge.
+ When confidence drops below threshold, we trigger a Spring event-driven fallback loop that rewrites the query and
+ re-executes retrieval before proceeding.
+
+ We implemented a Phase 3 adaptive agent loop with controlled replanning.
+ The system uses an LLM for decision-making while enforcing execution constraints in Java for reliability.
+
+ Phase 3:
+ =====================
+ User
+  ↓
+ Planner (LLM → steps)
+  ↓
+ Execution Loop (Java)
+  ↓
+ [Step] Research
+  ↓
+ Observe (Judge + State)
+  ↓
+ Planner (LLM sees results)
+  ↓
+ Decide:
+    → refine? → retry research
+    → act? → email
+    → stop
+
+Phase 4
+=========
+User: Summarize Q4 and email HR
+→ agent runs
+
+User: wait, send to finance instead
+→ NO re-research
+→ update state.email.recipient
+→ re-trigger email tool
+
+“We introduced a stateful continuation layer that allows users to modify
+previously generated outputs without re-executing expensive retrieval steps,
+enabling low-latency agent interactions
+
+Initial flow:
+User
+ → Planner
+ → Research
+ → Divergence Check
+    ├─ weak → retry / refined query
+    └─ good → Replan
+ → Email
+
+Continue flow:
+Session + instruction
+ → guardrails
+ → continuation planner
+ → update/draft/send
+
+Full Agentic System
+===============
+User
+ → Planner
+ → ResearchTool (RAG)
+ → Divergence Check (you already built)
+ → EmailTool
+
+ With continuation:
+ User
+  → Continue API
+  → Planner (context-aware)
+  → Update / Draft / Send
+
+  With guardrails:
+  cannot mutate after SEND
+  state-driven execution
+  no hallucination (email uses state, not LLM)
+
+What this demonstrates (interview gold)
+==================
+You can now confidently say:
+
+Built agentic orchestration layer in Spring Boot
+Implemented planner-executor architecture
+Designed stateful workflows with resumability
+Used event-driven fallback loops
+Prevented hallucinations via state-driven tools
+Added guardrails + deterministic execution layer
+
+Phase 7+
+multi-tool orchestration (search + DB + API)
+parallel tool execution
+memory layer (long-term context)
+tool selection via embeddings
+cost-aware planning
