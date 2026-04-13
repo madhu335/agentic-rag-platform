@@ -37,7 +37,9 @@ public class JudgeService {
                     ));
 
                     String raw = judgeClient.evaluate(prompt, contextChunks);
-                    JudgeResult result = objectMapper.readValue(raw, JudgeResult.class);
+                    String json = extractJsonObject(raw);
+
+                    JudgeResult result = objectMapper.readValue(json, JudgeResult.class);
 
                     double score = result.score();
                     if (score > 1.0) {
@@ -51,6 +53,7 @@ public class JudgeService {
                             score,
                             result.reason()
                     );
+
                     traceHelper.addAttributes(Map.of(
                             "gen_ai.completion.0.content", result.reason(),
                             "gen_ai.completion.0.score", result.score()
@@ -78,18 +81,43 @@ public class JudgeService {
         });
     }
 
+    private String extractJsonObject(String text) {
+        if (text == null || text.isBlank()) {
+            return "{}";
+        }
+
+        String trimmed = text.trim();
+
+        if (trimmed.startsWith("```")) {
+            trimmed = trimmed
+                    .replaceFirst("^```json\\s*", "")
+                    .replaceFirst("^```\\s*", "")
+                    .replaceFirst("\\s*```$", "")
+                    .trim();
+        }
+
+        int firstBrace = trimmed.indexOf('{');
+        int lastBrace = trimmed.lastIndexOf('}');
+
+        if (firstBrace >= 0 && lastBrace > firstBrace) {
+            return trimmed.substring(firstBrace, lastBrace + 1);
+        }
+
+        return trimmed;
+    }
+
     private String buildPrompt(String question, String answer) {
         return """
                 You are an evaluator.
-                
+
                 Evaluate the answer using only the provided context.
-                
+
                 Question:
                 %s
-                
+
                 Answer:
                 %s
-                
+
                 Return JSON only in this exact format:
                 {
                   "grounded": true,
@@ -98,7 +126,7 @@ public class JudgeService {
                   "score": 0.7,
                   "reason": "short explanation"
                 }
-                
+
                 Rules:
                 - score must be a decimal between 0.0 and 1.0
                 - do NOT use a 1-10 scale

@@ -773,15 +773,38 @@ public class PlannerService {
             return null;
         }
 
+        String json = null;
+        String cleaned = null;
+
         try {
-            String json = extractJsonObject(response);
-            return objectMapper.readValue(json, PlannerPayload.class);
+            json = extractJsonObject(response);
+            cleaned = cleanJson(json);
+            return objectMapper.readValue(cleaned, PlannerPayload.class);
         } catch (Exception e) {
-            log.warn("Failed to parse planner JSON. response={}", response, e);
+            log.warn("Failed to parse planner JSON. extracted={}, cleaned={}", json, cleaned, e);
             return null;
         }
     }
+    private String cleanJson(String text) {
+        if (text == null || text.isBlank()) {
+            return "{}";
+        }
 
+        String trimmed = text.trim();
+
+        if (trimmed.startsWith("```")) {
+            trimmed = trimmed
+                    .replaceFirst("^```json\\s*", "")
+                    .replaceFirst("^```\\s*", "")
+                    .replaceFirst("\\s*```$", "")
+                    .trim();
+        }
+
+        trimmed = trimmed.replaceAll("(?m)//.*$", "");
+        trimmed = trimmed.replaceAll("(?s)/\\*.*?\\*/", "");
+
+        return trimmed.trim();
+    }
     private String extractJsonObject(String text) {
         String trimmed = text.trim();
 

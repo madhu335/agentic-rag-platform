@@ -305,26 +305,42 @@ public class PgVectorStore {
         if (batch == null || batch.isEmpty()) return;
 
         String sql = """
-            INSERT INTO document_chunks (doc_id, chunk_index, content, embedding)
-            VALUES (?, ?, ?, ?::vector)
+            INSERT INTO document_chunks (doc_id, chunk_index, content, embedding, doc_type)
+            VALUES (?, ?, ?, ?::vector, ?)
             ON CONFLICT (doc_id, chunk_index)
             DO UPDATE SET
                 content   = EXCLUDED.content,
-                embedding = EXCLUDED.embedding
+                embedding = EXCLUDED.embedding,
+                doc_type  = EXCLUDED.doc_type
             """;
 
         for (VectorRecord record : batch) {
             if (record == null || record.vector() == null || record.vector().isEmpty()) {
                 throw new IllegalArgumentException("Record/vector cannot be null/empty");
             }
-            String docId = extractDocId(record.id());
+            String docId   = extractDocId(record.id());
+            String docType = inferDocType(docId);
             jdbcTemplate.update(sql,
                     docId,
                     record.chunkIndex(),
                     record.text(),
-                    toPgVector(record.vector())
+                    toPgVector(record.vector()),
+                    docType
             );
         }
+    }
+
+    /**
+     * Derives doc_type from docId naming convention.
+     *   Articles → start with "motortrend-"
+     *   Vehicles → contain a 4-digit year  (e.g. bmw-m3-2025-competition)
+     *   PDFs     → everything else
+     */
+    private String inferDocType(String docId) {
+        if (docId == null)                          return "pdf";
+        if (docId.startsWith("motortrend-"))        return "article";
+        if (docId.matches(".*-\\d{4}(-.*)?$"))     return "vehicle";
+        return "pdf";
     }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -395,4 +411,77 @@ public class PgVectorStore {
                 }
         );
     }
+
+    // ---------------- DOC_TYPE SCOPED SEARCH ----------------
+
+    /**
+     * Vector search scoped to a specific doc_type.
+     * Prevents article searches returning vehicle or pdf chunks.
+     * Usage: vectorStore.searchAllWithScores(queryVector, topK, "article")
+     */
+    public List<SearchHit> searchAllWithScores(List<Double> queryVector, int topK, String docType) {
+        int k = Math.max(1, topK);
+        String vectorLiteral = toPgVector(queryVector);
+
+        String sql = """
+                SELECT
+                    doc_id,
+                    chunk_index,
+                    content,
+                    embedding <=> ?::vector AS distance
+                FROM document_chunks
+                WHERE doc_type = ?
+                ORDER BY embedding <=> ?::vector
+                LIMIT ?
+                """;
+
+        return jdbcTemplate.query(
+                sql,
+                ps -> {
+                    ps.setString(1, vectorLiteral);
+                    ps.setString(2, docType);
+                    ps.setString(3, vectorLiteral);
+                    ps.setInt(4, k);
+                },
+                searchHitRowMapper()
+        );
+    }
+
+    /**
+     * Keyword search scoped to a specific doc_type.
+     * Usage: vectorStore.keywordSearchAll(question, topK, "article")
+     */
+    public List<SearchHit> keywordSearchAll(String question, int topK, String docType) {
+        String sql = """
+                SELECT
+                    doc_id,
+                    chunk_index,
+                    content,
+                    ts_rank_cd(content_tsv, plainto_tsquery('english', ?)) AS score
+                FROM document_chunks
+                WHERE doc_type = ?
+                  AND content_tsv @@ plainto_tsquery('english', ?)
+                ORDER BY score DESC, chunk_index ASC
+                LIMIT ?
+                """;
+
+        return jdbcTemplate.query(
+                sql,
+                ps -> {
+                    ps.setString(1, question);
+                    ps.setString(2, docType);
+                    ps.setString(3, question);
+                    ps.setInt(4, Math.max(1, topK));
+                },
+                (rs, rowNum) -> {
+                    String foundDocId = rs.getString("doc_id");
+                    int chunkIndex    = rs.getInt("chunk_index");
+                    String chunkId    = foundDocId + ":" + chunkIndex;
+                    VectorRecord record = new VectorRecord(0L, chunkIndex, chunkId,
+                            rs.getString("content"), List.of());
+                    return new SearchHit(record, rs.getDouble("score"));
+                }
+        );
+    }
+
 }

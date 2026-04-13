@@ -514,6 +514,13 @@ public class RagAnswerService {
      * Simple chunks start with: "YYYY Make Model ... vehicle specification."
      * Semantic chunks start with: "YYYY Make Model [Trim] [class]. <ChunkType>:"
      */
+    /**
+     * Detects structured domain chunks that must bypass compress() entirely.
+     * Covers: vehicle spec chunks, vehicle semantic chunks, article chunks.
+     *
+     * All of these are written as dense single-line prose that the compress()
+     * length filter (< 400 chars) silently wipes — causing empty context to the LLM.
+     */
     private boolean isVehicleChunk(String text) {
         if (text == null || text.isBlank()) return false;
         String first = text.strip().lines().findFirst().orElse("").toLowerCase();
@@ -521,11 +528,19 @@ public class RagAnswerService {
         // Simple VehicleDocumentBuilder preamble
         if (first.contains("vehicle specification")) return true;
 
-        // Semantic VehicleChunkBuilder chunk types — all anchored with year+make+model
-        return first.matches(".*\\b(performance specs|ownership cost|5-year ownership"
+        // Vehicle semantic chunk types (VehicleChunkBuilder)
+        if (first.matches(".*\\b(performance specs|ownership cost|5-year ownership"
                 + "|rankings and awards|safety ratings|features and trim"
                 + "|expert reviews|maintenance at \\d|recall [a-z]"
-                + "|industry rankings).*");
+                + "|industry rankings).*")) return true;
+
+        // Article chunks (ArticleChunkBuilder) — all start with "MotorTrend <type> featuring"
+        // or contain article-level chunk type labels
+        if (first.startsWith("motortrend ")) return true;
+        if (first.matches(".*\\b(article:|section:|motortrend ratings|expert assessment"
+                + "|vehicles featured|article excerpt).*")) return true;
+
+        return false;
     }
 
     private List<String> filterValidCitations(String answer, List<String> validIds) {
