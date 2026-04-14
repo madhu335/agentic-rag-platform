@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Agent Sessions Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 24px; background: #f7f7f9; }
+        h1 { margin-bottom: 16px; }
+        .layout { display: grid; grid-template-columns: 420px 1fr; gap: 16px; }
+        .panel { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .session { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; margin-bottom: 10px; cursor: pointer; }
+        .session:hover { background: #fafafa; }
+        .meta { color: #555; font-size: 12px; margin-top: 4px; }
+        .chips { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+        .chip { background: #eef2ff; border-radius: 999px; padding: 4px 8px; font-size: 12px; }
+        pre { white-space: pre-wrap; word-wrap: break-word; background: #0b1020; color: #e5e7eb; padding: 12px; border-radius: 10px; overflow: auto; }
+        .row { display: flex; gap: 8px; margin-bottom: 12px; }
+        input { flex: 1; padding: 8px 10px; }
+        button { padding: 8px 12px; cursor: pointer; }
+    </style>
+</head>
+<body>
+<h1>Agent Sessions Dashboard</h1>
+<div class="row">
+    <input id="limit" type="number" value="25" min="1" max="100" />
+    <button onclick="loadSessions()">Refresh</button>
+</div>
+<div class="layout">
+    <div class="panel">
+        <div id="sessions"></div>
+    </div>
+    <div class="panel">
+        <h3>Session Detail</h3>
+        <div id="detail-meta"></div>
+        <pre id="detail-json">Select a session...</pre>
+    </div>
+</div>
+
+<script>
+    async function loadSessions() {
+        const limit = document.getElementById('limit').value || 25;
+        const res = await fetch(`/agent/dashboard/sessions?limit=${limit}`);
+        const sessions = await res.json();
+
+        const container = document.getElementById('sessions');
+        container.innerHTML = '';
+
+        sessions.forEach(session => {
+            const div = document.createElement('div');
+            div.className = 'session';
+            div.onclick = () => loadDetail(session.sessionId);
+
+            const chips = (session.stepNames || [])
+                .map(step => `<span class="chip">${escapeHtml(step)}</span>`)
+                .join('');
+
+            div.innerHTML = `
+          <strong>${escapeHtml(session.flowType)} · ${escapeHtml(session.status)}</strong>
+          <div>${escapeHtml(session.originalUserRequest || '(no request)')}</div>
+          <div class="meta">sessionId: ${escapeHtml(session.sessionId)}</div>
+          <div class="meta">updated: ${escapeHtml(session.updatedAt || '')}</div>
+          <div class="meta">judgeScore: ${session.judgeScore ?? '-'} | confidence: ${session.confidenceScore ?? '-'}</div>
+          <div class="chips">${chips}</div>
+        `;
+            container.appendChild(div);
+        });
+    }
+
+    async function loadDetail(sessionId) {
+        const res = await fetch(`/agent/dashboard/sessions/${sessionId}`);
+        const detail = await res.json();
+
+        document.getElementById('detail-meta').innerHTML = `
+        <div><strong>Session:</strong> ${escapeHtml(detail.sessionId || '')}</div>
+        <div><strong>Original Request:</strong> ${escapeHtml(detail.originalUserRequest || '')}</div>
+        <div><strong>Doc Id:</strong> ${escapeHtml(detail.docId || '')}</div>
+      `;
+        document.getElementById('detail-json').textContent = JSON.stringify(detail, null, 2);
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    loadSessions();
+</script>
+</body>
+</html>
