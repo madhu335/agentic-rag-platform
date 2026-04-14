@@ -50,9 +50,9 @@ public class PlannerService {
 
         String prompt = """
                 You are a workflow planner.
-
+                
                 Convert the user request into workflow steps.
-
+                
                 Allowed steps:
                 - research -> args: query
                 - email -> args: recipient, subject
@@ -64,7 +64,7 @@ public class PlannerService {
                 - compare_vehicles -> args: vehicleIds (comma-separated), question
                 - enrich_vehicle_data -> args: vehicleId
                 - stop
-
+                
                 Step meanings:
                 - research = retrieve information from ingested PDF or text documents only
                 - email = generate email content in workflow state only (NO external side effect)
@@ -75,7 +75,7 @@ public class PlannerService {
                 - generate_vehicle_summary = write a consumer narrative summary for a vehicle (use after fetch_vehicle_specs)
                 - compare_vehicles = compare two or more vehicles side-by-side on a given dimension
                 - enrich_vehicle_data = auto-generate or improve a vehicle summary and re-ingest it
-
+                
                 Vehicle routing rules (IMPORTANT):
                 - If the user asks about a specific vehicle's specs, features, performance, or wants a summary -> use fetch_vehicle_specs then generate_vehicle_summary
                 - If the user asks to compare vehicles -> use compare_vehicles with vehicleIds as comma-separated string
@@ -83,7 +83,7 @@ public class PlannerService {
                 - Vehicle steps are SEPARATE from research — do NOT use research for vehicle queries
                 - Extract vehicleId from context: "Tesla Model 3 Long Range" -> "tesla-model3-2025-long-range", "BMW M3" -> "bmw-m3-2025-competition"
                 - If docId is provided in context and looks like a vehicleId (contains hyphens, a year), use it directly
-
+                
                 Rules:
                 - If the user only asks a question about a document or general knowledge, return ONLY a research step.
                 - If the user asks for an answer to be emailed, separate research from email.
@@ -108,7 +108,7 @@ public class PlannerService {
                       { "step": "email", "args": { "recipient": "hr@company.com", "subject": "Spring Boot Answers" } }
                     ]
                   }
-
+                
                 User request:
                 %s
                 """.formatted(safe(userPrompt));
@@ -127,10 +127,10 @@ public class PlannerService {
 
         String prompt = """
                 You are replanning after a completed or failed workflow step.
-
+                
                 Original user request:
                 %s
-
+                
                 Current workflow state:
                 - research exists: %s
                 - email exists: %s
@@ -141,42 +141,67 @@ public class PlannerService {
                 - current subject: %s
                 - current phone number: %s
                 - execution history: %s
-
+                
                 Last step result:
                 - step: %s
                 - confidence: %s
                 - judge grounded: %s
                 - judge score: %s
-
+                
                 Decide the next step.
-
+                
                 Allowed steps:
                 - research -> args: query
                 - email -> args: recipient, subject
                 - send -> args: recipient, subject
                 - compose_sms -> args: phoneNumber
                 - send_sms -> args: phoneNumber
+                - fetch_vehicle_specs -> args: vehicleId, question (optional), topK (optional)
+                - generate_vehicle_summary -> args: vehicleId
+                - compare_vehicles -> args: vehicleIds (comma-separated), question
+                - enrich_vehicle_data -> args: vehicleId
                 - stop
-
+                
                 Step meanings:
                 - research = retrieve information
                 - email = generate email content in workflow state only
                 - send = send email externally now
                 - compose_sms = generate SMS content in workflow state only
                 - send_sms = send SMS externally now
-
+                - fetch_vehicle_specs = retrieve raw spec data for a specific vehicle
+                - generate_vehicle_summary = write a consumer narrative summary
+                - compare_vehicles = compare vehicles side-by-side
+                - enrich_vehicle_data = improve vehicle summary and re-ingest
+                
+                Vehicle routing rules (IMPORTANT):
+                - Use vehicle steps for vehicle queries
+                - DO NOT use research for vehicle queries
+                
                 Rules:
                 - If the last research result is good enough, continue only with the communication steps the original request asked for.
                 - If the last research result is weak, you may request one more research step with a refined query.
-                - If research has already failed multiple times, avoid infinite retries.
+                - Avoid infinite retries.
                 - If the original request was only Q&A, return stop after good research.
-                - If email already exists:
-                  - DO NOT change recipient unless explicitly requested.
-                  - DO NOT change subject unless explicitly requested.
-                - If sms already exists:
-                  - DO NOT change phone number unless explicitly requested.
-                - Avoid repeating already successful steps unless necessary.
-                - Return ONLY strict JSON.
+                - If a vehicle query has already been answered successfully, return stop unless the original request also asked for email or SMS.
+                - Do not repeat successful steps unless necessary.
+                - Do not change recipient unless explicitly requested.
+                - Do not change subject unless explicitly requested.
+                - Do not change phone number unless explicitly requested.
+                - Do not invent new step names.
+                
+                Return ONLY valid JSON.
+                Do NOT return markdown.
+                Do NOT return bullet points.
+                Do NOT return explanations.
+                Do NOT include any text before or after the JSON object.
+                Response MUST start with { and end with }.
+                
+                Schema:
+                {
+                  "steps": [
+                    { "step": "research", "args": { "query": "..." } }
+                  ]
+                }
                 """.formatted(
                 safe(state.originalUserRequest()),
                 state.research() != null,
@@ -257,7 +282,7 @@ public class PlannerService {
 
         String prompt = """
                 You are continuing an existing workflow.
-
+                
                 Current workflow state:
                 - original request: %s
                 - current request: %s
@@ -268,10 +293,10 @@ public class PlannerService {
                 - current phone number: %s
                 - current sms status: %s
                 - execution history: %s
-
+                
                 New user instruction:
                 %s
-
+                
                 Allowed steps:
                 - update_recipient -> args: recipient
                 - shorten_email
@@ -280,7 +305,7 @@ public class PlannerService {
                 - compose_sms -> args: phoneNumber
                 - send_sms -> args: phoneNumber
                 - stop
-
+                
                 Step meanings:
                 - update_recipient = change recipient in workflow state
                 - shorten_email = modify existing email body in workflow state
@@ -288,7 +313,7 @@ public class PlannerService {
                 - send_email = send externally
                 - compose_sms = generate SMS content in workflow state
                 - send_sms = send SMS externally
-
+                
                 Rules:
                 - Reuse existing research; do NOT request research again if a summary already exists.
                 - If the user asks to change recipient, update recipient first and then draft again.
@@ -621,7 +646,8 @@ public class PlannerService {
                 case "fetch_vehicle_specs",
                      "generate_vehicle_summary",
                      "compare_vehicles",
-                     "enrich_vehicle_data" -> validated.add(new PlanStep(name, new LinkedHashMap<>(step.args() != null ? step.args() : Map.of())));
+                     "enrich_vehicle_data" ->
+                        validated.add(new PlanStep(name, new LinkedHashMap<>(step.args() != null ? step.args() : Map.of())));
 
                 default -> log.warn("Unsupported step during enforcement: {}", name);
             }
@@ -714,7 +740,8 @@ public class PlannerService {
                 case "fetch_vehicle_specs",
                      "generate_vehicle_summary",
                      "compare_vehicles",
-                     "enrich_vehicle_data" -> validated.add(new PlanStep(name, new LinkedHashMap<>(step.args() != null ? step.args() : Map.of())));
+                     "enrich_vehicle_data" ->
+                        validated.add(new PlanStep(name, new LinkedHashMap<>(step.args() != null ? step.args() : Map.of())));
 
                 default -> log.warn("Unsupported continuation step during enforcement: {}", name);
             }
@@ -778,16 +805,29 @@ public class PlannerService {
 
         try {
             json = extractJsonObject(response);
+
+            if (json == null || json.isBlank()) {
+                log.warn("Planner response had no JSON object. response={}", response);
+                return null;
+            }
+
             cleaned = cleanJson(json);
+
+            if (!cleaned.startsWith("{") || !cleaned.endsWith("}")) {
+                log.warn("Planner response was not a valid JSON object after cleaning. cleaned={}", cleaned);
+                return null;
+            }
+
             return objectMapper.readValue(cleaned, PlannerPayload.class);
         } catch (Exception e) {
-            log.warn("Failed to parse planner JSON. extracted={}, cleaned={}", json, cleaned, e);
+            log.warn("Failed to parse planner JSON. raw={}, extracted={}, cleaned={}", response, json, cleaned, e);
             return null;
         }
     }
+
     private String cleanJson(String text) {
         if (text == null || text.isBlank()) {
-            return "{}";
+            return "";
         }
 
         String trimmed = text.trim();
@@ -805,7 +845,12 @@ public class PlannerService {
 
         return trimmed.trim();
     }
+
     private String extractJsonObject(String text) {
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+
         String trimmed = text.trim();
 
         if (trimmed.startsWith("```")) {
@@ -818,11 +863,12 @@ public class PlannerService {
 
         int firstBrace = trimmed.indexOf('{');
         int lastBrace = trimmed.lastIndexOf('}');
+
         if (firstBrace >= 0 && lastBrace > firstBrace) {
             return trimmed.substring(firstBrace, lastBrace + 1);
         }
 
-        return trimmed;
+        return null;
     }
 
     private String normalizeStepName(String step) {
@@ -878,7 +924,9 @@ public class PlannerService {
         ));
     }
 
-    private record PlannerPayload(List<PlannerStep> steps) {}
+    private record PlannerPayload(List<PlannerStep> steps) {
+    }
 
-    private record PlannerStep(String step, Map<String, Object> args) {}
+    private record PlannerStep(String step, Map<String, Object> args) {
+    }
 }

@@ -150,6 +150,7 @@ Section titles are enriched with user query vocabulary before embedding:
 Queries like "performance on track" retrieve the Performance section chunk rather than a less precise body window chunk.
 
 #### Retrieval modes
+These endpoints create session traces visible in the dashboard
 
 **Single-article ask:** `POST /articles/{articleId}/ask`
 Scoped to one article. Uses HYBRID retrieval.
@@ -159,6 +160,7 @@ Finds all articles that mention a vehicle — works for any role (primary, compe
 
 **Cross-article semantic search:** `POST /articles/search`
 Searches globally across all article chunks. Supports opinion queries, rating threshold filters, and comparison queries. Chunk preference ranking surfaces identity/verdict/ratings chunks above body windows.
+
 
 #### Domain isolation via doc_type
 
@@ -235,6 +237,10 @@ Detects deviation from plan execution. Triggers re-planning on invalid outputs, 
 ---
 
 ## Observability
+### Session tracing and dashboard
+- All agent sessions are persisted in PostgreSQL as immutable AgentSessionState snapshots.
+- A lightweight dashboard visualizes recent sessions, step history, research output, and flow status
+across doc, vehicle, and CMS workflows.
 
 - **OpenTelemetry:** spans on every retrieval call, embedding call, LLM call, and RRF fusion step
 - **LangSmith:** execution traces, prompt inspection, retrieval debugging, workflow monitoring
@@ -272,7 +278,6 @@ Detects deviation from plan execution. Triggers re-planning on invalid outputs, 
 
 ## Roadmap
 
-- Persistent AgentStateStore (replace in-memory with PostgreSQL)
 - Async ingestion pipeline with checkpoint table for resumable exactly-once semantics
 - HNSW index evaluation vs IVFFLAT at scale
 - Fine-tuned embedding model for automotive domain vocabulary

@@ -1,5 +1,6 @@
 package com.example.airagassistant.domain.vehicle;
 
+import com.example.airagassistant.agentic.AgentSessionRunner;
 import com.example.airagassistant.domain.vehicle.service.VehicleRagService;
 import com.example.airagassistant.rag.RagAnswerService;
 import com.example.airagassistant.rag.RetrievalMode;
@@ -12,12 +13,12 @@ import java.util.List;
 
 /**
  * Vehicle RAG REST API.
- *
+ * <p>
  * Endpoints:
- *
- *  POST /vehicles/ingest          — ingest a single vehicle
- *  POST /vehicles/{id}/ask        — ask a question about one vehicle
- *  POST /vehicles/ask             — ask a cross-vehicle question (fleet search)
+ * <p>
+ * POST /vehicles/ingest          — ingest a single vehicle
+ * POST /vehicles/{id}/ask        — ask a question about one vehicle
+ * POST /vehicles/ask             — ask a cross-vehicle question (fleet search)
  */
 @RestController
 @RequestMapping("/vehicles")
@@ -26,6 +27,7 @@ public class VehicleController {
 
     private final VehicleIngestionService ingestionService;
     private final VehicleRagService vehicleRagService;
+    private final AgentSessionRunner sessionRunner;
 
     // ─── Request / Response DTOs ───────────────────────────────────────────
 
@@ -33,7 +35,8 @@ public class VehicleController {
             String question,
             Integer topK,
             String mode   // optional: VECTOR | BM25 | HYBRID | HYBRID_RERANK  (default: HYBRID)
-    ) {}
+    ) {
+    }
 
     public record VehicleAskResponse(
             String vehicleId,
@@ -42,19 +45,22 @@ public class VehicleController {
             List<String> citedChunkIds,
             int usedChunks,
             Double bestScore
-    ) {}
+    ) {
+    }
 
     public record FleetSearchRequest(
             String question,
             Integer topK
-    ) {}
+    ) {
+    }
 
     public record FleetSearchHit(
             String chunkId,
             String vehicleId,
             int rank,          // 1-based position in results (clearer than raw RRF score)
             String excerpt     // first 200 chars of the chunk text
-    ) {}
+    ) {
+    }
 
     // ─── Ingest ───────────────────────────────────────────────────────────
 
@@ -78,14 +84,14 @@ public class VehicleController {
      * POST /vehicles/ingest/rich
      * Ingests a RichVehicleRecord as N semantic chunks (one per sub-object type).
      * Returns the list of stored chunkIds and any per-chunk errors.
-     *
+     * <p>
      * Example response:
      * {
-     *   "vehicleId": "bmw-m3-2025-competition",
-     *   "chunkCount": 12,
-     *   "storedChunkIds": ["bmw-m3-2025-competition:1", ..., "bmw-m3-2025-competition:21"],
-     *   "errors": [],
-     *   "hasErrors": false
+     * "vehicleId": "bmw-m3-2025-competition",
+     * "chunkCount": 12,
+     * "storedChunkIds": ["bmw-m3-2025-competition:1", ..., "bmw-m3-2025-competition:21"],
+     * "errors": [],
+     * "hasErrors": false
      * }
      */
     @PostMapping("/ingest/rich")
@@ -97,10 +103,10 @@ public class VehicleController {
     /**
      * POST /vehicles/{vehicleId}/ask
      * Ask a question scoped to a single ingested vehicle.
-     *
+     * <p>
      * Example:
-     *   POST /vehicles/tesla-model3-2025-long-range/ask
-     *   { "question": "What is the horsepower and drivetrain?" }
+     * POST /vehicles/tesla-model3-2025-long-range/ask
+     * { "question": "What is the horsepower and drivetrain?" }
      */
     @PostMapping("/{vehicleId}/ask")
     public VehicleAskResponse askVehicle(
@@ -110,7 +116,16 @@ public class VehicleController {
         int topK = (req.topK() == null || req.topK() <= 0) ? 5 : req.topK();
         RetrievalMode mode = parseMode(req.mode());
 
-        RagAnswerService.RagResult result = vehicleRagService.askVehicle(vehicleId, req.question(), topK, mode);
+        RagAnswerService.RagResult result = sessionRunner.runRagWithSession(
+                req.question(),
+                vehicleId,
+                () -> vehicleRagService.askVehicle(
+                        vehicleId,
+                        req.question(),
+                        topK,
+                        mode
+                )
+        );
 
         return new VehicleAskResponse(
                 vehicleId,
@@ -128,10 +143,10 @@ public class VehicleController {
      * POST /vehicles/ask
      * Ask a question across ALL ingested vehicles.
      * Returns the top matching chunks from any vehicle.
-     *
+     * <p>
      * Example:
-     *   POST /vehicles/ask
-     *   { "question": "Which vehicles have over 400 horsepower?", "topK": 5 }
+     * POST /vehicles/ask
+     * { "question": "Which vehicles have over 400 horsepower?", "topK": 5 }
      */
     @PostMapping("/ask")
     public List<FleetSearchHit> askFleet(@RequestBody FleetSearchRequest req) {
@@ -163,7 +178,9 @@ public class VehicleController {
         }
     }
 
-    /** chunkId format is  "vehicleId:chunkIndex"  e.g. "tesla-model3-2025-long-range:1" */
+    /**
+     * chunkId format is  "vehicleId:chunkIndex"  e.g. "tesla-model3-2025-long-range:1"
+     */
     private String extractVehicleId(String chunkId) {
         int idx = chunkId.lastIndexOf(':');
         return idx > 0 ? chunkId.substring(0, idx) : chunkId;
