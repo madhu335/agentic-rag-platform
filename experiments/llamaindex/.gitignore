@@ -1,0 +1,17 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Personal/sensitive sample docs — keep local only
+sample-data/*.pdf
+
+# IDE
+.idea/
+
+# Secrets — never commit
+.env
+
+# Local response files from IntelliJ HTTP client (if you moved java-comparison.http here)
+*.200.json

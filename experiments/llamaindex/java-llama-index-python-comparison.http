@@ -1,0 +1,95 @@
+### =============================================================================
+### Java pipeline head-to-head vs LlamaIndex experiment
+###
+### PDFs already ingested in document_chunks:
+###   - spring-boot-qa       (11 chunks, TextChunker)
+###   - jvm-flags-guide      (10 chunks, TextChunker)
+###
+### LlamaIndex corpus in data_llamaindex_chunks:
+###   - same 2 PDFs          (17 chunks, SentenceSplitter, 512 tokens)
+###
+### Java uses HYBRID by default via RagRetriever.retrieve(docId, question, topK).
+### For the head-to-head we compare Java HYBRID vs LlamaIndex HYBRID on the same
+### 2 questions that drove findings #4–#6.
+###
+### For each response, capture into notes.md:
+###   - answer                  (LLM output)
+###   - chunks[].text           (top-5 retrieved content, first 120 chars is enough)
+###   - bestScore               (Java's per-retrieval confidence)
+###   - judge.score / grounded  (your internal judge's take — bonus data point)
+### =============================================================================
+
+@host = http://localhost:8080
+
+
+### =============================================================================
+### QUESTION 1: Heap sizing (the mixed-corpus question)
+###
+### LlamaIndex results to beat:
+###   Vector  : clean, -Xms1024m -Xmx4096m, top-1 score 0.67
+###   BM25    : clean, -Xms512m -Xmx4g,     top-1 @Repository (irrelevant), score 2.83
+###   Hybrid  : HALLUCINATED "CPU core's worth of memory" — the failure case
+###
+### Java hybrid is weighted linear combination of vector + BM25 scores.
+### Prediction: Java should NOT hallucinate because the scoped docId prevents
+### cross-doc pollution. That's also the key structural difference — Java
+### retrieval is doc-scoped by design, LlamaIndex is corpus-wide.
+### =============================================================================
+
+### Q1a: Heap sizing, scoped to JVM flags PDF (answer lives here)
+POST {{host}}/ask
+Content-Type: application/json
+
+{
+  "docId": "jvm-flags-guide",
+  "question": "How should I configure heap size for a Spring Boot app in production?",
+  "topK": 5
+}
+
+### Q1b: Heap sizing, scoped to Spring Boot PDF (should return weak/irrelevant chunks)
+### This isolates: "what happens when retrieval can't find the real answer?"
+POST {{host}}/ask
+Content-Type: application/json
+
+{
+  "docId": "spring-boot-qa",
+  "question": "How should I configure heap size for a Spring Boot app in production?",
+  "topK": 5
+}
+
+
+### =============================================================================
+### QUESTION 2: Spring Boot auto-configuration (clean-signal question)
+###
+### LlamaIndex results to beat:
+###   Vector  : clean 2-sentence answer, top-1 score 0.72
+###   BM25    : richer answer with @EnableAutoConfiguration, top-1 score 3.63
+###   Hybrid  : BEST answer — META-INF path + Kafka example
+### =============================================================================
+
+### Q2a: Auto-config, scoped to Spring Boot PDF (answer lives here)
+POST {{host}}/ask
+Content-Type: application/json
+
+{
+  "docId": "spring-boot-qa",
+  "question": "What is Spring Boot auto-configuration?",
+  "topK": 5
+}
+
+### Q2b: Auto-config, scoped to JVM flags PDF (should return irrelevant chunks)
+POST {{host}}/ask
+Content-Type: application/json
+
+{
+  "docId": "jvm-flags-guide",
+  "question": "What is Spring Boot auto-configuration?",
+  "topK": 5
+}
+
+
+### =============================================================================
+### Sanity check
+### =============================================================================
+
+GET {{host}}/health
