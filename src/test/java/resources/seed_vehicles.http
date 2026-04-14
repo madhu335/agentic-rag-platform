@@ -1,0 +1,211 @@
+### Seed Vehicles — run all requests top to bottom in IntelliJ
+### Right-click > Run All Requests in File   (or click the green ▶▶ gutter icon)
+
+### 1. Tesla Model 3 Long Range
+POST http://localhost:8080/vehicles/ingest
+Content-Type: application/json
+
+{
+  "vehicleId": "tesla-model3-2025-long-range",
+  "year": 2025,
+  "make": "Tesla",
+  "model": "Model 3",
+  "trim": "Long Range",
+  "bodyStyle": "Sedan",
+  "engine": "Dual motor electric",
+  "horsepower": 450,
+  "torque": 471,
+  "drivetrain": "AWD",
+  "transmission": "Single-speed automatic",
+  "mpgCity": "134",
+  "mpgHighway": "126",
+  "msrp": "$47,990",
+  "features": ["panoramic glass roof", "adaptive cruise control", "heated seats", "15-inch touchscreen", "autopilot"],
+  "summary": "Long-range electric sedan with 450hp dual motors, 358-mile range, and advanced Autopilot."
+}
+
+###
+
+### 2. BMW M3 Competition
+POST http://localhost:8080/vehicles/ingest
+Content-Type: application/json
+
+{
+  "vehicleId": "bmw-m3-2025-competition",
+  "year": 2025,
+  "make": "BMW",
+  "model": "M3",
+  "trim": "Competition",
+  "bodyStyle": "Sedan",
+  "engine": "3.0L twin-turbo inline-6",
+  "horsepower": 503,
+  "torque": 479,
+  "drivetrain": "RWD",
+  "transmission": "8-speed M Steptronic automatic",
+  "mpgCity": "16",
+  "mpgHighway": "23",
+  "msrp": "$76,900",
+  "features": ["M sport seats", "adaptive M suspension", "carbon fiber trim", "head-up display", "launch control"],
+  "summary": "High-performance sports sedan with 503hp twin-turbo inline-6 and track-tuned chassis."
+}
+
+###
+
+### 3. Ford F-150 Lariat
+POST http://localhost:8080/vehicles/ingest
+Content-Type: application/json
+
+{
+  "vehicleId": "ford-f150-2025-lariat",
+  "year": 2025,
+  "make": "Ford",
+  "model": "F-150",
+  "trim": "Lariat",
+  "bodyStyle": "Pickup Truck",
+  "engine": "3.5L EcoBoost V6",
+  "horsepower": 400,
+  "torque": 500,
+  "drivetrain": "4WD",
+  "transmission": "10-speed automatic",
+  "mpgCity": "18",
+  "mpgHighway": "24",
+  "msrp": "$52,430",
+  "features": ["pro power onboard", "360-degree camera", "trailer brake controller", "heated/cooled seats", "12-inch SYNC 4 display"],
+  "summary": "Full-size truck with 400hp EcoBoost V6, 2000lb payload, and available Pro Power Onboard generator."
+}
+
+###
+
+### 4. Toyota Camry XSE Hybrid
+POST http://localhost:8080/vehicles/ingest
+Content-Type: application/json
+
+{
+  "vehicleId": "toyota-camry-2025-xse-hybrid",
+  "year": 2025,
+  "make": "Toyota",
+  "model": "Camry",
+  "trim": "XSE Hybrid",
+  "bodyStyle": "Sedan",
+  "engine": "2.5L hybrid inline-4",
+  "horsepower": 225,
+  "torque": 163,
+  "drivetrain": "FWD",
+  "transmission": "eCVT",
+  "mpgCity": "51",
+  "mpgHighway": "53",
+  "msrp": "$33,400",
+  "features": ["sport-tuned suspension", "JBL audio", "wireless Apple CarPlay", "blind spot monitoring", "heated front seats"],
+  "summary": "Sporty hybrid sedan delivering 51 MPG city with 225hp combined output and standard Toyota Safety Sense."
+}
+
+###
+
+### 5. Honda CR-V Sport Hybrid
+POST http://localhost:8080/vehicles/ingest
+Content-Type: application/json
+
+{
+  "vehicleId": "honda-crv-2025-sport-hybrid",
+  "year": 2025,
+  "make": "Honda",
+  "model": "CR-V",
+  "trim": "Sport Hybrid",
+  "bodyStyle": "SUV",
+  "engine": "2.0L hybrid inline-4",
+  "horsepower": 204,
+  "torque": 247,
+  "drivetrain": "AWD",
+  "transmission": "eCVT",
+  "mpgCity": "43",
+  "mpgHighway": "36",
+  "msrp": "$35,950",
+  "features": ["hands-free power tailgate", "panoramic moonroof", "wireless charging", "Honda Sensing 360", "rain-sensing wipers"],
+  "summary": "Compact hybrid SUV with 204hp, all-wheel drive, and 43 MPG city — Honda's most fuel-efficient CR-V ever."
+}
+
+###
+
+### 6. Porsche 911 Carrera S
+POST http://localhost:8080/vehicles/ingest
+Content-Type: application/json
+
+{
+  "vehicleId": "porsche-911-2025-carrera-s",
+  "year": 2025,
+  "make": "Porsche",
+  "model": "911",
+  "trim": "Carrera S",
+  "bodyStyle": "Coupe",
+  "engine": "3.0L twin-turbo flat-6",
+  "horsepower": 443,
+  "torque": 390,
+  "drivetrain": "RWD",
+  "transmission": "8-speed PDK automatic",
+  "mpgCity": "18",
+  "mpgHighway": "25",
+  "msrp": "$132,050",
+  "features": ["PASM sport suspension", "sport chrono package", "Bose surround sound", "carbon ceramic brakes", "rear-axle steering"],
+  "summary": "Iconic rear-engine sports car with 443hp twin-turbo flat-6, 0-60 in 3.3 seconds."
+}
+
+###
+
+### 7. Rivian R1T Adventure
+POST http://localhost:8080/vehicles/ingest
+Content-Type: application/json
+
+{
+  "vehicleId": "rivian-r1t-2025-adventure",
+  "year": 2025,
+  "make": "Rivian",
+  "model": "R1T",
+  "trim": "Adventure",
+  "bodyStyle": "Pickup Truck",
+  "engine": "Quad motor electric",
+  "horsepower": 835,
+  "torque": 908,
+  "drivetrain": "AWD",
+  "transmission": "Single-speed automatic",
+  "mpgCity": "N/A",
+  "mpgHighway": "N/A",
+  "msrp": "$73,000",
+  "features": ["gear tunnel storage", "camp kitchen", "air compressor", "tank turn capability", "14-inch driver display"],
+  "summary": "All-electric adventure truck with 835hp quad motors, 314-mile range, and unique gear tunnel storage."
+}
+
+###
+
+### 8. Chevrolet Corvette Z06
+POST http://localhost:8080/vehicles/ingest
+Content-Type: application/json
+
+{
+  "vehicleId": "chevrolet-corvette-2025-z06",
+  "year": 2025,
+  "make": "Chevrolet",
+  "model": "Corvette",
+  "trim": "Z06",
+  "bodyStyle": "Coupe",
+  "engine": "5.5L flat-plane V8",
+  "horsepower": 670,
+  "torque": 460,
+  "drivetrain": "RWD",
+  "transmission": "8-speed dual-clutch automatic",
+  "mpgCity": "13",
+  "mpgHighway": "21",
+  "msrp": "$109,295",
+  "features": ["magnetic ride control", "carbon fiber body panels", "brembo carbon ceramic brakes", "performance data recorder", "Z06-specific aero package"],
+  "summary": "Mid-engine supercar powered by a naturally-aspirated 5.5L flat-plane V8 producing 670hp at 8,400 RPM."
+}
+
+###
+
+### ── Verify: fleet search after seeding ──────────────────────────────────
+POST http://localhost:8080/vehicles/ask
+Content-Type: application/json
+
+{
+  "question": "which vehicles have over 500 horsepower",
+  "topK": 3
+}

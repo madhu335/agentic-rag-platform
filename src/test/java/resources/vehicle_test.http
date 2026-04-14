@@ -1,0 +1,318 @@
+### ══════════════════════════════════════════════════════════════════════
+### VEHICLE RAG — Full Test Suite
+### Run individually with ▶  or all at once with ▶▶
+### ══════════════════════════════════════════════════════════════════════
+
+### ── 1. HEALTH CHECK ────────────────────────────────────────────────────
+GET http://localhost:8080/health
+
+###
+
+### ══════════════════════════════════════════════════════════════════════
+### INGESTION  (skip if already seeded via seed_vehicles.http)
+### ══════════════════════════════════════════════════════════════════════
+
+### ── 2. Ingest Tesla Model 3
+POST http://localhost:8080/vehicles/ingest
+Content-Type: application/json
+
+{
+  "vehicleId": "tesla-model3-2025-long-range",
+  "year": 2025,
+  "make": "Tesla",
+  "model": "Model 3",
+  "trim": "Long Range",
+  "bodyStyle": "Sedan",
+  "engine": "Dual motor electric",
+  "horsepower": 450,
+  "torque": 471,
+  "drivetrain": "AWD",
+  "transmission": "Single-speed automatic",
+  "mpgCity": "134",
+  "mpgHighway": "126",
+  "msrp": "$47,990",
+  "features": ["panoramic glass roof", "adaptive cruise control", "heated seats", "autopilot"],
+  "summary": "Long-range electric sedan with 450hp dual motors and advanced Autopilot."
+}
+
+###
+
+### ── 3. Ingest BMW M3
+POST http://localhost:8080/vehicles/ingest
+Content-Type: application/json
+
+{
+  "vehicleId": "bmw-m3-2025-competition",
+  "year": 2025,
+  "make": "BMW",
+  "model": "M3",
+  "trim": "Competition",
+  "bodyStyle": "Sedan",
+  "engine": "3.0L twin-turbo inline-6",
+  "horsepower": 503,
+  "torque": 479,
+  "drivetrain": "RWD",
+  "transmission": "8-speed M Steptronic automatic",
+  "mpgCity": "16",
+  "mpgHighway": "23",
+  "msrp": "$76,900",
+  "features": ["M sport seats", "adaptive M suspension", "carbon fiber trim", "launch control"],
+  "summary": "High-performance sports sedan with 503hp twin-turbo inline-6 and track-tuned chassis."
+}
+
+###
+
+### ══════════════════════════════════════════════════════════════════════
+### SINGLE-VEHICLE ASK  — POST /vehicles/{vehicleId}/ask
+### ══════════════════════════════════════════════════════════════════════
+
+### ── 4. Ask about Tesla specs (HYBRID mode — default)
+### Expected: LLM answer with horsepower, drivetrain, price cited from ingested doc
+POST http://localhost:8080/vehicles/tesla-model3-2025-long-range/ask
+Content-Type: application/json
+
+{
+  "question": "What is the horsepower, drivetrain, and starting price?",
+  "topK": 3,
+  "mode": "HYBRID"
+}
+
+### ── 5. Ask about Tesla features (VECTOR mode)
+POST http://localhost:8080/vehicles/tesla-model3-2025-long-range/ask
+Content-Type: application/json
+
+{
+  "question": "What are the key features and safety systems?",
+  "topK": 3,
+  "mode": "VECTOR"
+}
+
+### ── 6. Ask about BMW performance (BM25 keyword mode)
+POST http://localhost:8080/vehicles/bmw-m3-2025-competition/ask
+Content-Type: application/json
+
+{
+  "question": "What engine does the M3 Competition use?",
+  "topK": 3,
+  "mode": "BM25"
+}
+
+###
+
+### ── 7. Ask something NOT in the ingested data — expect fallback
+### Expected: "I don't know based on the ingested documents."
+POST http://localhost:8080/vehicles/tesla-model3-2025-long-range/ask
+Content-Type: application/json
+
+{
+  "question": "What color options are available?",
+  "topK": 3,
+  "mode": "HYBRID"
+}
+
+###
+
+### ══════════════════════════════════════════════════════════════════════
+### FLEET SEARCH  — POST /vehicles/ask
+### ══════════════════════════════════════════════════════════════════════
+
+### ── 8. Numeric filter — over 500 horsepower
+### Expected: rank 1 = Rivian (835hp), rank 2 = Corvette (670hp), rank 3 = BMW M3 (503hp)
+POST http://localhost:8080/vehicles/ask
+Content-Type: application/json
+
+{
+  "question": "which vehicles have over 500 horsepower",
+  "topK": 3
+}
+
+###
+
+### ── 9. Numeric filter — cheapest vehicles (under $50,000)
+### Expected: Tesla Model 3 ($47,990), Toyota Camry ($33,400), Honda CR-V ($35,950)
+POST http://localhost:8080/vehicles/ask
+Content-Type: application/json
+
+{
+  "question": "vehicles under $50000",
+  "topK": 3
+}
+
+###
+
+### ── 10. Semantic search — best fuel economy
+### Expected: Toyota Camry hybrid (51 MPG) and Honda CR-V hybrid near top
+POST http://localhost:8080/vehicles/ask
+Content-Type: application/json
+
+{
+  "question": "most fuel efficient vehicles best mpg",
+  "topK": 3
+}
+
+###
+
+### ── 11. Semantic search — electric vehicles
+### Expected: Tesla Model 3, Rivian R1T
+POST http://localhost:8080/vehicles/ask
+Content-Type: application/json
+
+{
+  "question": "electric vehicles",
+  "topK": 3
+}
+
+###
+
+### ── 12. Semantic search — family SUV
+POST http://localhost:8080/vehicles/ask
+Content-Type: application/json
+
+{
+  "question": "family SUV with good safety features",
+  "topK": 3
+}
+
+###
+
+### ══════════════════════════════════════════════════════════════════════
+### AGENTIC FLOWS  — POST /agent
+### Each test shows the expected planner steps in comments
+### ══════════════════════════════════════════════════════════════════════
+
+### ── 13. Agent: fetch specs + generate summary for Tesla
+### Expected planner steps:
+###   1. fetch_vehicle_specs  { vehicleId: "tesla-model3-2025-long-range" }
+###   2. generate_vehicle_summary  { vehicleId: "tesla-model3-2025-long-range" }
+###   3. stop
+### Expected response: narrative summary paragraph about the Tesla
+POST http://localhost:8080/agent
+Content-Type: application/json
+
+{
+  "prompt": "Give me a summary of the Tesla Model 3 Long Range",
+  "docId": "tesla-model3-2025-long-range",
+  "topK": 3
+}
+
+###
+
+### ── 14. Agent: compare Tesla vs BMW
+### Expected planner steps:
+###   1. compare_vehicles { vehicleIds: "tesla-model3-2025-long-range,bmw-m3-2025-competition", question: "performance and value" }
+###   2. stop
+### Expected response: side-by-side comparison paragraph
+POST http://localhost:8080/agent
+Content-Type: application/json
+
+{
+  "prompt": "Compare the Tesla Model 3 and BMW M3 on performance and value",
+  "topK": 3
+}
+
+###
+
+### ── 15. Agent: enrich vehicle summary
+### Expected planner steps:
+###   1. enrich_vehicle_data { vehicleId: "bmw-m3-2025-competition" }
+###   2. stop
+### Expected response: confirmation that vehicle was enriched and re-ingested
+POST http://localhost:8080/agent
+Content-Type: application/json
+
+{
+  "prompt": "Enrich and improve the summary for the BMW M3 Competition",
+  "docId": "bmw-m3-2025-competition",
+  "topK": 1
+}
+
+###
+
+### ── 16. Agent: fetch specs then email summary
+### Expected planner steps:
+###   1. fetch_vehicle_specs  { vehicleId: "tesla-model3-2025-long-range" }
+###   2. generate_vehicle_summary  { vehicleId: "tesla-model3-2025-long-range" }
+###   3. email  { recipient: "sales@dealership.com", subject: "Tesla Model 3 Summary" }
+###   4. stop
+POST http://localhost:8080/agent
+Content-Type: application/json
+
+{
+  "prompt": "Summarize the Tesla Model 3 Long Range and email the summary to sales@dealership.com",
+  "docId": "tesla-model3-2025-long-range",
+  "topK": 3,
+  "recipientEmail": "sales@dealership.com"
+}
+
+###
+
+### ── 17. Agent: plain research question (existing pipeline — not vehicle tools)
+### Expected planner steps:
+###   1. research  { query: "spring boot dependency injection" }
+###   2. stop
+### This verifies existing non-vehicle agent flow still works after your changes
+POST http://localhost:8080/agent
+Content-Type: application/json
+
+{
+  "prompt": "What is dependency injection in Spring Boot?",
+  "docId": "spring-boot-qa",
+  "topK": 5
+}
+
+###
+
+### ══════════════════════════════════════════════════════════════════════
+### AGENT SESSION INSPECTION  — debug planned vs actual steps
+### ══════════════════════════════════════════════════════════════════════
+
+### ── 18. Get session state (replace SESSION_ID with id from test 13/14/15 response)
+### Use this to see what steps the planner actually generated
+GET http://localhost:8080/agent/SESSION_ID
+
+###
+
+### ── 19. Get step history for a session
+GET http://localhost:8080/agent/SESSION_ID/history
+
+###
+
+### ══════════════════════════════════════════════════════════════════════
+### EDGE CASES
+### ══════════════════════════════════════════════════════════════════════
+
+### ── 20. Ingest validation — missing make (expect 400 / IllegalArgumentException)
+POST http://localhost:8080/vehicles/ingest
+Content-Type: application/json
+
+{
+  "vehicleId": "test-bad-vehicle",
+  "year": 2025,
+  "make": "",
+  "model": "Test",
+  "trim": null
+}
+
+###
+
+### ── 21. Ingest validation — vehicleId contains colon (expect 400)
+POST http://localhost:8080/vehicles/ingest
+Content-Type: application/json
+
+{
+  "vehicleId": "bad:id:vehicle",
+  "year": 2025,
+  "make": "Test",
+  "model": "Car"
+}
+
+###
+
+### ── 22. Fleet search — topK larger than ingested vehicles (should return all)
+POST http://localhost:8080/vehicles/ask
+Content-Type: application/json
+
+{
+  "question": "all vehicles",
+  "topK": 20
+}

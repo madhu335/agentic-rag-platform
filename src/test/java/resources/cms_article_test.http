@@ -1,0 +1,271 @@
+### ══════════════════════════════════════════════════════════════════════
+### MotorTrend CMS Article — Ingest & Retrieval Test Suite
+### ══════════════════════════════════════════════════════════════════════
+
+### ── 1. Ingest single-vehicle review (BMW M3)
+POST http://localhost:8080/articles/ingest
+Content-Type: application/json
+
+{
+  "articleId": "motortrend-bmw-m3-2025-review",
+  "slug": "2025-bmw-m3-competition-review",
+  "title": "2025 BMW M3 Competition Review: The Benchmark Returns",
+  "articleType": "first_drive",
+  "author": "Jonny Lieberman",
+  "publishDate": "2025-03-15",
+  "updatedDate": "2025-03-20",
+
+  "vehicles": [
+    {
+      "vehicleId": "bmw-m3-2025-competition",
+      "year": 2025,
+      "make": "BMW",
+      "model": "M3",
+      "trim": "Competition",
+      "role": "primary"
+    }
+  ],
+
+  "verdict": "The 2025 BMW M3 Competition remains the definitive sports sedan. Its S58 engine is a masterpiece of turbocharged engineering, delivering power with an analog character that feels increasingly rare in the age of electrification. If you can live with the polarizing styling and the infotainment learning curve, nothing else in this segment comes close.",
+
+  "pros": "Extraordinary engine character, razor-sharp chassis balance, genuinely usable daily driver, strong resale value",
+  "cons": "Divisive kidney grille styling, iDrive interface has steep learning curve, firm ride on degraded roads, premium fuel required",
+
+  "bodyText": "The BMW M3 has been the sports sedan benchmark for over three decades. For 2025, BMW has refined rather than reinvented the formula. The S58 twin-turbocharged inline-six now produces 503 horsepower in Competition trim, a figure that felt outrageous five years ago but today sits squarely in the middle of the performance sedan pack. Yet numbers rarely tell the full story with M cars. The engine's character — its willingness to rev, the way power builds smoothly through the entire range — is what separates the M3 from competitors that simply have bigger horsepower figures on paper. On our test track at Willow Springs, the M3 Competition lapped consistently in the 1:28s, a time that would embarrass dedicated sports cars from a decade ago. The chassis communicates beautifully through the steering wheel, giving the driver constant information about what the front tires are doing. Lateral grip is immense — over 1.0g in our skidpad testing — yet the car never feels clinical or disconnected. Daily driving is more comfortable than previous M3 generations. BMW's suspension engineers deserve credit for finding compliance without sacrificing cornering precision. The seats hold you firmly in spirited driving while remaining comfortable on a two-hour highway cruise. The interior represents a step forward for BMW. The curved display pairing the 12.3-inch instrument cluster with a 14.9-inch infotainment screen looks spectacular, though the iDrive 8 software can frustrate with its complexity. Physical shortcut buttons have largely disappeared, replaced by haptic controls that require more attention than twist-and-push knobs. At $76,900 for the Competition, the M3 asks for a premium over its rivals. But residual values remain strong — M3s historically retain over 58 percent of their MSRP after three years — making the total ownership story more compelling than the sticker price suggests.",
+
+  "sections": [
+    {
+      "sectionTitle": "Performance",
+      "content": "The S58 engine produces 503 horsepower and 479 lb-ft of torque in Competition trim. Zero to 60 mph takes just 3.4 seconds with launch control active. The 8-speed M Steptronic automatic is superb, swapping gears in milliseconds while remaining smooth in city traffic. On the Willow Springs circuit, the M3 demonstrated exceptional balance — the chassis communicates grip limits progressively, allowing confident exploration of its limits. Brake fade was nonexistent despite repeated hard stops from over 100 mph.",
+      "orderIndex": 1
+    },
+    {
+      "sectionTitle": "Interior",
+      "content": "BMW's curved display combining the 12.3-inch gauge cluster and 14.9-inch infotainment screen creates a striking visual centerpiece. Seat quality is exceptional — the M Sport seats with integrated headrests offer excellent lateral support without sacrificing long-distance comfort. Material quality throughout is class-leading, with soft-touch surfaces dominating the upper dashboard and door panels. Storage is adequate with a reasonably sized center console cubby and generous door pockets.",
+      "orderIndex": 2
+    },
+    {
+      "sectionTitle": "Technology",
+      "content": "iDrive 8 is BMW's most capable infotainment system yet, though its complexity can frustrate. Wireless Apple CarPlay and Android Auto are standard. The Bowers & Wilkins Diamond surround sound system is worth the option price — 20 speakers deliver audiophile-grade performance. Active driving assistance is comprehensive: adaptive cruise control, lane keeping assist, and automatic emergency braking are all standard.",
+      "orderIndex": 3
+    },
+    {
+      "sectionTitle": "Value",
+      "content": "At $76,900 the M3 Competition commands a significant premium. However, depreciation curves for M cars consistently outperform segment averages. Expect to retain 58 percent of MSRP after three years — better than the Cadillac CT4-V Blackwing and comparable to the Porsche 718 Cayman. Maintenance costs are above average: BMW's service intervals extend to 10,000 miles, but parts and labor prices are premium. Annual ownership costs average $4,500 including insurance.",
+      "orderIndex": 4
+    }
+  ],
+
+  "rating": {
+    "overall": 9.2,
+    "performance": 9.8,
+    "comfort": 7.8,
+    "interior": 8.5,
+    "technology": 8.2,
+    "practicality": 7.5,
+    "value": 8.0,
+    "verdictLabel": "Top Pick"
+  },
+
+  "tags": ["sports sedan", "track car", "daily driver", "enthusiast"],
+  "priceAsTestedMsrp": "$89,450",
+  "wordCount": 2400
+}
+
+###
+
+### ── 2. Ingest comparison test (M3 vs C63 vs CT4-V)
+POST http://localhost:8080/articles/ingest
+Content-Type: application/json
+
+{
+  "articleId": "motortrend-sports-sedan-comparison-2025",
+  "slug": "2025-sports-sedan-comparison-bmw-m3-mercedes-c63-cadillac-ct4v",
+  "title": "2025 Sports Sedan Comparison: BMW M3 vs Mercedes-AMG C63 vs Cadillac CT4-V Blackwing",
+  "articleType": "comparison",
+  "author": "Automobile Staff",
+  "publishDate": "2025-04-01",
+  "updatedDate": null,
+
+  "vehicles": [
+    {
+      "vehicleId": "bmw-m3-2025-competition",
+      "year": 2025, "make": "BMW", "model": "M3", "trim": "Competition",
+      "role": "primary"
+    },
+    {
+      "vehicleId": "mercedes-amg-c63-2025",
+      "year": 2025, "make": "Mercedes-AMG", "model": "C63", "trim": "S E Performance",
+      "role": "competitor"
+    },
+    {
+      "vehicleId": "cadillac-ct4v-2025-blackwing",
+      "year": 2025, "make": "Cadillac", "model": "CT4-V", "trim": "Blackwing",
+      "role": "competitor"
+    }
+  ],
+
+  "verdict": "The BMW M3 Competition wins this comparison by a meaningful margin. Its combination of engine character, chassis balance, and daily usability is unmatched. The Cadillac CT4-V Blackwing earns a strong second place — its Blackwing V8 delivers emotion the M3's turbo six cannot. The Mercedes-AMG C63 S E Performance disappoints: its hybrid powertrain adds weight and complexity without improving the driving experience.",
+
+  "pros": "BMW M3: best chassis balance, strongest resale value. Cadillac CT4-V: best engine sound, best value. Mercedes C63: most powerful on paper",
+  "cons": "BMW M3: expensive, firm ride. Cadillac CT4-V: dated interior, smaller dealer network. Mercedes C63: heavy hybrid system, highest price, worst fuel economy",
+
+  "bodyText": "Three of the most anticipated sports sedans of 2025 face off at our test track. The BMW M3 Competition, Mercedes-AMG C63 S E Performance, and Cadillac CT4-V Blackwing represent three very different philosophies for what a performance sedan should be. BMW stakes its claim on refinement and balance. The M3 feels engineered to a consistent standard — every system works in harmony, nothing feels like an afterthought. The S58 engine is turbocharged but rev-happy, producing 503 horsepower while maintaining the character that made previous M3s legendary. Cadillac swims against the electrification tide with the CT4-V Blackwing's naturally aspirated 4.2-liter twin-turbocharged V8. At 668 horsepower it is the most powerful car here, and its exhaust note is genuinely magnificent — a sound that neither the BMW's turbo six nor the Mercedes hybrid system can replicate. Mercedes takes the most complex path with the C63 S E Performance. The 2.0-liter turbocharged four-cylinder paired with a rear-axle electric motor produces a combined 671 horsepower, but the system adds 500 pounds over the outgoing C63. At our skidpad, the Mercedes posted the worst lateral acceleration figure despite having the most power. Lap times told the same story: BMW 1:28.2, Cadillac 1:28.9, Mercedes 1:30.1. The BMW wins this comparison because it does everything well and nothing poorly.",
+
+  "sections": [
+    {
+      "sectionTitle": "Performance comparison",
+      "content": "BMW M3 Competition: 503hp, 0-60 in 3.4 seconds, lap time 1:28.2. Cadillac CT4-V Blackwing: 668hp, 0-60 in 3.5 seconds, lap time 1:28.9. Mercedes-AMG C63 S E Performance: 671hp combined, 0-60 in 3.3 seconds, lap time 1:30.1. Despite having the least power the BMW posted the fastest lap time, demonstrating that chassis balance matters more than peak horsepower.",
+      "orderIndex": 1
+    },
+    {
+      "sectionTitle": "Value comparison",
+      "content": "BMW M3 Competition: $76,900 base, strong 58% 3-year residual. Cadillac CT4-V Blackwing: $91,495 base, average residuals but best performance per dollar. Mercedes-AMG C63 S E Performance: $84,900 base, weakest residuals in the group. For pure value the Cadillac offers the most performance per dollar. For total cost of ownership the BMW wins thanks to superior depreciation curves.",
+      "orderIndex": 2
+    }
+  ],
+
+  "rating": {
+    "overall": 9.2,
+    "performance": 9.5,
+    "comfort": 7.8,
+    "interior": 8.5,
+    "technology": 8.2,
+    "practicality": 7.5,
+    "value": 8.8,
+    "verdictLabel": "Top Pick"
+  },
+
+  "tags": ["sports sedan", "comparison test", "track car", "BMW M3", "Cadillac CT4-V"],
+  "priceAsTestedMsrp": "$89,450",
+  "wordCount": 1800
+}
+
+###
+
+### ══════════════════════════════════════════════════════════════════════
+### RETRIEVAL TESTS
+### ══════════════════════════════════════════════════════════════════════
+
+### ── 3. Single-article ask — performance section
+### Expected: chunk :10 (performance section) cited
+### Answer should mention 3.4s 0-60, Willow Springs, lap times
+POST http://localhost:8080/articles/motortrend-bmw-m3-2025-review/ask
+Content-Type: application/json
+
+{
+  "question": "What did MotorTrend say about the M3's performance on track?",
+  "topK": 3,
+  "mode": "HYBRID"
+}
+
+###
+
+### ── 4. Single-article ask — verdict
+### Expected: chunk :1 (identity + verdict) cited
+POST http://localhost:8080/articles/motortrend-bmw-m3-2025-review/ask
+Content-Type: application/json
+
+{
+  "question": "What was the overall verdict on the BMW M3?",
+  "topK": 3,
+  "mode": "HYBRID"
+}
+
+###
+
+### ── 5. Single-article ask — value section
+### Expected: chunk :13 (value section) cited, mentions residual value
+POST http://localhost:8080/articles/motortrend-bmw-m3-2025-review/ask
+Content-Type: application/json
+
+{
+  "question": "Is the BMW M3 worth the price?",
+  "topK": 3,
+  "mode": "HYBRID"
+}
+
+###
+
+### ── 6. Cross-article search — rating filter
+### Expected: both articles should surface (both rated 9.2 overall)
+POST http://localhost:8080/articles/search
+Content-Type: application/json
+
+{
+  "question": "articles rated over 9 out of 10",
+  "topK": 5
+}
+
+###
+
+### ── 7. Cross-article search — opinion query
+### Expected: comparison article surfaces for "which is best"
+POST http://localhost:8080/articles/search
+Content-Type: application/json
+
+{
+  "question": "which sports sedan is best for track days",
+  "topK": 5
+}
+
+###
+
+### ── 8. Cross-article search — comparison query
+### Expected: comparison article surfaces, mentions all 3 cars
+POST http://localhost:8080/articles/search
+Content-Type: application/json
+
+{
+  "question": "BMW M3 vs Mercedes C63 comparison",
+  "topK": 5
+}
+
+###
+
+### ── 9. Vehicle-scoped search — find all M3 articles
+### Expected: both articles surface (both feature BMW M3)
+POST http://localhost:8080/articles/search/vehicle
+Content-Type: application/json
+
+{
+  "vehicleQuery": "BMW M3 2025",
+  "topK": 10
+}
+
+###
+
+### ── 10. Vehicle-scoped search — find Cadillac CT4-V articles
+### Expected: only comparison article surfaces (CT4-V is in that article only)
+POST http://localhost:8080/articles/search/vehicle
+Content-Type: application/json
+
+{
+  "vehicleQuery": "Cadillac CT4-V Blackwing",
+  "topK": 5
+}
+
+###
+
+### ── 11. Cross-domain query — articles + vehicles together
+### Ask article endpoint about value, check if it connects to vehicle cost data
+POST http://localhost:8080/articles/motortrend-bmw-m3-2025-review/ask
+Content-Type: application/json
+
+{
+  "question": "What are the pros and cons of the BMW M3?",
+  "topK": 3,
+  "mode": "HYBRID"
+}
+
+###
+
+### ── 12. Edge case — query about non-primary vehicle in comparison article
+### Expected: comparison article surfaces for Mercedes C63 query
+POST http://localhost:8080/articles/search/vehicle
+Content-Type: application/json
+
+{
+  "vehicleQuery": "Mercedes AMG C63",
+  "topK": 5
+}

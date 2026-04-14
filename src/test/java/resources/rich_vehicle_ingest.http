@@ -1,0 +1,228 @@
+### Ingest rich BMW M3 — full nested payload
+POST http://localhost:8080/vehicles/ingest/rich
+Content-Type: application/json
+
+{
+  "vehicleId": "bmw-m3-2025-competition",
+  "year": 2025,
+  "make": "BMW",
+  "model": "M3",
+  "trim": "Competition",
+  "bodyStyle": "Sedan",
+  "vehicleClass": "sports sedan",
+  "exteriorColor": "Isle of Man Green",
+  "interiorColor": "Merino leather black",
+
+  "engine": "3.0L twin-turbo inline-6 (S58)",
+  "horsepower": 503,
+  "torque": 479,
+  "drivetrain": "RWD",
+  "transmission": "8-speed M Steptronic automatic",
+  "zeroToSixty": 3.4,
+  "topSpeed": 180,
+  "fuelType": "gasoline",
+  "mpgCity": "16",
+  "mpgHighway": "23",
+  "electricRangeMiles": null,
+
+  "msrp": "$76,900",
+  "invoicePrice": "$72,840",
+  "destinationCharge": "$995",
+
+  "features": [
+    "M sport seats with memory",
+    "adaptive M suspension",
+    "carbon fiber interior trim",
+    "head-up display",
+    "launch control",
+    "M Drive modes",
+    "Harman Kardon surround sound",
+    "wireless Apple CarPlay",
+    "parking assistant"
+  ],
+
+  "trimLevels": [
+    {
+      "trim": "Base M3",
+      "msrp": "$72,800",
+      "addedFeatures": ["M sport seats", "adaptive suspension", "launch control"],
+      "extraHorsepower": 0
+    },
+    {
+      "trim": "Competition",
+      "msrp": "$76,900",
+      "addedFeatures": ["high-rev engine tune", "M carbon bucket seats", "enhanced cooling"],
+      "extraHorsepower": 30
+    },
+    {
+      "trim": "Competition xDrive",
+      "msrp": "$80,900",
+      "addedFeatures": ["all-wheel drive", "winter performance package"],
+      "extraHorsepower": 30
+    },
+    {
+      "trim": "CS",
+      "msrp": "$119,900",
+      "addedFeatures": ["carbon roof", "ceramic brakes", "track-tuned suspension", "lightweight wheels"],
+      "extraHorsepower": 40
+    }
+  ],
+
+  "rankings": [
+    {
+      "category": "sports sedans",
+      "rank": 2,
+      "total": 18,
+      "score": 91,
+      "source": "US News",
+      "year": 2025,
+      "notes": "Praised for driving dynamics and engine character. Docked for infotainment learning curve."
+    },
+    {
+      "category": "luxury sports cars",
+      "rank": 1,
+      "total": 12,
+      "score": 88,
+      "source": "Car and Driver",
+      "year": 2025,
+      "notes": "Editors choice award winner for the third consecutive year."
+    },
+    {
+      "category": "reliability",
+      "rank": 8,
+      "total": 20,
+      "score": 74,
+      "source": "Consumer Reports",
+      "year": 2025,
+      "notes": "Above average reliability for the segment. Electrical system historically the weak point."
+    },
+    {
+      "category": "resale value",
+      "rank": 4,
+      "total": 15,
+      "score": 82,
+      "source": "Kelley Blue Book",
+      "year": 2025,
+      "notes": "M3 retains value well, especially Competition trim. Limited supply supports residuals."
+    }
+  ],
+
+  "maintenanceSchedule": [
+    {
+      "mileage": 10000,
+      "service": "Oil change (M-grade synthetic), oil filter, cabin air filter, tire rotation",
+      "partsCost": 95,
+      "laborHours": 1.0,
+      "dealerAvg": 280,
+      "diyAvg": 110,
+      "notes": "BMW recommends 0W-30 M-grade oil. Do not use conventional oil."
+    },
+    {
+      "mileage": 20000,
+      "service": "Oil change, brake fluid test, spark plug inspection",
+      "partsCost": 110,
+      "laborHours": 1.5,
+      "dealerAvg": 320,
+      "diyAvg": 130,
+      "notes": "Brake fluid should be replaced if moisture content exceeds 3%."
+    },
+    {
+      "mileage": 30000,
+      "service": "Oil change, air filter, brake pads front, tire rotation",
+      "partsCost": 380,
+      "laborHours": 3.0,
+      "dealerAvg": 950,
+      "diyAvg": 420,
+      "notes": "M3 front brake pads wear faster due to track-biased brake bias. Check wear indicators."
+    },
+    {
+      "mileage": 60000,
+      "service": "Spark plugs, serpentine belt, coolant flush, transmission service, rear diff fluid",
+      "partsCost": 820,
+      "laborHours": 6.0,
+      "dealerAvg": 2400,
+      "diyAvg": 950,
+      "notes": "The S58 engine spark plugs are accessible but tight. Allow extra time."
+    },
+    {
+      "mileage": 100000,
+      "service": "Timing chain inspection, water pump, full fluid refresh, valve adjustment",
+      "partsCost": 1400,
+      "laborHours": 10.0,
+      "dealerAvg": 4200,
+      "diyAvg": 1600,
+      "notes": "S58 timing chain is robust but should be inspected. Water pump is a known failure point on S55 predecessor."
+    }
+  ],
+
+  "ownershipCost": {
+    "fuelCostPerYear": 2800,
+    "insurancePerYear": 3400,
+    "maintenancePerYear": 1100,
+    "depreciationFiveYear": 28000,
+    "totalFiveYear": 52000,
+    "resaleValuePct": 58.0,
+    "resaleRating": "excellent"
+  },
+
+  "safety": {
+    "nhtsaOverall": "5-star",
+    "nhtsaFrontal": "5-star",
+    "nhtsaSide": "5-star",
+    "nhtsaRollover": "4-star",
+    "iihsOverall": "Good",
+    "iihsSmallOverlap": "Good",
+    "iihsHeadlights": "Acceptable",
+    "hasAutomaticEmergencyBraking": true,
+    "hasLaneDepartureWarning": true,
+    "hasBlindSpotMonitoring": true
+  },
+
+  "recalls": [
+    {
+      "recallId": "NHTSA-2025-0041",
+      "date": "2025-02",
+      "component": "Software — driver assistance",
+      "description": "Adaptive cruise control may disengage without warning in certain road gradient conditions.",
+      "remedy": "Software update via dealer OTA or in-person visit",
+      "remedyAvailable": true
+    },
+    {
+      "recallId": "NHTSA-2024-0318",
+      "date": "2024-11",
+      "component": "Fuel system",
+      "description": "High-pressure fuel injector may develop micro-crack under sustained track use causing rough idle.",
+      "remedy": "Injector replacement at no charge",
+      "remedyAvailable": true
+    }
+  ],
+
+  "reviews": [
+    {
+      "source": "Car and Driver",
+      "score": 9,
+      "summary": "The M3 Competition remains the benchmark sports sedan. The S58 engine is a masterpiece of forced-induction engineering.",
+      "pros": "Extraordinary engine, razor-sharp chassis, usable daily driver",
+      "cons": "Divisive styling, complex iDrive menus, firm ride on rough roads",
+      "year": 2025
+    },
+    {
+      "source": "Motor Trend",
+      "score": 9,
+      "summary": "No sports sedan does more things better. The Competition is worth the premium over the base M3.",
+      "pros": "Best-in-class lap times, excellent build quality, strong resale",
+      "cons": "Premium fuel required, insurance costs are high, rear tires wear quickly",
+      "year": 2025
+    },
+    {
+      "source": "Consumer Reports",
+      "score": 7,
+      "summary": "Performance is exceptional but reliability scores keep it from the top spot. Ownership costs are significant.",
+      "pros": "Driving experience, brand prestige, strong residuals",
+      "cons": "Above-average repair costs, some owners report electrical gremlins",
+      "year": 2025
+    }
+  ],
+
+  "summary": "The 2025 BMW M3 Competition is the benchmark sports sedan with a 503hp twin-turbo S58 inline-6, 0-60 in 3.4 seconds, and a chassis tuned equally for the track and the daily commute."
+}
