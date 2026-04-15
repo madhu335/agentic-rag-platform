@@ -204,14 +204,50 @@ you'd have to build:
 All of which exist as building blocks, but none of which are wired together
 by default. In the Java pipeline it's the default behavior.
 
-### Caveat: what `bestScore = 0.0909` means
+### How the Java refusal logic actually works
 
-Across three different queries (Q1a, Q1b, Q2b) the Java response came back
-with bestScore exactly 0.0909 ≈ 1/11. That's not a cosine similarity —
-it's a rank-based fusion artifact (1/(k+rank) with k=10, rank=1). Q2a
-came back with 0.9791, which IS a cosine similarity. So the Java orchestrator
-has two code paths: one that returns the raw vector score when there's a
-clear winner, and one that falls back to rank fusion when nothing stands out.
-TODO: trace the exact logic in `RagAnswerService` / `OrchestratorService` /
-`PgVectorStore.hybridSearch` to describe this accurately. The overall finding
-stands either way.
+Traced through `RagAnswerService.java`. The pipeline has four layers of
+defense against hallucination, each catching a different failure mode.
+
+**Two thresholds for two score scales.** Hybrid retrieval and vector retrieval
+produce scores on incompatible scales, so the gating logic uses two constants:
+
+- `COSINE_LOW = 0.40` — for VECTOR mode results (cosine similarity, 0–1)
+- `RRF_LOW = 0.04` — for HYBRID mode results (RRF caps around 0.18 with `k=10`)
+
+`COSINE_LOW` was tuned down from 0.55 after empirical testing showed 0.55 was
+too strict for structured content (FAQs, tables). `passesKeywordGuard` inspects
+`bestScore` and auto-detects which scale it's on, then applies the right
+threshold. Same code path handles all retrieval modes transparently.
+
+**Refusal is gated at four layers:**
+
+| Layer | Where | Catches |
+|---|---|---|
+| 1. Score gate (`passesMinimumThreshold`) | Top hit must clear `LOW` | "retrieval found nothing relevant" |
+| 2. Keyword guard (`passesKeywordGuard`) | Top chunk text must overlap the question | "high cosine similarity but actually about a different topic" |
+| 3. Chunk filter (`selectUsableHits`) | Individual chunks below `LOW` dropped from LLM context | "weak supporting chunks polluting the prompt" |
+| 4. Prompt fallback | LLM instructed to emit refusal string when context is insufficient | "anything that slips through the first three layers" |
+
+When a request fails layers 1 or 2, the refusal string is returned **directly,
+without ever calling the LLM**. That's both faster and more reliable than the
+prompt-fallback layer alone.
+
+**Why `bestScore = 0.0909` appeared three times.** With `k = 10` in
+`fuseRRF`, the maximum possible RRF score is `2/(10+1) ≈ 0.1818` (when both
+vector and BM25 rank the same chunk #1). A score of exactly `0.0909 = 1/11`
+means the rank-1 chunk was found by **exactly one** of the two retrievers
+at rank 1, not both. So the three queries with `bestScore = 0.0909` weren't
+producing degenerate scores — they were all cases where vector and BM25
+disagreed on the top chunk. Q2a's `0.9791` is a real cosine similarity
+because the orchestrator routed that query to VECTOR mode (the question text
+matched a chunk's first line nearly exactly), bypassing fusion entirely.
+
+**Why this beat LlamaIndex on the heap question.** LlamaIndex's
+`RetrieverQueryEngine` has none of these four layers — it always synthesizes
+an answer from whatever retrieval returned. On the heap-sizing question
+scoped against the wrong corpus, that meant hallucinating "CPU core's worth
+of memory." The Java pipeline returned the refusal cleanly because layer 1
+(score gate) caught it before the LLM was even called. Same model, same
+Postgres, same embeddings. The difference was the four layers of
+orchestration above the retriever.
