@@ -1,0 +1,14 @@
+# LangGraph itself — workflow/state machine engine
+langgraph==0.2.45
+
+# Postgres driver — same one the LlamaIndex experiment uses
+psycopg2-binary==2.9.10
+
+# HTTP client for direct Ollama API calls (no LangChain abstraction)
+httpx==0.28.1
+
+# Numpy for cosine similarity calculations on retrieved vectors
+numpy==2.1.3
+
+# Load .env files (same convention as the LlamaIndex experiment)
+python-dotenv==1.0.1
