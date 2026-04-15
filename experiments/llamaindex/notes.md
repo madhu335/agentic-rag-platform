@@ -5,25 +5,70 @@ rerank) against a LlamaIndex implementation on the same corpus and models.
 
 ## Development speed
 
-| Stage       | Custom (Java) LOC | LlamaIndex (Py) LOC | Notes |
-|-------------|------------------:|--------------------:|-------|
-| Ingestion   | ~250 (PdfExtractorService + TextChunker + EmbeddingService + PgVectorStore writes) | ~30 (`ingest.py`) | LlamaIndex hides the reader/splitter/embed/store wiring behind `VectorStoreIndex.from_documents` |
-| Retrieval   | ~200 (`RagRetriever` + `PgVectorStore.hybridSearch` + `ReRankService`) | ~25 (`retrieve.py`) | Fusion is one constructor call |
-| Answer      | ~150 (`RagAnswerService` + prompt building + `LlmClient`) | ~10 (`answer.py`) | `RetrieverQueryEngine.from_args` |
-| **Total**   | ~600              | ~65                 | ~10x less code for the happy path |
+Measured with `cloc` v2.08, code-only (excludes blanks and comments).
+
+| Stage       | Custom (Java) | LlamaIndex (Python) | Ratio | Files (Java / Py) |
+|-------------|--------------:|--------------------:|------:|:-----------------:|
+| Ingestion   | 230 LOC       | ~70 LOC             | 3.3x  | 11 / 4            |
+| Retrieval   | 657 LOC       | ~70 LOC             | 9.4x  | 9 / 4             |
+| Answer      | 596 LOC       | ~30 LOC             | 19.9x | 5 / 4             |
+| **Total**   | **1,483 LOC** | **195 LOC**         | **7.6x** | **25 / 4**     |
+
+Notice the ratio gets *bigger* as you move from ingestion to retrieval to
+answer:
+
+- **Ingestion (3.3x)** — both pipelines do similar work (parse PDF, chunk,
+  embed, write to pg). The work is irreducible; LlamaIndex saves wiring.
+- **Retrieval (9.4x)** — Java has hand-written SQL, RRF fusion math,
+  multi-mode dispatch, and observability hooks. LlamaIndex hides all of that
+  behind constructors. Big code savings, big control loss.
+- **Answer (19.9x)** — Java has four layers of refusal logic, dual-scale
+  score thresholds, prompt cleaning, citation extraction, and a multi-LLM
+  router. LlamaIndex has `query_engine.query(q)`. **And the missing
+  functionality is exactly what hallucinated on the heap question.**
+
+The layer where LlamaIndex saves the most code is the same layer where it
+produced the worst answer. That's not a coincidence — the deleted code
+wasn't bloat, it was correctness logic.
 
 > LOC is approximate — measure with `cloc` or `wc -l` for exact numbers.
 
 ## Retrieval quality (same questions, same docs, same models)
 
-Run this table on 5–10 questions. Put a ✅ / ❌ / ~ in each cell by eyeballing the top-3 chunks.
+Two questions, two docs, both pipelines. LlamaIndex queries the whole corpus
+(17 chunks); Java requires explicit `docId` scoping (one PDF at a time). That
+asymmetry is itself a finding — Java's design eliminates an entire class of
+cross-doc pollution failures, but requires upstream routing to pick the
+right doc.
 
-| Question | Java VECTOR | LI vector | Java HYBRID | LI hybrid | Winner |
-|----------|:-----------:|:---------:|:-----------:|:---------:|:------:|
-| ...      |             |           |             |           |        |
+Legend: ✅ correct grounded answer · ❌ hallucinated · 🚫 refused (returned
+"I don't know") · ~ correct but weaker
 
-Things to watch for:
+| Question | Java VECTOR | Java BM25 | Java HYBRID | LI vector | LI BM25 | LI hybrid |
+|----------|:-----------:|:---------:|:-----------:|:---------:|:-------:|:---------:|
+| **Q1: heap sizing** (jvm-flags-guide scope) | n/a | n/a | ✅ cited [5,6] | ✅ | ✅ | ❌ hallucinated |
+| **Q1: heap sizing** (spring-boot-qa scope)  | n/a | n/a | 🚫 grounded=false | (corpus-wide) | (corpus-wide) | (corpus-wide) |
+| **Q2: auto-config** (spring-boot-qa scope)  | n/a | n/a | ✅ cited [1] (cosine 0.98) | ✅ | ✅ | ✅ richest |
+| **Q2: auto-config** (jvm-flags-guide scope) | n/a | n/a | 🚫 grounded=false | (corpus-wide) | (corpus-wide) | (corpus-wide) |
 
+Notes on the gaps:
+
+- **Java VECTOR / BM25 columns are `n/a`** because `OrchestratorService` uses
+  HYBRID by default via `RagRetriever.retrieve(docId, question, topK)` — the
+  HTTP API doesn't expose per-mode dispatch. The Java numbers above are all
+  hybrid mode. Adding a `mode` parameter to `AskController` would let us fill
+  these in for direct vector/BM25 head-to-heads.
+- **LlamaIndex doesn't have rows for both doc scopes** because there's no
+  `docId` filter in the default retriever — it always queries the full
+  corpus. The single LlamaIndex result per question covers the whole 17-chunk
+  corpus.
+
+Headline result from these four cells: **the only ❌ in the table is
+LlamaIndex hybrid on the heap question.** Same model, same Postgres, same
+embeddings — Java's four-layer refusal architecture caught what LlamaIndex's
+default query engine couldn't. Detail in the "Live experiment" sections below.
+
+Things to watch for in future runs:
 - **BM25 lives in different places.** The Java BM25 runs in Postgres via `ts_vector` + `ts_rank_cd` — it scales with the DB and benefits from pg's FTS features (stemming, stopwords, GIN index). LlamaIndex's `BM25Retriever` pulls every node out of pgvector on startup and builds a `rank_bm25` index in Python memory. For small corpora this is fine and sometimes faster (no round-trip per query). For a large corpus it's a non-starter — you'd have to either use pg FTS manually, or write a custom retriever. **This is the single biggest architectural divergence between the two approaches.**
 - **Short tokens** ("M3", "V8"). Postgres FTS drops tokens under 3 chars, so the Java BM25 falls back to vector for short-token queries. LlamaIndex's `rank_bm25` uses a different tokenizer — it may or may not handle these better. Test it.
 - **Fusion algorithm.** Java does weighted linear combination in SQL. LlamaIndex's `QueryFusionRetriever` with `mode="reciprocal_rerank"` uses RRF. RRF is more robust to score-scale mismatches; linear weighting gives you a tuning knob. Neither is strictly better.
