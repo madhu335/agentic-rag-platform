@@ -11,6 +11,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
+import java.util.function.Consumer;
 
 @Component("openAiLlmClient")
 public class OpenAiClient implements LlmClient{
@@ -78,5 +79,12 @@ public class OpenAiClient implements LlmClient{
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void streamAnswer(String question, List<String> contextChunks, Consumer<String> onToken) {
+        // Temporary fallback (non-streaming)
+        String fullAnswer = answer(question, contextChunks);
+        onToken.accept(fullAnswer);
     }
 }

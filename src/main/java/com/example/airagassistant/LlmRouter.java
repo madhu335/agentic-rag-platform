@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 @Primary
 @Component
@@ -29,5 +30,12 @@ public class LlmRouter implements LlmClient {
             case "openai" -> openAi.answer(question, contextChunks);
             default -> throw new IllegalArgumentException("Unknown llm.provider: " + provider);
         };
+    }
+    public void streamAnswer(String question, List<String> contextChunks, Consumer<String> onToken) {
+        if ("ollama".equalsIgnoreCase(provider)) {
+            ollama.streamAnswer(question, contextChunks, onToken);
+        } else {
+            ollama.streamAnswer(question, contextChunks, onToken);
+        }
     }
 }

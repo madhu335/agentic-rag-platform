@@ -113,3 +113,11 @@ Content-Type: application/json
   "instruction": "shorten the email"
 }
 ###
+POST http://localhost:8080/agent
+Content-Type: application/json
+
+{
+  "docId": "spring-boot-qa",
+  "prompt": "Explain this document in simple terms",
+  "topK": 5
+}

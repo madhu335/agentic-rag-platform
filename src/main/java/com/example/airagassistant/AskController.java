@@ -1,17 +1,22 @@
 package com.example.airagassistant;
 
 import com.example.airagassistant.judge.JudgeResult;
+import com.example.airagassistant.rag.RagAnswerService;
 import com.example.airagassistant.router.OrchestratorResult;
 import com.example.airagassistant.router.OrchestratorService;
 import com.example.airagassistant.trace.TraceHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
@@ -21,6 +26,7 @@ public class AskController {
 
     private final OrchestratorService orchestratorService;
     private final TraceHelper traceHelper;
+    private final RagAnswerService ragAnswerService;
 
     public record AskRequest(String docId, String question, Integer topK) {}
 
@@ -127,5 +133,39 @@ public class AskController {
         public BadRequestException(String message) {
             super(message);
         }
+    }
+
+    @PostMapping(value = "/ask/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter askStream(@RequestParam String docId,
+                                @RequestParam String question,
+                                @RequestParam(defaultValue = "5") int topK) {
+
+        SseEmitter emitter = new SseEmitter(0L); // no timeout
+
+        Executors.newSingleThreadExecutor().submit(() -> {
+            try {
+                // optional: notify start
+                emitter.send(SseEmitter.event().name("start").data("Streaming started"));
+
+                ragAnswerService.streamAnswer(docId, question, topK, token -> {
+                    try {
+                        emitter.send(SseEmitter.event()
+                                .name("token")
+                                .data(token));
+                    } catch (IOException e) {
+                        emitter.completeWithError(e);
+                    }
+                });
+
+                // optional: notify done
+                emitter.send(SseEmitter.event().name("done").data("Completed"));
+                emitter.complete();
+
+            } catch (Exception e) {
+                emitter.completeWithError(e);
+            }
+        });
+
+        return emitter;
     }
 }

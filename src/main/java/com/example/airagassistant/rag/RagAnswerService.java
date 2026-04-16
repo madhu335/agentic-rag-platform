@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Service
@@ -242,6 +243,109 @@ public class RagAnswerService {
                     contextResult.contextChunks().size(),
                     bestScore
             );
+        });
+    }
+
+    public void streamAnswer(String docId, String question, int topK, Consumer<String> onToken) {
+        Map<String, Object> attrs = new LinkedHashMap<>();
+        attrs.put("langsmith.metadata.doc_id", docId);
+        attrs.put("gen_ai.prompt.0.content", question);
+        attrs.put("langsmith.metadata.top_k", topK);
+
+        traceHelper.run("rag-answer-stream", attrs, () -> {
+            List<SearchHit> hits = traceHelper.run(
+                    "retrieve-chunks",
+                    Map.of(
+                            "langsmith.metadata.doc_id", docId,
+                            "langsmith.metadata.top_k", topK
+                    ),
+                    () -> {
+                        List<SearchHit> result = ragRetriever.retrieve(docId, question, topK);
+                        traceHelper.addAttributes(Map.of("retrieved.count", result.size()));
+                        return result;
+                    }
+            );
+
+            List<SearchHit> reranked = traceHelper.run(
+                    "rerank",
+                    null,
+                    () -> {
+                        List<SearchHit> result = reRankService.rerank(question, hits);
+                        traceHelper.addAttributes(Map.of(
+                                "input.count", hits.size(),
+                                "output.count", result.size()
+                        ));
+                        return result;
+                    }
+            );
+
+            Double bestScore = reranked.isEmpty() ? null : reranked.get(0).score();
+            addBestScore(bestScore);
+
+            if (reranked.isEmpty()) {
+                addFallbackAttributes("no_hits");
+                RagResult fallbackResult = fallback(bestScore);
+                onToken.accept(fallbackResult.answer());
+                return null;
+            }
+
+            String topText = reranked.get(0).record().text();
+
+            if (!passesKeywordGuard(question, bestScore, topText)) {
+                addFallbackAttributes("keyword_guard");
+                RagResult fallbackResult = fallback(bestScore);
+                onToken.accept(fallbackResult.answer());
+                return null;
+            }
+
+            List<SearchHit> usableHits = reranked.stream()
+                    .limit(3)
+                    .toList();
+
+            String citedQuestion = buildDefaultPrompt(question);
+
+            ContextBuildResult contextResult = traceHelper.run(
+                    "build-context",
+                    null,
+                    () -> {
+                        List<String> contextChunks = buildCitedContext(usableHits);
+                        List<String> retrievedChunkIds = extractChunkIds(usableHits);
+                        List<RetrievedChunk> retrievedChunks = extractRetrievedChunks(usableHits);
+
+                        Map<String, Object> resultAttrs = new LinkedHashMap<>();
+                        resultAttrs.put("gen_ai.completion.0.usable.count", usableHits.size());
+                        resultAttrs.put("gen_ai.completion.0.context.count", contextChunks.size());
+                        traceHelper.addAttributes(resultAttrs);
+
+                        return new ContextBuildResult(contextChunks, retrievedChunkIds, retrievedChunks);
+                    }
+            );
+
+            StringBuilder fullAnswer = new StringBuilder();
+
+            traceHelper.run(
+                    "llm-call-stream",
+                    buildLlmAttributes(question, citedQuestion, contextResult.contextChunks().size()),
+                    () -> {
+                        llm.streamAnswer(citedQuestion, contextResult.contextChunks(), token -> {
+                            fullAnswer.append(token);
+                            onToken.accept(token);
+                        });
+                        return null;
+                    }
+            );
+
+            String finalAnswer = removeInvalidCitations(fullAnswer.toString(), contextResult.retrievedChunkIds());
+            finalAnswer = cleanAnswer(finalAnswer);
+            List<String> citedChunkIds = filterValidCitations(finalAnswer, contextResult.retrievedChunkIds());
+
+            Map<String, Object> finalAttrs = new LinkedHashMap<>();
+            finalAttrs.put("gen_ai.completion.0.content", finalAnswer);
+            finalAttrs.put("gen_ai.completion.0.used.chunks", contextResult.contextChunks().size());
+            finalAttrs.put("gen_ai.completion.0.cited.count", citedChunkIds.size());
+            traceHelper.addAttributes(finalAttrs);
+
+            return null;
         });
     }
 
