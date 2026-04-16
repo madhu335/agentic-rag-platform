@@ -205,6 +205,14 @@ Each failed entry includes a `FailureAnalysis` with primary reason and actionabl
 | LOW_SCORE | Chunk scores below threshold | Add narrative context |
 | EDGE_CASE_LEAK | Nonsense query returned results | Add minimum score filter |
 
+### Streaming RAG UX
+Added a rich SSE endpoint (`/ask/stream`) that streams:
+- request start metadata
+- retrieval/rerank status events
+- selected source chunks with previews and scores
+- token-by-token answer generation
+- final cleaned answer with cited and retrieved chunk IDs
+
 ---
 
 ## Agentic patterns
@@ -281,6 +289,5 @@ across doc, vehicle, and CMS workflows.
 - Async ingestion pipeline with checkpoint table for resumable exactly-once semantics
 - HNSW index evaluation vs IVFFLAT at scale
 - Fine-tuned embedding model for automotive domain vocabulary
-- Streaming agent responses via SSE
 - Live pricing and dealer inventory tools
 - Multi-agent orchestration

@@ -1,19 +1,8 @@
-### Stream RAG Answer (Readable)
-POST http://localhost:8080/ask/stream
-Accept: text/event-stream
-Content-Type: application/x-www-form-urlencoded
-
-docId=test
-    &question=Explain RAG in simple terms
-    &topK=5
-
-###
-### Stream RAG Answer (Readable)
+### Rich SSE stream
 POST http://localhost:8080/ask/stream
 Accept: text/event-stream
 Content-Type: application/x-www-form-urlencoded
 
 docId=spring-boot-qa
-    &question=Explain this document in simple terms
+    &question=Explain lazy loading versus eager loading
     &topK=5
-

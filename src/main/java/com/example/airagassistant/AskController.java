@@ -2,6 +2,7 @@ package com.example.airagassistant;
 
 import com.example.airagassistant.judge.JudgeResult;
 import com.example.airagassistant.rag.RagAnswerService;
+import com.example.airagassistant.rag.RagAnswerService.StreamEvent;
 import com.example.airagassistant.router.OrchestratorResult;
 import com.example.airagassistant.router.OrchestratorService;
 import com.example.airagassistant.trace.TraceHelper;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @CrossOrigin(origins = "http://localhost:5173")
@@ -27,6 +29,8 @@ public class AskController {
     private final OrchestratorService orchestratorService;
     private final TraceHelper traceHelper;
     private final RagAnswerService ragAnswerService;
+
+    private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
 
     public record AskRequest(String docId, String question, Integer topK) {}
 
@@ -89,6 +93,7 @@ public class AskController {
             );
         });
     }
+
     private Map<String, Object> buildResultAttributes(OrchestratorResult result) {
         Map<String, Object> attrs = new LinkedHashMap<>();
 
@@ -109,6 +114,7 @@ public class AskController {
 
         return attrs;
     }
+
     @GetMapping("/orchestrate")
     public OrchestratorResult orchestrate(
             @RequestParam String docId,
@@ -140,32 +146,44 @@ public class AskController {
                                 @RequestParam String question,
                                 @RequestParam(defaultValue = "5") int topK) {
 
-        SseEmitter emitter = new SseEmitter(0L); // no timeout
+        SseEmitter emitter = new SseEmitter(0L);
 
-        Executors.newSingleThreadExecutor().submit(() -> {
+        sseExecutor.submit(() -> {
             try {
-                // optional: notify start
-                emitter.send(SseEmitter.event().name("start").data("Streaming started"));
+                emitter.send(SseEmitter.event()
+                        .name("start")
+                        .data(Map.of(
+                                "docId", docId,
+                                "question", question,
+                                "topK", topK
+                        ), MediaType.APPLICATION_JSON));
 
-                ragAnswerService.streamAnswer(docId, question, topK, token -> {
-                    try {
-                        emitter.send(SseEmitter.event()
-                                .name("token")
-                                .data(token));
-                    } catch (IOException e) {
-                        emitter.completeWithError(e);
-                    }
-                });
+                ragAnswerService.streamAnswerEvents(docId, question, topK, event -> sendEvent(emitter, event));
 
-                // optional: notify done
-                emitter.send(SseEmitter.event().name("done").data("Completed"));
                 emitter.complete();
-
             } catch (Exception e) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("error")
+                            .data(Map.of(
+                                    "message", e.getMessage() != null ? e.getMessage() : "Streaming failed"
+                            ), MediaType.APPLICATION_JSON));
+                } catch (IOException ignored) {
+                }
                 emitter.completeWithError(e);
             }
         });
 
         return emitter;
+    }
+
+    private void sendEvent(SseEmitter emitter, StreamEvent event) {
+        try {
+            emitter.send(SseEmitter.event()
+                    .name(event.type())
+                    .data(event.payload(), MediaType.APPLICATION_JSON));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to send SSE event", e);
+        }
     }
 }

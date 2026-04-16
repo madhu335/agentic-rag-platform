@@ -13,11 +13,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RagAnswerService {
 
-    // Cosine similarity thresholds (VECTOR mode) — scores are 0.0–1.0
-    private static final double COSINE_LOW  = 0.40;   // was 0.55 — relaxed for structured chunks
-    private static final double COSINE_HIGH = 0.70;   // was 0.80
+    private static final double COSINE_LOW  = 0.40;
+    private static final double COSINE_HIGH = 0.70;
 
-    // RRF score thresholds (HYBRID / BM25 modes) — scores top out ~0.16 by design
     private static final double RRF_LOW  = 0.04;
     private static final double RRF_HIGH = 0.08;
 
@@ -246,11 +244,23 @@ public class RagAnswerService {
         });
     }
 
+    // Backward-compatible token-only stream
     public void streamAnswer(String docId, String question, int topK, Consumer<String> onToken) {
+        streamAnswerEvents(docId, question, topK, event -> {
+            if ("token".equals(event.type()) && event.payload() instanceof TokenPayload tokenPayload) {
+                onToken.accept(tokenPayload.value());
+            }
+        });
+    }
+
+    // New rich event stream for better UX
+    public void streamAnswerEvents(String docId, String question, int topK, Consumer<StreamEvent> onEvent) {
         Map<String, Object> attrs = new LinkedHashMap<>();
         attrs.put("langsmith.metadata.doc_id", docId);
         attrs.put("gen_ai.prompt.0.content", question);
         attrs.put("langsmith.metadata.top_k", topK);
+
+        onEvent.accept(new StreamEvent("status", new StatusPayload("retrieving", "Retrieving relevant chunks")));
 
         traceHelper.run("rag-answer-stream", attrs, () -> {
             List<SearchHit> hits = traceHelper.run(
@@ -265,6 +275,11 @@ public class RagAnswerService {
                         return result;
                     }
             );
+
+            onEvent.accept(new StreamEvent(
+                    "status",
+                    new StatusPayload("reranking", "Ranking retrieved chunks")
+            ));
 
             List<SearchHit> reranked = traceHelper.run(
                     "rerank",
@@ -285,7 +300,18 @@ public class RagAnswerService {
             if (reranked.isEmpty()) {
                 addFallbackAttributes("no_hits");
                 RagResult fallbackResult = fallback(bestScore);
-                onToken.accept(fallbackResult.answer());
+
+                onEvent.accept(new StreamEvent("token", new TokenPayload(fallbackResult.answer())));
+                onEvent.accept(new StreamEvent(
+                        "done",
+                        new DonePayload(
+                                fallbackResult.answer(),
+                                List.of(),
+                                List.of(),
+                                0,
+                                bestScore
+                        )
+                ));
                 return null;
             }
 
@@ -294,7 +320,18 @@ public class RagAnswerService {
             if (!passesKeywordGuard(question, bestScore, topText)) {
                 addFallbackAttributes("keyword_guard");
                 RagResult fallbackResult = fallback(bestScore);
-                onToken.accept(fallbackResult.answer());
+
+                onEvent.accept(new StreamEvent("token", new TokenPayload(fallbackResult.answer())));
+                onEvent.accept(new StreamEvent(
+                        "done",
+                        new DonePayload(
+                                fallbackResult.answer(),
+                                List.of(),
+                                List.of(),
+                                0,
+                                bestScore
+                        )
+                ));
                 return null;
             }
 
@@ -321,6 +358,14 @@ public class RagAnswerService {
                     }
             );
 
+            List<SourcePayload> sources = buildSourcePayloads(usableHits);
+            onEvent.accept(new StreamEvent("sources", new SourcesPayload(sources)));
+
+            onEvent.accept(new StreamEvent(
+                    "status",
+                    new StatusPayload("generating", "Generating answer")
+            ));
+
             StringBuilder fullAnswer = new StringBuilder();
 
             traceHelper.run(
@@ -329,7 +374,7 @@ public class RagAnswerService {
                     () -> {
                         llm.streamAnswer(citedQuestion, contextResult.contextChunks(), token -> {
                             fullAnswer.append(token);
-                            onToken.accept(token);
+                            onEvent.accept(new StreamEvent("token", new TokenPayload(token)));
                         });
                         return null;
                     }
@@ -345,8 +390,44 @@ public class RagAnswerService {
             finalAttrs.put("gen_ai.completion.0.cited.count", citedChunkIds.size());
             traceHelper.addAttributes(finalAttrs);
 
+            onEvent.accept(new StreamEvent(
+                    "done",
+                    new DonePayload(
+                            finalAnswer,
+                            citedChunkIds,
+                            contextResult.retrievedChunkIds(),
+                            contextResult.contextChunks().size(),
+                            bestScore
+                    )
+            ));
+
             return null;
         });
+    }
+
+    private List<SourcePayload> buildSourcePayloads(List<SearchHit> hits) {
+        List<SourcePayload> sources = new ArrayList<>();
+        int rank = 1;
+
+        for (SearchHit hit : hits) {
+            sources.add(new SourcePayload(
+                    hit.record().id(),
+                    preview(hit.record().text()),
+                    hit.score(),
+                    rank++
+            ));
+        }
+
+        return sources;
+    }
+
+    private String preview(String text) {
+        String compressed = compress(text);
+        if (compressed == null) {
+            return "";
+        }
+        String trimmed = compressed.trim().replaceAll("\\s+", " ");
+        return trimmed.length() <= 220 ? trimmed : trimmed.substring(0, 220) + "...";
     }
 
     private void addBestScore(Double bestScore) {
@@ -473,17 +554,14 @@ public class RagAnswerService {
         if (bestScore == null) {
             return false;
         }
-        // RRF scores (hybrid/BM25) are mathematically tiny — ~0.04–0.16.
-        // Cosine scores (vector) are 0.0–1.0.
 
-        // Detect which range we are in and apply the right threshold.
         boolean isRrfScore = bestScore < 0.5;
 
         double low  = isRrfScore ? RRF_LOW  : COSINE_LOW;
         double high = isRrfScore ? RRF_HIGH : COSINE_HIGH;
 
-        if (bestScore < low)  return false;   // below minimum — likely noise
-        if (bestScore >= high) return true;   // clearly relevant — skip keyword check
+        if (bestScore < low) return false;
+        if (bestScore >= high) return true;
         return hasKeywordOverlap(question, topText);
     }
 
@@ -550,9 +628,6 @@ public class RagAnswerService {
     private String compress(String text) {
         if (text == null || text.isBlank()) return text;
 
-        // Vehicle chunks (both simple and semantic) must pass through intact.
-        // compress() was written for PDF/Q&A chunks — it strips structured
-        // vehicle text by the 200-char line filter and " is a " heuristic.
         if (isVehicleChunk(text)) {
             return text;
         }
@@ -594,36 +669,17 @@ public class RagAnswerService {
                 .collect(Collectors.joining(" "));
     }
 
-    /**
-     * Returns true if the chunk was produced by VehicleDocumentBuilder or
-     * VehicleChunkBuilder — both of which write structured text that must
-     * not be compressed before reaching the LLM.
-     *
-     * Simple chunks start with: "YYYY Make Model ... vehicle specification."
-     * Semantic chunks start with: "YYYY Make Model [Trim] [class]. <ChunkType>:"
-     */
-    /**
-     * Detects structured domain chunks that must bypass compress() entirely.
-     * Covers: vehicle spec chunks, vehicle semantic chunks, article chunks.
-     *
-     * All of these are written as dense single-line prose that the compress()
-     * length filter (< 400 chars) silently wipes — causing empty context to the LLM.
-     */
     private boolean isVehicleChunk(String text) {
         if (text == null || text.isBlank()) return false;
         String first = text.strip().lines().findFirst().orElse("").toLowerCase();
 
-        // Simple VehicleDocumentBuilder preamble
         if (first.contains("vehicle specification")) return true;
 
-        // Vehicle semantic chunk types (VehicleChunkBuilder)
         if (first.matches(".*\\b(performance specs|ownership cost|5-year ownership"
                 + "|rankings and awards|safety ratings|features and trim"
                 + "|expert reviews|maintenance at \\d|recall [a-z]"
                 + "|industry rankings).*")) return true;
 
-        // Article chunks (ArticleChunkBuilder) — all start with "MotorTrend <type> featuring"
-        // or contain article-level chunk type labels
         if (first.startsWith("motortrend ")) return true;
         if (first.matches(".*\\b(article:|section:|motortrend ratings|expert assessment"
                 + "|vehicles featured|article excerpt).*")) return true;
@@ -678,6 +734,39 @@ public class RagAnswerService {
             List<RetrievedChunk> retrievedChunks,
             List<String> retrievedChunkIds,
             List<String> citedChunkIds,
+            int usedChunks,
+            Double bestScore
+    ) {}
+
+    public record StreamEvent(
+            String type,
+            Object payload
+    ) {}
+
+    public record StatusPayload(
+            String stage,
+            String message
+    ) {}
+
+    public record TokenPayload(
+            String value
+    ) {}
+
+    public record SourcePayload(
+            String id,
+            String preview,
+            Double score,
+            int rank
+    ) {}
+
+    public record SourcesPayload(
+            List<SourcePayload> chunks
+    ) {}
+
+    public record DonePayload(
+            String answer,
+            List<String> citedChunkIds,
+            List<String> retrievedChunkIds,
             int usedChunks,
             Double bestScore
     ) {}
