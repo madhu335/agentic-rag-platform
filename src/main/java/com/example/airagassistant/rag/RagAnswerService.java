@@ -20,9 +20,6 @@ public class RagAnswerService {
     private static final double RRF_LOW  = 0.04;
     private static final double RRF_HIGH = 0.08;
 
-    // Legacy aliases used by passesKeywordGuard / selectUsableHits
-    private static final double LOW  = COSINE_LOW;
-    private static final double HIGH = COSINE_HIGH;
     private static final String FALLBACK = "I don't know based on the ingested documents.";
 
     private final RagRetriever ragRetriever;
@@ -368,35 +365,22 @@ public class RagAnswerService {
         return cleaned;
     }
 
-    private Double getBestScore(List<SearchHit> hits) {
-        return hits.isEmpty() ? null : hits.get(0).score();
-    }
-
-    private boolean passesMinimumThreshold(List<SearchHit> hits, Double bestScore) {
-        return !hits.isEmpty() && bestScore != null && bestScore >= LOW;
-    }
-
     private boolean passesKeywordGuard(String question, Double bestScore, String topText) {
         if (bestScore == null) {
             return false;
         }
         // RRF scores (hybrid/BM25) are mathematically tiny — ~0.04–0.16.
         // Cosine scores (vector) are 0.0–1.0.
+
         // Detect which range we are in and apply the right threshold.
         boolean isRrfScore = bestScore < 0.5;
+
         double low  = isRrfScore ? RRF_LOW  : COSINE_LOW;
         double high = isRrfScore ? RRF_HIGH : COSINE_HIGH;
 
         if (bestScore < low)  return false;   // below minimum — likely noise
         if (bestScore >= high) return true;   // clearly relevant — skip keyword check
         return hasKeywordOverlap(question, topText);
-    }
-
-    private List<SearchHit> selectUsableHits(List<SearchHit> hits) {
-        return hits.stream()
-                .filter(hit -> hit.score() >= LOW)
-                .limit(3)
-                .toList();
     }
 
     private List<String> extractChunkIds(List<SearchHit> hits) {
