@@ -3,15 +3,19 @@ package com.example.airagassistant.router;
 import com.example.airagassistant.agent.AgentService;
 import com.example.airagassistant.judge.JudgeResult;
 import com.example.airagassistant.judge.JudgeService;
+import com.example.airagassistant.policy.EvaluationDecision;
+import com.example.airagassistant.policy.ResultEvaluationPolicy;
 import com.example.airagassistant.rag.RagAnswerService;
 import com.example.airagassistant.rag.RetrievalMode;
 import com.example.airagassistant.trace.TraceHelper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrchestratorService {
@@ -21,6 +25,7 @@ public class OrchestratorService {
     private final AgentService agentService;
     private final JudgeService judgeService;
     private final TraceHelper traceHelper;
+    private final ResultEvaluationPolicy resultEvaluationPolicy;
 
     public OrchestratorResult handle(String question, String docId, int k) {
         RouteDecision decision = queryRouter.route(question);
@@ -42,10 +47,12 @@ public class OrchestratorService {
                         "bm25_success",
                         question
                 );
-                if (isAcceptable(bm25)) {
+                EvaluationDecision bm25Decision = resultEvaluationPolicy.evaluateOrchestratorResult(bm25);
+                if (bm25Decision.acceptable()) {
                     traceHelper.addAttributes(Map.of(
                             "langsmith.metadata.final_mode", "BM25",
-                            "langsmith.metadata.final_outcome", bm25.outcome()
+                            "langsmith.metadata.final_outcome", bm25.outcome(),
+                            "langsmith.metadata.final_reason", bm25Decision.reason()
                     ));
                     return bm25;
                 }
@@ -57,10 +64,12 @@ public class OrchestratorService {
                         "hybrid_success",
                         question
                 );
-                if (isAcceptable(hybrid)) {
+                EvaluationDecision hybridDecision = resultEvaluationPolicy.evaluateOrchestratorResult(hybrid);
+                if (hybridDecision.acceptable()) {
                     traceHelper.addAttributes(Map.of(
                             "langsmith.metadata.final_mode", "HYBRID",
-                            "langsmith.metadata.final_outcome", hybrid.outcome()
+                            "langsmith.metadata.final_outcome", hybrid.outcome(),
+                            "langsmith.metadata.final_reason", hybridDecision.reason()
                     ));
                     return hybrid;
                 }
@@ -72,10 +81,12 @@ public class OrchestratorService {
                         "hybrid_rerank_success",
                         question
                 );
-                if (isAcceptable(hybridRerank)) {
+                EvaluationDecision hybridRerankDecision = resultEvaluationPolicy.evaluateOrchestratorResult(hybridRerank);
+                if (hybridRerankDecision.acceptable()) {
                     traceHelper.addAttributes(Map.of(
                             "langsmith.metadata.final_mode", "HYBRID_RERANK",
-                            "langsmith.metadata.final_outcome", hybridRerank.outcome()
+                            "langsmith.metadata.final_outcome", hybridRerank.outcome(),
+                            "langsmith.metadata.final_reason", hybridRerankDecision.reason()
                     ));
                     return hybridRerank;
                 }
@@ -87,10 +98,12 @@ public class OrchestratorService {
                         "vector_success",
                         question
                 );
-                if (isAcceptable(vector)) {
+                EvaluationDecision vectorDecision = resultEvaluationPolicy.evaluateOrchestratorResult(vector);
+                if (vectorDecision.acceptable()) {
                     traceHelper.addAttributes(Map.of(
                             "langsmith.metadata.final_mode", "VECTOR",
-                            "langsmith.metadata.final_outcome", vector.outcome()
+                            "langsmith.metadata.final_outcome", vector.outcome(),
+                            "langsmith.metadata.final_reason", vectorDecision.reason()
                     ));
                     return vector;
                 }
@@ -103,9 +116,12 @@ public class OrchestratorService {
                         question
                 );
 
+                EvaluationDecision agentFallbackDecision = resultEvaluationPolicy.evaluateOrchestratorResult(agentFallback);
+
                 traceHelper.addAttributes(Map.of(
                         "langsmith.metadata.final_mode", "AGENT_FALLBACK",
-                        "langsmith.metadata.final_outcome", agentFallback.outcome()
+                        "langsmith.metadata.final_outcome", agentFallback.outcome(),
+                        "langsmith.metadata.final_reason", agentFallbackDecision.reason()
                 ));
                 return agentFallback;
             }
@@ -118,9 +134,12 @@ public class OrchestratorService {
                     question
             );
 
+            EvaluationDecision agentDecision = resultEvaluationPolicy.evaluateOrchestratorResult(agent);
+
             traceHelper.addAttributes(Map.of(
                     "langsmith.metadata.final_mode", "AGENT",
-                    "langsmith.metadata.final_outcome", agent.outcome()
+                    "langsmith.metadata.final_outcome", agent.outcome(),
+                    "langsmith.metadata.final_reason", agentDecision.reason()
             ));
             return agent;
         });
@@ -140,10 +159,13 @@ public class OrchestratorService {
 
         return traceHelper.run("retrieval-attempt-" + routeUsed.toLowerCase(), attrs, () -> {
             OrchestratorResult result = buildRagResult(routeUsed, supplier.get(), reason, outcome, question);
+            EvaluationDecision decision = resultEvaluationPolicy.evaluateOrchestratorResult(result);
 
             Map<String, Object> resultAttrs = new LinkedHashMap<>();
             resultAttrs.put("langsmith.metadata.attempt_mode", routeUsed);
-            resultAttrs.put("langsmith.metadata.accepted", isAcceptable(result));
+            resultAttrs.put("langsmith.metadata.accepted", decision.acceptable());
+            resultAttrs.put("langsmith.metadata.retry", decision.shouldRetry());
+            resultAttrs.put("langsmith.metadata.decision_reason", decision.reason());
             resultAttrs.put("langsmith.metadata.outcome", result.outcome());
 
             if (result.bestScore() != null) {
@@ -151,7 +173,8 @@ public class OrchestratorService {
             }
 
             resultAttrs.put("langsmith.metadata.used_chunks", result.usedChunks());
-            resultAttrs.put("langsmith.metadata.retrieved_chunk_count", result.retrievedChunkIds() != null ? result.retrievedChunkIds().size() : 0);
+            resultAttrs.put("langsmith.metadata.retrieved_chunk_count",
+                    result.retrievedChunkIds() != null ? result.retrievedChunkIds().size() : 0);
 
             if (result.judge() != null) {
                 resultAttrs.put("langsmith.metadata.judge.score", result.judge().score());
@@ -163,33 +186,16 @@ public class OrchestratorService {
                 resultAttrs.put("langsmith.metadata.judge.skipped", true);
             }
 
+            log.info("MODE={}, bestScore={}, accepted={}, retry={}, reason={}",
+                    result.routeUsed(),
+                    result.bestScore(),
+                    decision.acceptable(),
+                    decision.shouldRetry(),
+                    decision.reason());
+
             traceHelper.addAttributes(resultAttrs);
             return result;
         });
-    }
-
-    private boolean isAcceptable(OrchestratorResult result) {
-        if (result == null || result.bestScore() == null) {
-            return false;
-        }
-
-        if (result.bestScore() < 0.55) {
-            return false;
-        }
-
-        if (result.judge() == null) {
-            return true;
-        }
-
-        if (!result.judge().grounded()) {
-            return false;
-        }
-
-        if ("judge_unavailable".equals(result.judge().reason())) {
-            return result.bestScore() >= 0.75;
-        }
-
-        return result.judge().score() >= 0.70;
     }
 
     private OrchestratorResult buildRagResult(
@@ -216,7 +222,6 @@ public class OrchestratorService {
                     chunks.stream().map(OrchestratorResult.Chunk::text).toList()
             );
         }
-
 
         return new OrchestratorResult(
                 routeUsed,

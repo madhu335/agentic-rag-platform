@@ -11,7 +11,7 @@ public record AgentSessionSummaryDto(
         String currentUserRequest,
         String docId,
         int researchAttempts,
-        Double confidenceScore,
+        Double retrievalScore ,
         Double judgeScore,
         Boolean judgeGrounded,
         String emailStatus,

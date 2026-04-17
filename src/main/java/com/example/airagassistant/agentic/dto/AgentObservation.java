@@ -5,6 +5,6 @@ import com.example.airagassistant.judge.JudgeResult;
 public record AgentObservation(
         String lastStep,
         String summary,
-        Double confidence,
+        Double retrievalScore,
         JudgeResult judge
 ) {}

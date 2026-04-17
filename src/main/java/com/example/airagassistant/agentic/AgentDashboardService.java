@@ -68,7 +68,7 @@ public class AgentDashboardService {
                     state.currentUserRequest(),
                     state.docId(),
                     state.researchAttempts(),
-                    state.research() != null ? state.research().confidenceScore() : null,
+                    state.research() != null ? state.research().retrievalScore() : null,
                     judgeScore,
                     judgeGrounded,
                     state.email() != null && state.email().status() != null ? state.email().status().name() : "NOT_PRESENT",

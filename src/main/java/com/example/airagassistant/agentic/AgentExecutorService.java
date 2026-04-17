@@ -84,6 +84,15 @@ public class AgentExecutorService {
                                     request.topK() != null && request.topK() > 0 ? request.topK() : DEFAULT_TOP_K
                             );
 
+                            log.info(
+                                    "RESEARCH RESULT → retrievalScore={}, judgeScore={}, grounded={}, correct={}, complete={}",
+                                    result.retrievalScore(),
+                                    result.judge() != null ? result.judge().score() : null,
+                                    result.judge() != null ? result.judge().grounded() : null,
+                                    result.judge() != null ? result.judge().correct() : null,
+                                    result.judge() != null ? result.judge().complete() : null
+                            );
+
                             state = updateResearch(state, result);
 
                             state = addHistoryEntry(
@@ -129,14 +138,13 @@ public class AgentExecutorService {
                                 );
                                 stateStore.save(state);
 
-                                // 🔥 CRITICAL FIX
                                 return buildResponse(state);
                             }
 
                             AgentObservation observation = new AgentObservation(
                                     "research",
                                     result.answer(),
-                                    result.confidenceScore(),
+                                    result.retrievalScore(),
                                     result.judge()
                             );
 
@@ -276,7 +284,6 @@ public class AgentExecutorService {
                 || state.sms().message().isBlank();
     }
 
-    // KEEP ALL YOUR EXISTING METHODS BELOW (unchanged)
     public AgentSessionState getSessionState(String sessionId) {
         AgentSessionState state = stateStore.get(sessionId);
 
@@ -418,20 +425,22 @@ public class AgentExecutorService {
     }
 
     private AgentSessionState updateResearch(AgentSessionState state, ResearchResult result) {
-        int attempts = state.researchAttempts() + 1;
-
         return state
                 .withResearch(new AgentSessionState.ResearchSnapshot(
-                        result.answer(), result.citations(),
-                        result.confidenceScore(), result.judge(), result.chunks()))
+                        result.answer(),
+                        result.citations(),
+                        result.retrievalScore(),
+                        result.judge(),
+                        result.chunks()
+                ))
                 .withResearchAttempts(state.researchAttempts() + 1);
     }
 
     private AgentResponse buildResponse(AgentSessionState state) {
         AgentSessionState.ResearchSnapshot research = state.research();
 
-        double confidence = research != null && research.confidenceScore() != null
-                ? research.confidenceScore()
+        double retrievalScore = research != null && research.retrievalScore() != null
+                ? research.retrievalScore()
                 : 0.0;
 
         String summary = research != null && research.summary() != null
@@ -452,7 +461,7 @@ public class AgentExecutorService {
                 state.sessionId(),
                 summary,
                 citations,
-                confidence,
+                retrievalScore,
                 research != null ? research.judge() : null,
                 status
         );
@@ -528,13 +537,7 @@ public class AgentExecutorService {
         boolean saysIDontKnow = answer.contains("i don't know based on the ingested documents");
         boolean hasChunks = result.chunks() != null && !result.chunks().isEmpty();
 
-        double judgeScore = result.judge() != null
-                ? result.judge().score()
-                : 0.0;
-
-        boolean lowJudgeScore = judgeScore < 0.60;
-
-        return (saysIDontKnow && hasChunks) || lowJudgeScore;
+        return saysIDontKnow && hasChunks;
     }
 
     private boolean isUnresolvedResearch(AgentSessionState state) {
@@ -542,7 +545,6 @@ public class AgentExecutorService {
                 && state.research().summary() != null
                 && state.research().summary().toLowerCase().contains("i don't know based on the ingested documents");
     }
-
 
     private AgentSessionState addHistoryEntry(
             AgentSessionState state,
