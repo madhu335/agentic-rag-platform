@@ -96,17 +96,32 @@ public class PlannerService {
                 - If the user ONLY wants to compose or prepare an SMS and does NOT require external knowledge, return ONLY a compose_sms step.
                 - If the user ONLY wants to send an SMS now and does NOT require external knowledge, return ONLY a send_sms step.
                 - Do NOT include a research step unless information retrieval is needed.
-                - If the recipient is not explicitly provided, you may use a placeholder recipient like "hr@company.com".
-                - If the phone number is not explicitly provided, you may use a placeholder like "+10000000000".
                 - Do NOT generate full email or SMS body text in the plan.
                 - Do NOT include email or SMS wording inside the research query.
+                - NEVER invent or hallucinate recipient email addresses, phone numbers, or other identifiers.
+                - If recipientEmail is explicitly provided in the request or session state, you MUST use it.
+                - If phoneNumber is explicitly provided in the request or session state, you MUST use it.
+                - If a required recipient or phone number is missing, do not fabricate one.
+                - If a required field is missing, either:
+                   1. omit that argument from the plan, or
+                   2. return only the step(s) that can be safely executed with the available information.
+                - Do NOT add an email step unless a valid recipient is available from the request or session state.
+                - Do NOT add an SMS step unless a valid phone number is available from the request or session state.
+                - Do NOT generate full email or SMS body text in the plan.
                 - If the user explicitly says "send now", use send or send_sms instead of email or compose_sms.
+                - When planning continuation steps, prefer values already present in session state over invented placeholders.
                 - Return ONLY strict JSON using this schema:
                   {
                     "steps": [
                       { "step": "research", "args": { "query": "spring boot answers" } },
-                      { "step": "email", "args": { "recipient": "hr@company.com", "subject": "Spring Boot Answers" } }
+                      { "step": "email", "args": { "recipient": "madhu335@gmail.com", "subject": "Spring Boot Answers" } }
                     ]
+                  }
+                  Or, if recipient is missing:
+                  {
+                     "steps": [
+                      { "step": "research", "args": { "query": "spring boot answers" } }
+                     ]
                   }
                 
                 User request:
@@ -214,7 +229,7 @@ public class PlannerService {
                 getPhoneNumber(state),
                 summarizeHistory(state),
                 observation != null ? safe(observation.lastStep()) : "",
-                observation != null ? observation.confidence() : null,
+                observation != null ? observation.retrievalScore() : null,
                 observation != null && observation.judge() != null ? observation.judge().grounded() : null,
                 observation != null && observation.judge() != null ? observation.judge().score() : null
         );

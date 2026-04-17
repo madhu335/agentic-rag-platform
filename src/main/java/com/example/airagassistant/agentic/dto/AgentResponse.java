@@ -8,7 +8,7 @@ public record AgentResponse(
         String sessionId,
         String answer,
         List<String> citations,
-        Double confidenceScore,
+        Double retrievalScore,
         JudgeResult judge,
         String emailStatus
 ) {}

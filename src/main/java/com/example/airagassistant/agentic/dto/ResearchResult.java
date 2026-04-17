@@ -7,7 +7,7 @@ import java.util.List;
 public record ResearchResult(
         String answer,
         List<String> citations,
-        Double confidenceScore,
+        Double retrievalScore,
         JudgeResult judge,
         List<String> chunks
 ) {}

@@ -121,3 +121,7 @@ Content-Type: application/json
   "prompt": "Explain this document in simple terms",
   "topK": 5
 }
+
+### Goal: test AGENT + Judge ALWAYS
+POST http://localhost:8080/agent
+Content-Type: application/json

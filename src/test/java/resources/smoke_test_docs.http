@@ -1,0 +1,108 @@
+### ============================================
+### BASE REQUEST (reuse this header)
+### ============================================
+
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### ============================================
+### 1. SIMPLE RAG TEST
+### ============================================
+
+POST {{baseUrl}}/agent
+Content-Type: {{contentType}}
+
+{
+    "docId": "spring-boot-qa",
+    "prompt": "How does Spring Boot handle exceptions globally?"
+}
+
+### ============================================
+### 2. RAG + EMAIL (USES PROVIDED EMAIL)
+### ============================================
+
+POST {{baseUrl}}/agent
+Content-Type: {{contentType}}
+
+{
+    "docId": "spring-boot-qa",
+    "prompt": "Explain Spring Boot exception handling and email me the summary",
+    "recipientEmail": "madhu335@gmail.com"
+}
+
+### ============================================
+### 3. WEAK QUERY (TRIGGERS RETRIES)
+### ============================================
+
+POST {{baseUrl}}/agent
+Content-Type: {{contentType}}
+
+{
+    "docId": "spring-boot-qa",
+    "prompt": "tell me something about errors"
+}
+
+### ============================================
+### 4. AGENT ONLY (NO RAG)
+### ============================================
+
+POST {{baseUrl}}/agent
+Content-Type: {{contentType}}
+
+{
+    "docId": "spring-boot-qa",
+    "prompt": "Write a professional explanation of why exception handling is important in backend systems"
+}
+
+### ============================================
+### 5. SESSION START (SAVE THIS SESSION ID)
+### ============================================
+
+POST {{baseUrl}}/agent
+Content-Type: {{contentType}}
+
+{
+    "docId": "spring-boot-qa",
+    "prompt": "Explain Spring Boot exception handling and prepare an email summary"
+}
+
+> {%
+    // 🔥 THIS STORES sessionId AUTOMATICALLY
+    client.global.set("sessionId", response.body.sessionId);
+%}
+
+### ============================================
+### 6. CONTINUE FLOW (USES STORED SESSION)
+### ============================================
+
+POST {{baseUrl}}/agent/continue
+Content-Type: {{contentType}}
+
+{
+  "sessionId": "{{sessionId}}",
+  "instruction": "send it now"
+}
+
+### ============================================
+### 7. MODIFY FLOW (STATE-AWARE UPDATE)
+### ============================================
+
+POST {{baseUrl}}/agent/continue
+Content-Type: {{contentType}}
+
+{
+  "sessionId": "{{sessionId}}",
+  "instruction": "change subject to 'Spring Boot Exception Summary'"
+}
+
+### ============================================
+### 8. FORCE REPLAN TEST
+### ============================================
+
+POST {{baseUrl}}/agent/continue
+Content-Type: {{contentType}}
+
+{
+  "sessionId": "{{sessionId}}",
+  "instruction": "also text me the summary"
+}

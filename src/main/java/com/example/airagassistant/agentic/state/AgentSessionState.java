@@ -44,7 +44,7 @@ public record AgentSessionState(
     public record ResearchSnapshot(
             String summary,
             List<String> citations,
-            Double confidenceScore,
+            Double retrievalScore,
             JudgeResult judge,
             List<String> chunks
     ) {}
@@ -143,12 +143,6 @@ public record AgentSessionState(
     }
 
     public AgentSessionState withResearchAttempts(int researchAttempts) {
-        return new AgentSessionState(sessionId, originalUserRequest, currentUserRequest, docId,
-                research, email, sms, vehicle,
-                researchAttempts, createdAt, Instant.now(), history);
-    }
-
-    public AgentSessionState withCurrentUserRequest(String currentUserRequest) {
         return new AgentSessionState(sessionId, originalUserRequest, currentUserRequest, docId,
                 research, email, sms, vehicle,
                 researchAttempts, createdAt, Instant.now(), history);
