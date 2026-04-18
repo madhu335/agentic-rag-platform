@@ -15,7 +15,7 @@ public class DefaultResultEvaluationPolicy implements ResultEvaluationPolicy {
     private static final double MIN_HYBRID_RERANK_SCORE = 0.20;
 
     // Judge thresholds
-    private static final double MIN_JUDGE_SCORE = 0.60;
+    private static final double MIN_JUDGE_SCORE = 0.70;
     private static final double MIN_INCOMPLETE_JUDGE_SCORE = 0.75;
 
     // Only judge non-agent attempts if score is not obviously too weak

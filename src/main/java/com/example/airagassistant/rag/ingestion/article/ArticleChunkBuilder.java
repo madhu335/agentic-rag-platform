@@ -382,10 +382,22 @@ public class ArticleChunkBuilder {
                         + (v.trim() != null ? " " + v.trim() : ""))
                 .collect(Collectors.joining(", "));
 
+        // Include vehicleId values so downstream consumers (ArticleSubAgent)
+        // can extract them from retrieved chunk text without needing a separate
+        // lookup table. Format: vehicleId:xxx for each vehicle.
+        String vehicleIdList = article.vehicles().stream()
+                .filter(v -> v.vehicleId() != null && !v.vehicleId().isBlank())
+                .map(v -> "vehicleId:" + v.vehicleId())
+                .collect(Collectors.joining(", "));
+
         String type = article.articleType() != null
                 ? article.articleType().replace("_", " ") : "review";
 
-        return "MotorTrend " + type + " featuring " + vehicleList + ". ";
+        String anchor = "MotorTrend " + type + " featuring " + vehicleList + ". ";
+        if (!vehicleIdList.isEmpty()) {
+            anchor += "Vehicles: " + vehicleIdList + ". ";
+        }
+        return anchor;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

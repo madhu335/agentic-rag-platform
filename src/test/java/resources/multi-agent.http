@@ -1,0 +1,227 @@
+### ═══════════════════════════════════════════════════════════════════
+### Multi-Agent Supervisor Tests (POST /agent/multi)
+### Same AgentRequest body as POST /agent — different orchestration
+### ═══════════════════════════════════════════════════════════════════
+
+
+### ── RESEARCH ONLY ─────────────────────────────────────────────────
+### Supervisor should delegate to ResearchSubAgent only.
+### Compare with: POST /agent (single-agent) on the same request.
+
+### Research: simple Q&A (no email, no vehicle)
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "docId": "spring-boot-qa",
+  "prompt": "What is Spring Boot auto-configuration?",
+  "topK": 5
+}
+
+### Research: JVM flags question
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "docId": "jvm-flags-guide",
+  "prompt": "How should I configure heap size for a Spring Boot app in production?",
+  "topK": 5
+}
+
+###
+
+### Research: out-of-scope question (should refuse via keyword guard)
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "docId": "spring-boot-qa",
+  "prompt": "What is Kubernetes pod autoscaling?",
+  "topK": 5
+}
+
+
+### ── VEHICLE ONLY ──────────────────────────────────────────────────
+### Supervisor should delegate to VehicleSubAgent only.
+### VehicleSubAgent internally routes to the right tool chain.
+
+### Vehicle: fetch specs + generate summary
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "docId": "bmw-m3-2025-competition",
+  "prompt": "Tell me about the BMW M3 Competition specs and performance",
+  "topK": 3
+}
+
+###
+
+### Vehicle: compare two vehicles
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "docId": "bmw-m3-2025-competition",
+  "prompt": "Compare BMW M3 vs Porsche 911 on performance and price",
+  "topK": 3
+}
+
+###
+
+### Vehicle: specific question about a vehicle
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "docId": "tesla-model3-2025-long-range",
+  "prompt": "What is the 0-60 time and range of the Tesla Model 3 Long Range?",
+  "topK": 3
+}
+
+###
+
+### Vehicle: maintenance cost question
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "docId": "bmw-m3-2025-competition",
+  "prompt": "What does the 30000 mile service cost on the BMW M3?",
+  "topK": 3
+}
+
+###
+
+### Vehicle: enrich data
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "docId": "bmw-m3-2025-competition",
+  "prompt": "Enrich the BMW M3 Competition vehicle data with a better summary",
+  "topK": 3
+}
+
+
+### ── RESEARCH + EMAIL ──────────────────────────────────────────────
+### Supervisor should delegate: research → communication
+### ResearchSubAgent runs first, then CommunicationSubAgent gets
+### the research summary as content to email.
+
+### Research + email to default recipient
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "docId": "spring-boot-qa",
+  "prompt": "Research Spring Boot auto-configuration and email the answer to hr@company.com",
+  "topK": 5
+}
+
+###
+
+### Research + email to specific recipient
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "docId": "spring-boot-qa",
+  "prompt": "Find out about @Transactional and email the summary to john@example.com",
+  "topK": 5
+}
+
+
+### ── RESEARCH + SMS ────────────────────────────────────────────────
+### Supervisor should delegate: research → communication (type: sms)
+
+### Research + text the answer
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "docId": "spring-boot-qa",
+  "prompt": "What is Spring Boot auto-configuration? Text the answer to +1234567890",
+  "topK": 5
+}
+
+
+### ── VEHICLE + EMAIL ───────────────────────────────────────────────
+### Supervisor should delegate: vehicle → communication
+
+### Vehicle summary + email
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "docId": "bmw-m3-2025-competition",
+  "prompt": "Generate a summary of the BMW M3 Competition and email it to sales@dealer.com",
+  "topK": 3
+}
+
+###
+
+### Vehicle comparison + email
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "docId": "bmw-m3-2025-competition",
+  "prompt": "Compare BMW M3 vs Tesla Model 3 on performance and email the comparison to manager@company.com",
+  "topK": 3
+}
+
+
+### ── SINGLE-AGENT COMPARISON ───────────────────────────────────────
+### Run the same requests through the old endpoint for A/B comparison.
+### Check the dashboard to compare step histories side-by-side.
+
+### Single-agent: same research + email request
+POST http://localhost:8080/agent
+Content-Type: application/json
+
+{
+  "docId": "spring-boot-qa",
+  "prompt": "Research Spring Boot auto-configuration and email the answer to hr@company.com",
+  "topK": 5
+}
+
+###
+
+### Single-agent: same vehicle request
+POST http://localhost:8080/agent
+Content-Type: application/json
+
+{
+  "docId": "bmw-m3-2025-competition",
+  "prompt": "Tell me about the BMW M3 Competition specs and performance",
+  "topK": 3
+}
+
+###
+### ── 8. Cross-article search — comparison query
+### Expected: comparison article surfaces, mentions all 3 cars
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "top rated sports sedans",
+  "topK": 5
+}
+
+### ═══════════════════════════════════════════════════════════════════
+### DASHBOARD — check session histories after running the above
+### ═══════════════════════════════════════════════════════════════════
+
+### List all sessions (both single-agent and multi-agent appear here)
+GET http://localhost:8080/agent/dashboard
+
+###
+
+### Get a specific session's full state (replace {sessionId})
+GET http://localhost:8080/agent/{sessionId}
+
+###
+
+### Get a specific session's step history (replace {sessionId})
+GET http://localhost:8080/agent/{sessionId}/history

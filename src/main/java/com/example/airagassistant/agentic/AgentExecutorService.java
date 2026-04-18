@@ -1,16 +1,21 @@
 package com.example.airagassistant.agentic;
 
 import com.example.airagassistant.agentic.divergence.DivergenceCheckService;
+import com.example.airagassistant.agentic.divergence.QueryRefinementService;
 import com.example.airagassistant.agentic.dto.*;
 import com.example.airagassistant.agentic.state.AgentSessionState;
 import com.example.airagassistant.agentic.state.AgentStateStore;
 import com.example.airagassistant.agentic.state.StepHistoryEntry;
 import com.example.airagassistant.agentic.tools.ResearchTool;
+import com.example.airagassistant.judge.JudgeResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +32,7 @@ public class AgentExecutorService {
     private final ResearchTool researchTool;
     private final AgentStateStore stateStore;
     private final DivergenceCheckService divergenceCheckService;
+    private final QueryRefinementService queryRefinementService;
     private final Map<String, AgentTool> tools;
 
     public AgentExecutorService(
@@ -34,12 +40,14 @@ public class AgentExecutorService {
             ResearchTool researchTool,
             AgentStateStore stateStore,
             DivergenceCheckService divergenceCheckService,
+            QueryRefinementService queryRefinementService,
             List<AgentTool> toolList
     ) {
         this.plannerService = plannerService;
         this.researchTool = researchTool;
         this.stateStore = stateStore;
         this.divergenceCheckService = divergenceCheckService;
+        this.queryRefinementService = queryRefinementService;
         this.tools = toolList.stream()
                 .collect(Collectors.toMap(AgentTool::name, t -> t));
     }
@@ -72,13 +80,14 @@ public class AgentExecutorService {
                 switch (step.step().toLowerCase()) {
 
                     case "research" -> {
+                        ResearchResult result = null;
                         try {
                             state = addHistoryEntry(state, "research", step.args(), "STARTED", null, null);
                             stateStore.save(state);
 
                             String query = getStringArg(step.args(), "query", request.prompt());
 
-                            ResearchResult result = researchTool.research(
+                            result = researchTool.research(
                                     request.docId(),
                                     query,
                                     request.topK() != null && request.topK() > 0 ? request.topK() : DEFAULT_TOP_K
@@ -109,7 +118,15 @@ public class AgentExecutorService {
                             boolean lowQuality = shouldRetryResearch(result);
 
                             if ((diverged || lowQuality) && canRetry(state)) {
-                                String refinedQuery = refineQuery(query);
+                                String refinedQuery = queryRefinementService.refineQuery(
+                                        query,
+                                        result.answer(),
+                                        result.chunks(),
+                                        result.judge()
+                                );
+                                if (refinedQuery == null || refinedQuery.isBlank()) {
+                                    refinedQuery = query + " detailed explanation with examples";
+                                }
 
                                 state = addHistoryEntry(
                                         state,
@@ -157,6 +174,7 @@ public class AgentExecutorService {
                             }
 
                         } catch (Exception e) {
+
                             state = addHistoryEntry(
                                     state,
                                     "research",
@@ -168,8 +186,29 @@ public class AgentExecutorService {
                             stateStore.save(state);
 
                             if (canRetry(state)) {
+
                                 String query = getStringArg(step.args(), "query", request.prompt());
-                                String refinedQuery = refineQuery(query);
+
+                                String previousAnswer = null;
+                                List<String> chunks = null;
+                                JudgeResult judge = null;
+
+                                if (state.research() != null) {
+                                    previousAnswer = state.research().summary();
+                                    chunks = state.research().chunks();
+                                    judge = state.research().judge();
+                                } else if (result != null) {
+                                    previousAnswer = result.answer();
+                                    chunks = result.chunks();
+                                    judge = result.judge();
+                                }
+
+                                String refinedQuery = queryRefinementService.refineQuery(
+                                        query,
+                                        previousAnswer,
+                                        chunks,
+                                        judge
+                                );
 
                                 state = addHistoryEntry(
                                         state,
@@ -477,10 +516,6 @@ public class AgentExecutorService {
         return new AgentPlan(List.of(
                 new PlanStep("stop", Map.of())
         ));
-    }
-
-    private String refineQuery(String query) {
-        return query + " explained with implementation details, example, and controller advice pattern";
     }
 
     private String getRecipient(AgentSessionState state) {

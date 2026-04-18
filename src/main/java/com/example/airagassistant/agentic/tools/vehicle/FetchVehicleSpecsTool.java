@@ -46,7 +46,7 @@ public class FetchVehicleSpecsTool {
 
         int topK = input.topK() <= 0 ? 3 : input.topK();
 
-        log.debug("FetchVehicleSpecsTool — vehicleId='{}' query='{}' topK={}", input.vehicleId(), query, topK);
+        log.info("FetchVehicleSpecsTool — vehicleId='{}' query='{}' topK={}", input.vehicleId(), query, topK);
 
         List<Double> queryVector = embeddingClient.embed(query);
         List<SearchHit> hits = vectorStore.searchWithScores(input.vehicleId(), queryVector, topK);

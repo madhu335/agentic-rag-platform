@@ -31,6 +31,7 @@ public record AgentSessionState(
         EmailSnapshot email,
         SmsSnapshot sms,
         VehicleSnapshot vehicle,
+        ArticleSnapshot article,
 
         int researchAttempts,
 
@@ -72,6 +73,32 @@ public record AgentSessionState(
             VehicleStepStatus status
     ) {}
 
+    /**
+     * Snapshot of the article agent's execution state.
+     *
+     * Visible at the top level of the session JSON alongside research/email/vehicle,
+     * so the dashboard can show article-specific data without digging into history args.
+     *
+     * Fields:
+     *   articleIds        — which articles were retrieved (from ArticleRagService)
+     *   extractedVehicleIds — which vehicle IDs were extracted from article IDs
+     *                         (the input to FetchVehicleSpecsTool)
+     *   resolvedVehicleIds  — which of those actually returned spec chunks
+     *                         (extractedVehicleIds minus the ones that returned empty)
+     *   operation          — which execution path ran (ask_article, cross_article_search,
+     *                         vehicle_scoped_search, vehicle_enriched_search)
+     *   judgeScore         — final judge score (null if judge didn't run)
+     *   chunkCount         — total context chunks fed to the LLM
+     */
+    public record ArticleSnapshot(
+            List<String> articleIds,
+            List<String> extractedVehicleIds,
+            List<String> resolvedVehicleIds,
+            String operation,
+            Double judgeScore,
+            int chunkCount
+    ) {}
+
     // ─── Enums ─────────────────────────────────────────────────────────────
 
     public enum EmailStatus   { NOT_STARTED, DRAFTED, SENT, CANCELLED }
@@ -100,6 +127,7 @@ public record AgentSessionState(
                 null,   // email
                 null,   // sms
                 null,   // vehicle
+                null,   // article
                 0,
                 now,
                 now,
@@ -114,37 +142,49 @@ public record AgentSessionState(
 
     public AgentSessionState withResearch(ResearchSnapshot research) {
         return new AgentSessionState(sessionId, originalUserRequest, currentUserRequest, docId,
-                research, email, sms, vehicle,
+                research, email, sms, vehicle, article,
                 researchAttempts, createdAt, Instant.now(), history);
     }
 
     public AgentSessionState withEmail(EmailSnapshot email) {
         return new AgentSessionState(sessionId, originalUserRequest, currentUserRequest, docId,
-                research, email, sms, vehicle,
+                research, email, sms, vehicle, article,
                 researchAttempts, createdAt, Instant.now(), history);
     }
 
     public AgentSessionState withSms(SmsSnapshot sms) {
         return new AgentSessionState(sessionId, originalUserRequest, currentUserRequest, docId,
-                research, email, sms, vehicle,
+                research, email, sms, vehicle, article,
                 researchAttempts, createdAt, Instant.now(), history);
     }
 
     public AgentSessionState withVehicle(VehicleSnapshot vehicle) {
         return new AgentSessionState(sessionId, originalUserRequest, currentUserRequest, docId,
-                research, email, sms, vehicle,
+                research, email, sms, vehicle, article,
+                researchAttempts, createdAt, Instant.now(), history);
+    }
+
+    public AgentSessionState withArticle(ArticleSnapshot article) {
+        return new AgentSessionState(sessionId, originalUserRequest, currentUserRequest, docId,
+                research, email, sms, vehicle, article,
                 researchAttempts, createdAt, Instant.now(), history);
     }
 
     public AgentSessionState withHistory(List<StepHistoryEntry> history) {
         return new AgentSessionState(sessionId, originalUserRequest, currentUserRequest, docId,
-                research, email, sms, vehicle,
+                research, email, sms, vehicle, article,
                 researchAttempts, createdAt, Instant.now(), history);
     }
 
     public AgentSessionState withResearchAttempts(int researchAttempts) {
         return new AgentSessionState(sessionId, originalUserRequest, currentUserRequest, docId,
-                research, email, sms, vehicle,
+                research, email, sms, vehicle, article,
+                researchAttempts, createdAt, Instant.now(), history);
+    }
+
+    public AgentSessionState withCurrentUserRequest(String currentUserRequest) {
+        return new AgentSessionState(sessionId, originalUserRequest, currentUserRequest, docId,
+                research, email, sms, vehicle, article,
                 researchAttempts, createdAt, Instant.now(), history);
     }
 }
