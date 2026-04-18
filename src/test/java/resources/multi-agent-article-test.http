@@ -1,0 +1,396 @@
+### ══════════════════════════════════════════════════════════════════════
+### Multi-Agent: Article Sub-Agent Test Suite
+### ══════════════════════════════════════════════════════════════════════
+###
+### Pre-requisites:
+###   1. Run seed_vehicles.http first (seeds BMW M3, Porsche 911, etc.)
+###   2. Run cms_article_test.http sections 1-2 (ingests M3 review + comparison article)
+###   3. Spring Boot app running on localhost:8080
+###   4. Ollama running with llama3.1 + nomic-embed-text
+###
+### Test order:
+###   Phase 1: Verify data is seeded (read-only checks)
+###   Phase 2: Article agent via multi-agent supervisor
+###   Phase 3: Article → Vehicle shared tool (the key inter-agent test)
+###   Phase 4: Article + Communication (multi-delegation)
+###   Phase 5: Edge cases
+###
+### Endpoint: POST /agent/multi (MultiAgentController)
+### Same request/response shape as POST /agent (single-agent)
+### ══════════════════════════════════════════════════════════════════════
+
+
+### ── Phase 1: Verify seed data exists ─────────────────────────────────
+
+### 1.1 Check vehicle chunks exist (BMW M3)
+### Expected: count > 0
+### 1.1 Check vehicle chunks exist (BMW M3)
+### Expected: answer mentioning 503hp, S58 engine
+POST http://localhost:8080/vehicles/bmw-m3-2025-competition/ask
+Content-Type: application/json
+
+{
+  "question": "What is the horsepower?",
+  "topK": 3
+}
+
+###
+
+### 1.2 Check article chunks exist (M3 review)
+### Expected: answer about M3 performance
+POST http://localhost:8080/articles/motortrend-bmw-m3-2025-review/ask
+Content-Type: application/json
+
+{
+  "question": "What is the M3's horsepower?",
+  "topK": 3,
+  "mode": "HYBRID"
+}
+
+###
+
+
+### ══════════════════════════════════════════════════════════════════════
+### Phase 2: Article agent basic flows via supervisor
+### ══════════════════════════════════════════════════════════════════════
+
+### 2.1 Single-article ask — routes to article agent
+### Supervisor should plan: [{agent: "article", args: {articleId: "..."}}]
+### Expected: LLM-synthesized answer about M3 track performance
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "What did MotorTrend say about the BMW M3's performance on track? Article ID is motortrend-bmw-m3-2025-review",
+  "topK": 5
+}
+
+> {%
+    client.global.set("sessionId", response.body.sessionId);
+    client.log("Session: " + response.body.sessionId);
+    client.log("Answer preview: " + response.body.answer?.substring(0, 200));
+%}
+
+###
+
+### 2.2 Cross-article search — routes to article agent
+### Supervisor should plan: [{agent: "article"}]
+### Expected: mentions M3 as top-rated, comparison article also surfaces
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "Which sports sedan was rated best by MotorTrend?",
+  "topK": 5
+}
+
+> {%
+    client.global.set("sessionId", response.body.sessionId);
+    client.log("Answer preview: " + response.body.answer?.substring(0, 200));
+%}
+
+###
+
+### 2.3 Vehicle-scoped article search — find all articles about BMW M3
+### Supervisor should plan: [{agent: "article", args: {vehicleQuery: "BMW M3"}}]
+### Expected: both M3 review and comparison article
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "Find all articles and reviews about the BMW M3 2025",
+  "topK": 5
+}
+
+> {%
+    client.log("Answer preview: " + response.body.answer?.substring(0, 200));
+%}
+
+###
+
+### 2.4 Rating-based search — articles rated over 9
+### Expected: both articles (rated 9.2), LLM synthesizes from ratings chunks
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "Show me articles rated over 9 out of 10",
+  "topK": 5
+}
+
+> {%
+    client.log("Answer preview: " + response.body.answer?.substring(0, 200));
+%}
+
+###
+
+
+### ══════════════════════════════════════════════════════════════════════
+### Phase 3: Article → Vehicle shared tool (INTER-AGENT COMMUNICATION)
+### ══════════════════════════════════════════════════════════════════════
+###
+### This is the key test. The article agent should:
+###   Phase 1: Search articles → finds M3 review + comparison
+###   Phase 2: Extract vehicleId "bmw-m3-2025-competition" from article ID
+###            Call FetchVehicleSpecsTool (shared with VehicleSubAgent)
+###            Get spec chunks from the vehicle domain's pgvector data
+###   Phase 3: Merge article + spec chunks → LLM synthesizes unified answer
+###
+### The supervisor sends ONE delegation to article agent. The vehicle spec
+### fetch happens internally — supervisor doesn't know about it.
+###
+### Look for in the response:
+###   - answer mentions both article ratings AND vehicle specs (hp, engine)
+###   - citations include both article chunk IDs (motortrend-...:N)
+###     and vehicle spec chunk IDs (bmw-m3-2025-competition:N)
+
+### 3.1 Top-ranked articles with vehicle specs
+### THE MAIN TEST — triggers executeVehicleEnrichedSearch
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "Show me top ranked vehicle articles with specs for sports sedans",
+  "topK": 5
+}
+
+> {%
+    client.global.set("sessionId", response.body.sessionId);
+    client.log("=== INTER-AGENT TEST ===");
+    client.log("Answer: " + response.body.answer?.substring(0, 300));
+    client.log("Citations: " + JSON.stringify(response.body.citations));
+    // Check for both article and vehicle citations
+    var hasArticleCitation = response.body.citations?.some(c => c.startsWith("motortrend-"));
+    var hasVehicleCitation = response.body.citations?.some(c => c.startsWith("bmw-m3-"));
+    client.log("Has article citations: " + hasArticleCitation);
+    client.log("Has vehicle citations: " + hasVehicleCitation);
+%}
+
+###
+
+### 3.2 Inspect the session to see the article agent's internal steps
+GET http://localhost:8080/agent/{{sessionId}}
+Content-Type: application/json
+
+###
+
+### 3.3 Best rated with vehicle specifications — alternate phrasing
+### Should also trigger vehicle-enriched search
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "What are the best rated cars with their specifications and performance data?",
+  "topK": 5
+}
+
+> {%
+    client.log("Answer preview: " + response.body.answer?.substring(0, 300));
+%}
+
+###
+
+### 3.4 Highest rated with vehicle details — another trigger phrase
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "Show me the highest rated sports sedans with vehicle specs and images",
+  "topK": 5
+}
+
+> {%
+    client.log("Answer preview: " + response.body.answer?.substring(0, 200));
+%}
+
+###
+
+### 3.5 Explicit vehicleIds in prompt — supervisor might pass these in args
+### Tests that article agent uses explicit IDs instead of extracting from articleId
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "Show me top ranked articles with specs for bmw-m3-2025-competition and cadillac-ct4v-2025-blackwing",
+  "topK": 5
+}
+
+> {%
+    client.log("Citations: " + JSON.stringify(response.body.citations));
+%}
+
+###
+
+
+### ══════════════════════════════════════════════════════════════════════
+### Phase 4: Article + Communication (multi-delegation flow)
+### ══════════════════════════════════════════════════════════════════════
+###
+### Supervisor should plan TWO delegations:
+###   1. {agent: "article", task: "find top rated articles with specs"}
+###   2. {agent: "communication", task: "email the result"}
+###
+### Article agent runs first → produces content.
+### Communication agent runs second → uses article content as email body.
+
+### 4.1 Article search + email
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "Find the top rated sports sedan articles with vehicle specs and email the results to hr@company.com",
+  "topK": 5
+}
+
+> {%
+    client.global.set("sessionId", response.body.sessionId);
+    client.log("Status: " + response.body.emailStatus);
+    client.log("Answer preview: " + response.body.answer?.substring(0, 200));
+%}
+
+###
+
+### 4.2 Inspect session — should show delegate_article + delegate_communication steps
+GET http://localhost:8080/agent/{{sessionId}}
+Content-Type: application/json
+
+###
+
+### 4.3 Article search + SMS
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "What is the best rated sports sedan? Text the answer to +15551234567",
+  "topK": 5
+}
+
+> {%
+    client.log("Status: " + response.body.emailStatus);
+%}
+
+###
+
+
+### ══════════════════════════════════════════════════════════════════════
+### Phase 5: Edge cases and routing verification
+### ══════════════════════════════════════════════════════════════════════
+
+### 5.1 Pure vehicle question — should route to vehicle agent, NOT article
+### Verify supervisor picks "vehicle" not "article"
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "What are the specs of the BMW M3 Competition?",
+  "topK": 3
+}
+
+> {%
+    client.log("Answer preview: " + response.body.answer?.substring(0, 200));
+%}
+
+###
+
+### 5.2 Pure research question — should route to research agent
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "docId": "spring-boot-qa",
+  "prompt": "What is Spring Boot auto-configuration?",
+  "topK": 5
+}
+
+> {%
+    client.log("Answer preview: " + response.body.answer?.substring(0, 200));
+%}
+
+###
+
+### 5.3 Ambiguous article vs vehicle — "tell me about the M3"
+### Could go either way. Interesting to see how supervisor routes it.
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "Tell me everything about the 2025 BMW M3 Competition — reviews, ratings, specs, performance",
+  "topK": 5
+}
+
+> {%
+    client.global.set("sessionId", response.body.sessionId);
+    client.log("Answer preview: " + response.body.answer?.substring(0, 300));
+%}
+
+###
+
+### 5.4 Inspect the ambiguous routing session
+### Look at history → which agent(s) did the supervisor choose?
+GET http://localhost:8080/agent/{{sessionId}}
+Content-Type: application/json
+
+###
+
+### 5.5 No matching articles — should fail gracefully
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "Show me top ranked articles about electric boats with specs",
+  "topK": 5
+}
+
+> {%
+    client.log("Answer: " + response.body.answer);
+    client.log("Status: " + response.body.emailStatus);
+%}
+
+###
+
+### 5.6 Vehicle not ingested — article agent finds articles but spec fetch returns empty
+### Should still succeed with article-only content (graceful degradation)
+### Use a vehicle that has articles but no vehicle domain data
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "Show me top ranked articles with specs for the Mercedes AMG C63",
+  "topK": 5
+}
+
+> {%
+    client.log("Answer preview: " + response.body.answer?.substring(0, 200));
+    // Citations should include article chunks but NOT vehicle spec chunks
+    // (because mercedes-amg-c63-2025 is not in the vehicle domain)
+    client.log("Citations: " + JSON.stringify(response.body.citations));
+%}
+
+###
+
+
+### ══════════════════════════════════════════════════════════════════════
+### Quick reference: what to check in each phase
+### ══════════════════════════════════════════════════════════════════════
+###
+### Phase 2 (basic article):
+###   ✓ Supervisor routes to "article" agent (check session history)
+###   ✓ LLM-synthesized answer (not template text)
+###   ✓ Citations reference article chunk IDs
+###
+### Phase 3 (inter-agent — THE KEY TESTS):
+###   ✓ Answer contains BOTH article content (ratings, verdict)
+###     AND vehicle specs (horsepower, engine, 0-60)
+###   ✓ Citations include BOTH motortrend-*:N AND bmw-m3-*:N chunk IDs
+###   ✓ Session history shows only ONE delegation (article), not two
+###   ✓ Graceful degradation when vehicle specs unavailable (test 5.6)
+###
+### Phase 4 (article + communication):
+###   ✓ Two delegations in session history: article → communication
+###   ✓ emailStatus is "DRAFTED" or "SENT"
+###   ✓ Article content was passed as email body
+###
+### Phase 5 (routing):
+###   ✓ Pure vehicle → routes to vehicle agent (not article)
+###   ✓ Pure research → routes to research agent
+###   ✓ No results → fails gracefully, no 500 error

@@ -47,7 +47,7 @@ public class PgVectorStore {
                             sql,
                             ps -> {
                                 ps.setString(1, vectorLiteral);
-                                ps.setString(2, docId);
+                                ps.setString(2, docId); // Append wildcard here
                                 ps.setString(3, vectorLiteral);
                                 ps.setInt(4, k);
                             },
