@@ -6,6 +6,7 @@ import com.example.airagassistant.agentic.tools.vehicle.FetchVehicleSpecsTool;
 import com.example.airagassistant.domain.article.service.ArticleRagService;
 import com.example.airagassistant.judge.JudgeResult;
 import com.example.airagassistant.judge.JudgeService;
+import com.example.airagassistant.policy.DefaultResultEvaluationPolicy;
 import com.example.airagassistant.rag.RagAnswerService;
 import com.example.airagassistant.rag.RetrievalMode;
 import com.example.airagassistant.rag.SearchHit;
@@ -30,6 +31,7 @@ class ArticleSubAgentTest {
     private LlmClient llm;
     private JudgeService judgeService;
     private ArticleSubAgent agent;
+    private DefaultResultEvaluationPolicy policy;
 
     @BeforeEach
     void setUp() {
@@ -38,7 +40,7 @@ class ArticleSubAgentTest {
         fetchSpecsTool = mock(FetchVehicleSpecsTool.class);
         llm = mock(LlmClient.class);
         judgeService = mock(JudgeService.class);
-        agent = new ArticleSubAgent(articleRagService, ragAnswerService, fetchSpecsTool, llm, judgeService);
+        agent = new ArticleSubAgent(articleRagService, ragAnswerService, fetchSpecsTool, llm, judgeService, policy);
 
         // Default judge stub — returns passing score so tests don't fail on judge threshold
         when(judgeService.evaluate(any(), any(), any()))

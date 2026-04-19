@@ -1,6 +1,7 @@
 package com.example.airagassistant.rag;
 
 import com.example.airagassistant.trace.TraceHelper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
@@ -10,6 +11,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Component
 public class PgVectorStore {
 
@@ -258,16 +260,11 @@ public class PgVectorStore {
         insertChunk(record);
     }
 
-    public void addAll(List<VectorRecord> batch) {
-        if (batch == null || batch.isEmpty()) return;
-        batch.forEach(this::add);
-    }
-
     private void insertChunk(VectorRecord record) {
         String sql = """
-            INSERT INTO document_chunks (doc_id, chunk_index, content, embedding)
-            VALUES (?, ?, ?, ?::vector)
-            """;
+                INSERT INTO document_chunks (doc_id, chunk_index, content, embedding)
+                VALUES (?, ?, ?, ?::vector)
+                """;
 
         String docId = extractDocId(record.id());
 
@@ -288,58 +285,16 @@ public class PgVectorStore {
         return chunkId.substring(0, idx);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-// ADD THIS METHOD to your existing PgVectorStore.java  (inside the class body)
-// ─────────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Upsert a batch of VectorRecords.
-     * Uses INSERT ... ON CONFLICT (doc_id, chunk_index) DO UPDATE so that
-     * re-ingesting the same vehicle replaces its old embedding without leaving
-     * stale duplicates.
-     *
-     * Requires a UNIQUE constraint:
-     *   ALTER TABLE document_chunks ADD CONSTRAINT uq_doc_chunk UNIQUE (doc_id, chunk_index);
-     */
-    public void upsert(List<VectorRecord> batch) {
-        if (batch == null || batch.isEmpty()) return;
-
-        String sql = """
-            INSERT INTO document_chunks (doc_id, chunk_index, content, embedding, doc_type)
-            VALUES (?, ?, ?, ?::vector, ?)
-            ON CONFLICT (doc_id, chunk_index)
-            DO UPDATE SET
-                content   = EXCLUDED.content,
-                embedding = EXCLUDED.embedding,
-                doc_type  = EXCLUDED.doc_type
-            """;
-
-        for (VectorRecord record : batch) {
-            if (record == null || record.vector() == null || record.vector().isEmpty()) {
-                throw new IllegalArgumentException("Record/vector cannot be null/empty");
-            }
-            String docId   = extractDocId(record.id());
-            String docType = inferDocType(docId);
-            jdbcTemplate.update(sql,
-                    docId,
-                    record.chunkIndex(),
-                    record.text(),
-                    toPgVector(record.vector()),
-                    docType
-            );
-        }
-    }
-
     /**
      * Derives doc_type from docId naming convention.
-     *   Articles → start with "motortrend-"
-     *   Vehicles → contain a 4-digit year  (e.g. bmw-m3-2025-competition)
-     *   PDFs     → everything else
+     * Articles → start with "motortrend-"
+     * Vehicles → contain a 4-digit year  (e.g. bmw-m3-2025-competition)
+     * PDFs     → everything else
      */
     private String inferDocType(String docId) {
-        if (docId == null)                          return "pdf";
-        if (docId.startsWith("motortrend-"))        return "article";
-        if (docId.matches(".*-\\d{4}(-.*)?$"))     return "vehicle";
+        if (docId == null) return "pdf";
+        if (docId.startsWith("motortrend-")) return "article";
+        if (docId.matches(".*-\\d{4}(-.*)?$")) return "vehicle";
         return "pdf";
     }
 
@@ -475,13 +430,98 @@ public class PgVectorStore {
                 },
                 (rs, rowNum) -> {
                     String foundDocId = rs.getString("doc_id");
-                    int chunkIndex    = rs.getInt("chunk_index");
-                    String chunkId    = foundDocId + ":" + chunkIndex;
+                    int chunkIndex = rs.getInt("chunk_index");
+                    String chunkId = foundDocId + ":" + chunkIndex;
                     VectorRecord record = new VectorRecord(0L, chunkIndex, chunkId,
                             rs.getString("content"), List.of());
                     return new SearchHit(record, rs.getDouble("score"));
                 }
         );
     }
+
+    // ─── BATCH OPERATIONS ──────────────────────────────────────────────────
+    //
+    // Drop-in replacements for the serial addAll() and upsert() methods.
+    // Replace the existing methods in PgVectorStore.java with these.
+
+    /**
+     * Insert a batch of VectorRecords using JDBC batch execution.
+     * <p>
+     * Previous implementation: loop calling add() → one INSERT per chunk.
+     * This implementation: one jdbcTemplate.batchUpdate() call → one
+     * round-trip to Postgres with all INSERTs batched.
+     * <p>
+     * For 50 chunks:
+     * - Serial:  50 round-trips × ~2ms = ~100ms
+     * - Batch:   1 round-trip   × ~10ms = ~10ms
+     */
+    public void addAll(List<VectorRecord> batch) {
+        if (batch == null || batch.isEmpty()) return;
+        log.debug("======Batch Add all VectorRecord size {} =======", batch.size());
+        String sql = """
+                INSERT INTO document_chunks (doc_id, chunk_index, content, embedding)
+                VALUES (?, ?, ?, ?::vector)
+                """;
+
+        jdbcTemplate.batchUpdate(sql, new org.springframework.jdbc.core.BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(java.sql.PreparedStatement ps, int i) throws java.sql.SQLException {
+                VectorRecord record = batch.get(i);
+                ps.setString(1, extractDocId(record.id()));
+                ps.setInt(2, record.chunkIndex());
+                ps.setString(3, record.text());
+                ps.setString(4, toPgVector(record.vector()));
+            }
+
+            @Override
+            public int getBatchSize() {
+                return batch.size();
+            }
+        });
+    }
+
+    /**
+     * Upsert a batch of VectorRecords using JDBC batch execution.
+     * <p>
+     * Previous implementation: loop calling jdbcTemplate.update() per record.
+     * This implementation: one jdbcTemplate.batchUpdate() call.
+     * <p>
+     * Uses INSERT ... ON CONFLICT (doc_id, chunk_index) DO UPDATE so that
+     * re-ingesting the same vehicle/article replaces its old embeddings
+     * without leaving stale duplicates.
+     */
+    public void upsert(List<VectorRecord> batch) {
+        log.debug("======Batch upsert VectorRecord size {} =======", batch.size());
+        if (batch == null || batch.isEmpty()) return;
+
+        String sql = """
+                INSERT INTO document_chunks (doc_id, chunk_index, content, embedding, doc_type)
+                VALUES (?, ?, ?, ?::vector, ?)
+                ON CONFLICT (doc_id, chunk_index, doc_type)
+                DO UPDATE SET
+                    content   = EXCLUDED.content,
+                    embedding = EXCLUDED.embedding,
+                    doc_type  = EXCLUDED.doc_type
+                """;
+
+        jdbcTemplate.batchUpdate(sql, new org.springframework.jdbc.core.BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(java.sql.PreparedStatement ps, int i) throws java.sql.SQLException {
+                VectorRecord record = batch.get(i);
+                String docId = extractDocId(record.id());
+                ps.setString(1, docId);
+                ps.setInt(2, record.chunkIndex());
+                ps.setString(3, record.text());
+                ps.setString(4, toPgVector(record.vector()));
+                ps.setString(5, inferDocType(docId));
+            }
+
+            @Override
+            public int getBatchSize() {
+                return batch.size();
+            }
+        });
+    }
+
 
 }

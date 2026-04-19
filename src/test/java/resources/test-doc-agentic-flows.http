@@ -125,3 +125,19 @@ Content-Type: application/json
 ### Goal: test AGENT + Judge ALWAYS
 POST http://localhost:8080/agent
 Content-Type: application/json
+
+
+### Ingest PDF
+POST http://localhost:8080/api/ingest-pdf
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="sample.pdf"
+Content-Type: application/pdf
+
+< ./sample.pdf
+--WebAppBoundary
+Content-Disposition: form-data; name="docId"
+
+test-pdf-doc
+--WebAppBoundary--

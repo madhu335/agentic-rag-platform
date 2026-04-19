@@ -1,6 +1,6 @@
 # Agentic RAG Platform (Hybrid Search + AI Workflows)
 
-A production-grade agentic AI platform built with Spring Boot, pgvector, and Ollama, supporting hybrid retrieval (BM25 + vector + RRF), semantic chunking, structured domain ingestion, evaluation with failure diagnosis, and full observability.
+A production-grade agentic AI platform built with Spring Boot, pgvector, ParadeDB, and Ollama, supporting multi-agent orchestration, hybrid retrieval (BM25 + vector + RRF), semantic chunking, two-tier retrieval for fleet-scale search, batch ingestion, and full observability.
 
 ---
 
@@ -8,41 +8,121 @@ A production-grade agentic AI platform built with Spring Boot, pgvector, and Oll
 
 This platform enables:
 
-- Agentic workflows (Planner → Executor → Tools)
-- Hybrid RAG (BM25 + vector + RRF + re-ranking)
-- Multi-domain ingestion: PDF, vehicle specs, CMS articles
-- Semantic chunking by question category — not token count
-- Many-to-many vehicle-to-article relationships
-- Evaluation pipeline with precision/recall and failure diagnosis
-- Observability via OpenTelemetry and LangSmith
+- **Multi-agent orchestration** — supervisor delegates to specialized agents (vehicle, article, research, communication) with inter-agent communication via shared tools
+- **Single-agent workflows** — planner-executor pattern with 13 step types for backward compatibility
+- **Hybrid RAG** — BM25 + vector + RRF fusion, with ParadeDB BM25 for single-query hybrid
+- **Multi-domain ingestion** — PDF, vehicle specs, CMS articles with batch embedding
+- **Semantic chunking** — by question category, not token count
+- **Two-tier retrieval** — vehicle summary index (90K rows) + detail chunks for fleet-scale search
+- **Three-layer answer validation** — citation validation, judge evaluation, judge reason validation
+- **Partitioned vector storage** — halfvec (float16) indexes with IVFFlat on vehicle partition
+- **Evaluation pipeline** — precision/recall with failure diagnosis
+- **Observability** — OpenTelemetry, LangSmith, session dashboard with full context visibility
 
 ---
 
 ## Architecture
 
-### Core execution flow
+### Multi-agent flow (POST /agent/multi)
 
 ```
 User query
-  → Planner (structured JSON plan)
-  → Executor (step-by-step dispatch)
-  → Tools (vehicle, research, email, SMS)
-  → State store (session tracking)
-  → Evaluation / re-plan
-  → Response
+  -> SupervisorPlanner (numbered routing rules + few-shot examples)
+  -> SupervisorAgent dispatches to specialized agents:
+     -> ArticleSubAgent  (article search, vehicle-enriched content, judge validation)
+     -> VehicleSubAgent  (specs, summaries, comparisons)
+     -> ResearchSubAgent (PDF/document RAG with divergence detection)
+     -> CommunicationSubAgent (email, SMS)
+  -> Session state persisted with ArticleSnapshot, VehicleSnapshot
+  -> Response with citations, judge score, metadata
+```
+
+### Single-agent flow (POST /agent)
+
+```
+User query
+  -> PlannerService (structured JSON plan)
+  -> AgentExecutorService (step-by-step dispatch)
+  -> Tools (vehicle, research, email, SMS)
+  -> State store (session tracking)
+  -> Evaluation / re-plan
+  -> Response
 ```
 
 ### Retrieval pipeline
 
 ```
 User query
-  → Embed (Ollama nomic-embed-text)
-  → BM25 keyword search
-  → Vector search (pgvector cosine <=>)
-  → RRF fusion
-  → Re-ranking (cosine second pass)
-  → Compress / answer (Ollama llama3)
+  -> Embed (Ollama nomic-embed-text, 768d)
+  -> BM25 keyword search (ParadeDB Tantivy or PostgreSQL tsvector)
+  -> Vector search (pgvector halfvec cosine)
+  -> RRF fusion (app-level or ParadeDB single-query)
+  -> Re-ranking (cosine second pass)
+  -> LLM synthesis (Ollama llama3.1)
+  -> Judge evaluation (grounded/correct/complete)
+  -> Response with citations
 ```
+
+### Two-tier fleet retrieval
+
+```
+Fleet query ("which car has best fuel economy?")
+  -> Tier 1: vehicle_summaries (90K rows, HNSW on halfvec) -> top-10 candidates  (~5ms)
+  -> Tier 2: chunks_vehicle WHERE doc_id IN (top-10) -> detail chunks           (<1ms)
+  -> Total: ~6ms instead of 500ms-2s with single-tier at 9M chunks
+```
+
+---
+
+## Multi-Agent Architecture
+
+### Supervisor planner
+
+The supervisor decomposes user requests into agent delegations using numbered routing rules:
+
+1. Does the user mention "article", "review", "MotorTrend", "rated"? -> article agent
+2. Does the user ask about specs, performance, engine, horsepower? -> vehicle agent
+3. Does the user ask about documents or general knowledge? -> research agent
+4. Does the user ask to email/text/send? -> communication agent (after content agent)
+
+Seven few-shot examples in the prompt ensure reliable routing with llama3.1.
+
+### Article sub-agent
+
+Four execution paths routed by task + args:
+
+| Path | Trigger | What it does |
+|---|---|---|
+| Single-article ask | `articleId` in args | Scoped RAG on one article |
+| Cross-article search | Default | Search all articles, LLM synthesis, judge |
+| Vehicle-scoped search | `vehicleQuery` in args | Find articles about a vehicle |
+| Vehicle-enriched search | Task contains "top ranked" / "with specs" | Articles + shared tool spec fetch + merge + LLM + judge |
+
+### Inter-agent communication
+
+The article agent calls `FetchVehicleSpecsTool` directly (same Spring bean the vehicle agent uses). No circular dependency -- both agents depend on the tool, not on each other. This is the "shared tool" pattern.
+
+Vehicle IDs are extracted from chunk text (`vehicleId:xxx` tokens embedded by `ArticleChunkBuilder`) with three-source priority:
+1. Explicit args from supervisor
+2. Chunk text regex: `vehicleId:([a-zA-Z0-9-]+)`
+3. ArticleId naming convention fallback
+
+### Three-layer answer validation
+
+| Layer | What it catches | Action on failure |
+|---|---|---|
+| Citation validation | Hallucinated `[ID]` tags | Auto-correct to nearest valid ID, then retry with explicit valid ID list |
+| Judge evaluation | Factual errors, incomplete answers | Retry with judge feedback if reason is validated |
+| Judge reason validation | False negatives from judge | Skip retry if judge's "missing X" claims are contradicted by context |
+
+Auto-correction maps hallucinated chunk indices to valid ones (e.g. `[bmw-m3-2025-competition:6]` -> `[bmw-m3-2025-competition:2]`) eliminating retry loops.
+
+### Session observability
+
+Every delegation's history entry includes:
+- `_result`: contextChunks, retrievedArticles, vehicleSpecs, latency_ms, specs_resolved
+- `_judge`: grounded, correct, complete, score, reason
+- `ArticleSnapshot`: articleIds, extractedVehicleIds, resolvedVehicleIds, operation, judgeScore
 
 ---
 
@@ -58,44 +138,42 @@ Semantic chunking via sliding window. Used for interview Q&A, technical guides, 
 
 ### 2. Vehicle specs
 
-Rich structured ingestion — one semantic chunk per question category. Supports both simple flat records and full nested domain objects.
+Rich structured ingestion -- one semantic chunk per question category. Supports simple flat records, full nested domain objects, and bulk ingestion.
 
 **Simple ingest:** `POST /vehicles/ingest`
-One chunk per vehicle covering all fields.
+**Rich ingest:** `POST /vehicles/ingest/rich` (batch embed + summary population)
+**Bulk ingest:** `POST /vehicles/ingest/bulk` (pages of 50, batch embed + batch upsert + summaries)
 
-**Rich ingest:** `POST /vehicles/ingest/rich`
-Multiple semantic chunks per vehicle:
+#### Chunk layout
 
 | chunk_index | Type | Answers |
 |---|---|---|
-| :1 | identity | what class, body style, fuel type |
+| :1 | identity | class, body style, fuel type, MSRP |
 | :2 | performance | engine, hp, torque, 0-60, drivetrain |
 | :3 | ownership_cost | 5-year cost, insurance, depreciation, resale |
-| :4 | rankings | US News, Consumer Reports, KBB rankings as prose |
+| :4 | rankings | US News, Consumer Reports, KBB as narrative prose |
 | :5 | safety | NHTSA, IIHS ratings, AEB, blind spot |
 | :6 | features_trims | trim levels, added features, pricing |
 | :7 | reviews | expert review scores and summaries |
-| :10–:14 | maintenance | one chunk per service interval milestone |
+| :10+ | maintenance | one chunk per service interval milestone |
 | :20+ | recall | one chunk per open recall |
 
-Gaps at :8–:9 and :15–:19 are reserved for future chunk types — avoids re-ingestion when new types are added.
+#### Two-tier retrieval
 
-**Key design decisions:**
+**Fleet search:** `POST /vehicles/ask/fleet`
+Uses `vehicle_summaries` table (one embedding per vehicle) for Tier 1 candidate selection, then detail chunk retrieval scoped to candidates.
 
-- Rankings converted to narrative prose: `"Ranked 2nd of 18 sports sedans"` embeds better than `rank:2, total:18`
-- Maintenance split per interval: "30k service cost" retrieves exactly chunk :12, not all maintenance history
-- Identity anchor in every chunk: every chunk repeats `"2025 BMW M3 Competition sports sedan"` so retrieval never loses vehicle context
-- `NumericFilter`: post-retrieval re-sort for threshold queries like "over 500 horsepower" — embedding models cannot rank by numeric value
+**Hybrid search:** `POST /vehicles/ask/hybrid`
+ParadeDB BM25 + vector similarity in a single SQL query. Tunable `vectorWeight` parameter (0.0 = pure BM25, 1.0 = pure vector).
 
-**Ask endpoint:** `POST /vehicles/{vehicleId}/ask`
-**Fleet search:** `POST /vehicles/ask`
-**Evaluation:** `GET /api/eval/vehicles/recall/report`
+**Admin:** `GET /vehicles/admin/summaries`
+Lists all vehicle summaries with embedding status and chunk counts.
 
 ---
 
 ### 3. CMS articles (MotorTrend)
 
-Long-form article ingestion with many-to-many vehicle references. A single article can feature multiple vehicles (comparison tests, buyers guides).
+Long-form article ingestion with many-to-many vehicle references. Articles feature vehicleId tokens in chunk anchors for clean vehicle ID extraction.
 
 **Ingest:** `POST /articles/ingest`
 
@@ -103,76 +181,53 @@ Long-form article ingestion with many-to-many vehicle references. A single artic
 
 | chunk_index | Type | Answers |
 |---|---|---|
-| :1 | identity + verdict | what is this article, overall verdict |
+| :1 | identity + verdict | article metadata, overall verdict |
 | :2 | ratings narrative | structured scores as prose |
 | :3 | pros and cons | strengths and weaknesses |
 | :4 | vehicle references | all vehicles featured (primary + competitors) |
 | :10+ | article sections | one chunk per named section |
 | :50+ | body text windows | overlapping windows from recursive splitter |
 
-Gaps at :5–:9 reserved for future types (comments summary, comparison table, spec sheet).
+#### Vehicle anchor with IDs
 
-#### Many-to-many vehicle anchor
-
-Every chunk in every article repeats all referenced vehicle names:
-
+Every chunk includes machine-parseable vehicle IDs:
 ```
-"MotorTrend comparison featuring 2025 BMW M3 Competition,
- 2025 Mercedes-AMG C63 S E Performance, 2025 Cadillac CT4-V Blackwing."
+MotorTrend comparison featuring 2025 BMW M3 Competition, 2025 Mercedes-AMG C63 S E Performance.
+Vehicles: vehicleId:bmw-m3-2025-competition, vehicleId:mercedes-amg-c63-2025.
 ```
 
-Querying for any referenced vehicle — primary or competitor — retrieves the article. A query for "Mercedes AMG C63" retrieves the comparison article even though Mercedes is a `competitor` role, not `primary`.
+---
 
-#### Recursive semantic text splitter
+## Batch Ingestion
 
-Long article body text is split using a 4-level separator hierarchy:
+All ingestion paths use batch embedding and batch upsert:
 
-```
-Level 1: paragraph boundaries (\n\n)
-Level 2: sentence endings (. ! ?)
-Level 3: clause boundaries (, ; :)
-Level 4: word boundaries (last resort)
-```
-
-Each level is only tried when the previous produces chunks still exceeding `MAX_CHUNK_WORDS=600`. Overlap is sentence-based (2 sentences shared between adjacent chunks) — semantically cleaner than word-count overlap.
-
-#### Section title enrichment (UAC-first)
-
-Section titles are enriched with user query vocabulary before embedding:
-
-```
-"Performance"  → "Performance and track testing"
-"Interior"     → "Interior cabin quality and comfort"
-"Technology"   → "Technology infotainment and features"
-"Value"        → "Value pricing and cost of ownership"
-```
-
-Queries like "performance on track" retrieve the Performance section chunk rather than a less precise body window chunk.
-
-#### Retrieval modes
-These endpoints create session traces visible in the dashboard
-
-**Single-article ask:** `POST /articles/{articleId}/ask`
-Scoped to one article. Uses HYBRID retrieval.
-
-**Vehicle-scoped search:** `POST /articles/search/vehicle`
-Finds all articles that mention a vehicle — works for any role (primary, competitor, mentioned).
-
-**Cross-article semantic search:** `POST /articles/search`
-Searches globally across all article chunks. Supports opinion queries, rating threshold filters, and comparison queries. Chunk preference ranking surfaces identity/verdict/ratings chunks above body windows.
-
-
-#### Domain isolation via doc_type
-
-All chunks are tagged with `doc_type` at upsert time:
-
-| doc_type | Domain | How derived |
+| Path | Before (serial) | After (batch) |
 |---|---|---|
-| article | CMS articles | docId starts with `motortrend-` |
-| vehicle | Vehicle specs | docId matches `*-YYYY(-*)?` pattern |
-| pdf | PDF documents | everything else |
+| Rich vehicle (14 chunks) | 14 embed + 14 INSERT = 28 round-trips | 1 embed + 1 batch INSERT = 2 round-trips |
+| Article (15 chunks) | 15 embed + 15 INSERT = 30 round-trips | 1 embed + 1 batch INSERT = 2 round-trips |
+| Bulk (50 vehicles x 14 chunks) | 700 round-trips | ~22 embed + 1 batch INSERT per page |
 
-Article search uses `WHERE doc_type = 'article'` to prevent PDF and vehicle chunks from contaminating results. Vehicle fleet search uses unfiltered cross-domain methods unchanged.
+Ollama's `/api/embed` endpoint accepts an `input` array for batch embedding. Sub-batches of 32 texts are sent per HTTP call. JDBC `BatchPreparedStatementSetter` handles batch INSERT/UPSERT.
+
+---
+
+## Partitioned Storage
+
+The `document_chunks` table is partitioned by `doc_type`:
+
+| Partition | Index type | Purpose |
+|---|---|---|
+| `chunks_vehicle` | IVFFlat on halfvec | Fast filtered search at 90K+ vehicles |
+| `chunks_article` | HNSW on halfvec | High recall for smaller article corpus |
+| `chunks_pdf` | HNSW on halfvec | General document search |
+
+All indexes use `halfvec(768)` (float16) for 2x memory reduction. A trigger auto-populates `embedding_half` from `embedding` on every INSERT/UPDATE.
+
+IVFFlat probe count is set per connection via HikariCP:
+```properties
+spring.datasource.hikari.connection-init-sql=SET ivfflat.probes = 10
+```
 
 ---
 
@@ -182,16 +237,6 @@ Article search uses `WHERE doc_type = 'article'` to prevent PDF and vehicle chun
 
 **Result:** 86.7% overall recall against 29 golden set entries (target: 85%)
 
-### Golden set coverage
-
-| Source | Count | Purpose |
-|---|---|---|
-| DB_GENERATED | 5 | Structured filter queries with exact DB ground truth |
-| MANUAL | 10 | One query per chunk type, human-verified |
-| USER_LOG | 6 | Conversational paraphrased queries |
-| LLM_ASSISTED | 3 | Complex semantic cross-chunk queries |
-| EDGE_CASE | 5 | Boundary conditions: nonsense queries, short tokens, missing data |
-
 ### Failure diagnosis
 
 Each failed entry includes a `FailureAnalysis` with primary reason and actionable suggestion:
@@ -200,58 +245,24 @@ Each failed entry includes a `FailureAnalysis` with primary reason and actionabl
 |---|---|---|
 | MISSING_CHUNKS | Vehicle not ingested | Call `/vehicles/ingest` |
 | MISSING_CHUNK_TYPE | Simple ingest, needs rich | Call `/vehicles/ingest/rich` |
-| VOCABULARY_MISMATCH | Chunk text doesn't match query terms | Rewrite chunk prose |
-| OUTRANKED | Chunk exists but pushed below top-K | Increase topK |
+| VOCABULARY_MISMATCH | Chunk text doesn't match query | Rewrite chunk prose |
+| OUTRANKED | Chunk pushed below top-K | Increase topK |
 | LOW_SCORE | Chunk scores below threshold | Add narrative context |
 | EDGE_CASE_LEAK | Nonsense query returned results | Add minimum score filter |
-
-### Streaming RAG UX
-Added a rich SSE endpoint (`/ask/stream`) that streams:
-- request start metadata
-- retrieval/rerank status events
-- selected source chunks with previews and scores
-- token-by-token answer generation
-- final cleaned answer with cited and retrieved chunk IDs
-
----
-
-## Agentic patterns
-
-### Planner–executor
-
-Planner generates structured JSON workflows. Executor dispatches steps sequentially with terminal-step early-return to prevent re-execution loops.
-
-### Immutable session state
-
-`AgentSessionState` uses `empty()` factory + `withX()` copy helpers. Adding a new field never requires updating existing call sites.
-
-### Vehicle tools
-
-| Tool | Purpose |
-|---|---|
-| FetchVehicleSpecs | Vector lookup of existing spec chunk |
-| CompareVehicles | Multi-vehicle LLM comparison |
-| GenerateVehicleSummary | LLM narrative from retrieved chunks |
-| EnrichVehicleData | Fetch → parse → augment → re-ingest |
-
-### Communication tools
-
-Email (draft → review → send) and SMS (compose → confirm → send) with selective human-in-the-loop for high-impact actions.
-
-### Divergence detection
-
-Detects deviation from plan execution. Triggers re-planning on invalid outputs, missing data, or execution mismatch.
 
 ---
 
 ## Observability
-### Session tracing and dashboard
-- All agent sessions are persisted in PostgreSQL as immutable AgentSessionState snapshots.
-- A lightweight dashboard visualizes recent sessions, step history, research output, and flow status
-across doc, vehicle, and CMS workflows.
 
-- **OpenTelemetry:** spans on every retrieval call, embedding call, LLM call, and RRF fusion step
-- **LangSmith:** execution traces, prompt inspection, retrieval debugging, workflow monitoring
+### Session dashboard
+- All agent sessions persisted as immutable `AgentSessionState` snapshots
+- `ArticleSnapshot` shows articleIds, extractedVehicleIds, resolvedVehicleIds, operation, judgeScore
+- `VehicleSnapshot` shows vehicleId, summary, specChunkIds
+- History entries include `_result` (context chunks, retrieval scores) and `_judge` (grounded, score, reason)
+
+### Tracing
+- **OpenTelemetry:** spans on retrieval, embedding, LLM, RRF fusion
+- **LangSmith:** execution traces, prompt inspection, workflow monitoring
 
 ---
 
@@ -259,35 +270,87 @@ across doc, vehicle, and CMS workflows.
 
 | Component | Technology |
 |---|---|
-| Runtime | Java 21 / Spring Boot 3 |
-| Vector store | PostgreSQL + pgvector (IVFFLAT, cosine) |
-| Embeddings | Ollama nomic-embed-text |
-| LLM | Ollama llama3 |
-| Keyword search | PostgreSQL tsvector + plainto_tsquery |
+| Runtime | Java 21 / Spring Boot 3.5 |
+| Vector store | PostgreSQL 16 + pgvector 0.8 (HNSW, IVFFlat, halfvec) |
+| Full-text search | ParadeDB pg_search (Tantivy BM25) |
+| Embeddings | Ollama nomic-embed-text (768d) |
+| LLM | Ollama llama3.1 (4.9GB) |
+| Keyword search | PostgreSQL tsvector + ParadeDB BM25 |
+| Container | Docker (paradedb/paradedb:0.19.11-pg16) |
 | Observability | OpenTelemetry + LangSmith |
 
 ---
 
 ## Key design decisions
 
-**Chunking = partitioning.** Semantic chunking is a partitioning problem — split by access pattern (question type), not data structure. Too coarse loses precision, too fine loses context.
+**Chunking = partitioning.** Semantic chunking is a partitioning problem -- split by access pattern (question type), not data structure.
 
-**Push filtering into retrieval, not LLM.** Every structural decision that can be made by the retriever should be. Embedding models cannot rank by numeric value — `NumericFilter` handles that. LLMs handle synthesis and language only.
+**Push filtering into retrieval, not LLM.** Every structural decision that can be made by the retriever should be. Embedding models cannot rank by numeric value -- `NumericFilter` handles that.
 
-**UAC-first chunk text.** Chunk text is written to match user query vocabulary, not developer field names. `"Ranked 2nd of 18 sports sedans"` embeds far better than `"rank:2, total:18"`.
+**UAC-first chunk text.** Chunk text matches user query vocabulary: `"Ranked 2nd of 18 sports sedans"` embeds better than `"rank:2, total:18"`.
 
-**Score-regime-aware thresholds.** RRF scores top out at ~0.16. Cosine scores range 0.0–1.0. The same hardcoded threshold applied to both destroys retrieval quality. Detect the scoring regime by magnitude and apply the right threshold.
+**Two-tier retrieval.** At 90K vehicles, scan summaries (90K rows) first, then detail chunks within candidates. Reduces fleet search from 500ms to ~6ms.
 
-**Deterministic document IDs.** `Math.abs(vehicleId.hashCode())` not `System.currentTimeMillis()` — re-ingesting the same vehicle must produce the same documentId every time.
+**Auto-correct citations.** LLMs hallucinate chunk indices. Auto-correct `[vehicle:6]` to `[vehicle:2]` (same prefix, valid ID) instead of burning retries.
 
-**Reserved chunk index gaps.** Maintenance starts at :10 not :8, recalls at :20. Leaves :8–:9 for future chunk types without requiring schema migration or re-ingestion of existing data.
+**Judge reason validation.** Don't blindly feed judge feedback into retry prompts. If the judge says "missing specs" but specs are in the context, the judge is wrong -- skip retry.
+
+**Shared tool pattern.** Inter-agent communication via Spring DI -- both agents depend on the tool, not on each other. No circular dependencies.
+
+**Partitioned indexes.** IVFFlat on vehicle partition (fast filtered search), HNSW on article/pdf (higher recall, smaller corpus). halfvec for 2x memory reduction.
 
 ---
 
-## Roadmap
+## Experiments
 
-- Async ingestion pipeline with checkpoint table for resumable exactly-once semantics
-- HNSW index evaluation vs IVFFLAT at scale
-- Fine-tuned embedding model for automotive domain vocabulary
-- Live pricing and dealer inventory tools
-- Multi-agent orchestration
+### LlamaIndex comparison (`experiments/llamaindex/`)
+
+Python-based LlamaIndex experiment mirroring the Java RAG pipeline stage-by-stage:
+- Same Ollama models (nomic-embed-text + llama3.1)
+- Same Postgres DB (pgvector table `data_llamaindex_chunks`)
+- Side-by-side retrieval comparison (vector, BM25, hybrid)
+- Finding: BM25 in LlamaIndex is in-memory Python (rank_bm25), not pg-side FTS
+
+### LangGraph multi-agent (`experiments/langgraph-multi/`)
+
+Python-based multi-agent experiment using LangGraph for comparison with the Java supervisor pattern.
+
+---
+
+## Running
+
+### Prerequisites
+- Java 21
+- Docker Desktop
+- Ollama with `nomic-embed-text` and `llama3.1` pulled
+
+### Start infrastructure
+```bash
+docker-compose up -d    # ParadeDB (pgvector + pg_search)
+ollama pull nomic-embed-text
+ollama pull llama3.1
+```
+
+### Run migration
+```bash
+# Apply partitioning + two-tier + ParadeDB
+docker exec -i ai-rag-postgres psql -U postgres -d ai_rag_assistant < V2__partition_two_tier_paradedb.sql
+```
+
+### Start application
+```bash
+./mvnw spring-boot:run
+```
+
+### Seed data
+Run `.http` files in IntelliJ in order:
+1. `seed_vehicles.http` -- simple vehicle records
+2. `rich_vehicle_ingest.http` -- rich vehicle with semantic chunks
+3. `cms_article_test.http` -- MotorTrend articles
+4. `two-tier-retrieval-test.http` -- two-tier + hybrid tests
+5. `multi-agent-article-test.http` -- multi-agent flows
+
+### Run tests
+```bash
+./mvnw test
+```

@@ -5,7 +5,9 @@ import com.example.airagassistant.domain.vehicle.service.VehicleRagService;
 import com.example.airagassistant.rag.RagAnswerService;
 import com.example.airagassistant.rag.RetrievalMode;
 import com.example.airagassistant.rag.SearchHit;
+import com.example.airagassistant.rag.ingestion.vehicle.BulkVehicleIngestionService;
 import com.example.airagassistant.rag.ingestion.vehicle.VehicleIngestionService;
+import com.example.airagassistant.rag.retrieval.VehicleSummaryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +30,8 @@ public class VehicleController {
     private final VehicleIngestionService ingestionService;
     private final VehicleRagService vehicleRagService;
     private final AgentSessionRunner sessionRunner;
+    private final VehicleSummaryService summaryService;
+    private final BulkVehicleIngestionService bulkIngestionService;
 
     // ─── Request / Response DTOs ───────────────────────────────────────────
 
@@ -189,5 +193,154 @@ public class VehicleController {
     private String excerpt(String text, int maxLen) {
         if (text == null) return "";
         return text.length() <= maxLen ? text : text.substring(0, maxLen) + "…";
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TWO-TIER FLEET SEARCH
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * POST /vehicles/ask/fleet
+     * Two-tier fleet search: searches vehicle_summaries first (Tier 1),
+     * then retrieves detailed chunks from candidates (Tier 2).
+     *
+     * At 90K vehicles: ~6ms total instead of 500ms-2s with single-tier.
+     *
+     * Example:
+     *   POST /vehicles/ask/fleet
+     *   { "question": "Which vehicle has the best performance?", "topK": 5 }
+     */
+    @PostMapping("/ask/fleet")
+    public TwoTierFleetResponse askFleetTwoTier(@RequestBody FleetSearchRequest req) {
+        int topK = (req.topK() == null || req.topK() <= 0) ? 5 : req.topK();
+
+        VehicleSummaryService.TwoTierResult result =
+                summaryService.searchTwoTier(req.question(), 10, topK);
+
+        var summaryHits = result.summaryHits().stream()
+                .map(h -> new SummaryHit(
+                        h.vehicleId(),
+                        h.year() + " " + h.make() + " " + h.model()
+                                + (h.trim() != null ? " " + h.trim() : ""),
+                        h.score(),
+                        h.chunkCount()
+                ))
+                .toList();
+
+        var detailHits = new java.util.ArrayList<FleetSearchHit>();
+        for (int i = 0; i < result.detailHits().size(); i++) {
+            SearchHit hit = result.detailHits().get(i);
+            detailHits.add(new FleetSearchHit(
+                    hit.record().id(),
+                    extractVehicleId(hit.record().id()),
+                    i + 1,
+                    excerpt(hit.record().text(), 200)
+            ));
+        }
+
+        return new TwoTierFleetResponse(
+                summaryHits,
+                detailHits,
+                result.tier1Ms(),
+                result.totalMs()
+        );
+    }
+
+    public record SummaryHit(
+            String vehicleId,
+            String vehicleName,
+            double score,
+            int chunkCount
+    ) {}
+
+    public record TwoTierFleetResponse(
+            List<SummaryHit> candidates,
+            List<FleetSearchHit> results,
+            long tier1Ms,
+            long totalMs
+    ) {}
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PARADEDB HYBRID SEARCH
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * POST /vehicles/ask/hybrid
+     * Hybrid search combining vector similarity + BM25 (ParadeDB) in a
+     * single SQL query. No app-level RRF — fusion happens in Postgres.
+     *
+     * vectorWeight: 0.0 = pure BM25, 1.0 = pure vector, 0.7 = default blend
+     *
+     * Example:
+     *   POST /vehicles/ask/hybrid
+     *   { "question": "sports sedan track performance", "topK": 5, "vectorWeight": 0.7 }
+     */
+    @PostMapping("/ask/hybrid")
+    public List<HybridSearchHit> askHybrid(@RequestBody HybridSearchRequest req) {
+        int topK = (req.topK() == null || req.topK() <= 0) ? 5 : req.topK();
+        double vectorWeight = (req.vectorWeight() == null) ? 0.7 : req.vectorWeight();
+
+        List<SearchHit> hits = summaryService.hybridSearchVehicles(
+                req.question(), topK, vectorWeight);
+
+        var result = new java.util.ArrayList<HybridSearchHit>();
+        for (int i = 0; i < hits.size(); i++) {
+            SearchHit hit = hits.get(i);
+            result.add(new HybridSearchHit(
+                    hit.record().id(),
+                    extractVehicleId(hit.record().id()),
+                    i + 1,
+                    hit.score(),
+                    excerpt(hit.record().text(), 200)
+            ));
+        }
+        return result;
+    }
+
+    public record HybridSearchRequest(
+            String question,
+            Integer topK,
+            Double vectorWeight     // 0.0 = pure BM25, 1.0 = pure vector
+    ) {}
+
+    public record HybridSearchHit(
+            String chunkId,
+            String vehicleId,
+            int rank,
+            double hybridScore,
+            String excerpt
+    ) {}
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BULK INGESTION
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * POST /vehicles/ingest/bulk
+     * Batch-ingest multiple rich vehicles in one call.
+     * Processes in pages of 50: chunk → batch embed → batch upsert → populate summaries.
+     *
+     * Example:
+     *   POST /vehicles/ingest/bulk
+     *   [{ "vehicleId": "...", ... }, { "vehicleId": "...", ... }]
+     */
+    @PostMapping("/ingest/bulk")
+    public BulkVehicleIngestionService.BulkIngestResult ingestBulk(
+            @RequestBody List<RichVehicleRecord> vehicles) {
+        return bulkIngestionService.ingestBulk(vehicles);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ADMIN / OBSERVABILITY
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * GET /vehicles/admin/summaries
+     * View all vehicle summaries (two-tier Tier 1 data).
+     * Useful for verifying summary population after ingestion.
+     */
+    @GetMapping("/admin/summaries")
+    public List<VehicleSummaryService.VehicleSummaryInfo> getVehicleSummaries() {
+        return summaryService.getAllSummaries();
     }
 }

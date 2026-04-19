@@ -1,0 +1,471 @@
+### ══════════════════════════════════════════════════════════════════════
+### Two-Tier Retrieval, ParadeDB Hybrid, Bulk Ingestion Test Suite
+### ══════════════════════════════════════════════════════════════════════
+###
+### Pre-requisites:
+###   1. V2__partition_two_tier_paradedb.sql migration applied
+###   2. docker-compose up with paradedb/paradedb:0.19.11-pg16
+###   3. Spring Boot app running with VehicleSummaryService, BulkVehicleIngestionService
+###   4. At least one rich vehicle ingested (BMW M3)
+###
+### Endpoints tested:
+###   POST /vehicles/ingest/rich     - single rich vehicle (batch embed + summary)
+###   POST /vehicles/ingest/bulk     - bulk rich vehicles
+###   POST /vehicles/ask/fleet       - two-tier fleet search
+###   POST /vehicles/ask/hybrid      - ParadeDB vector + BM25 hybrid
+###   POST /vehicles/{id}/ask        - single-vehicle ask (existing)
+###   POST /vehicles/ask             - fleet ask (existing, single-tier)
+###   GET  /vehicles/admin/summaries - view vehicle summaries
+### ══════════════════════════════════════════════════════════════════════
+
+
+### ── Phase 1: Ingest seed data ────────────────────────────────────────
+
+### 1.1 Ingest BMW M3 Competition (rich, 14 chunks + summary)
+# Ingest rich BMW M3 - full nested payload
+POST http://localhost:8080/vehicles/ingest/rich
+Content-Type: application/json
+
+{
+  "vehicleId": "bmw-m3-2025-competition",
+  "year": 2025,
+  "make": "BMW",
+  "model": "M3",
+  "trim": "Competition",
+  "bodyStyle": "Sedan",
+  "vehicleClass": "sports sedan",
+  "engine": "3.0L twin-turbo inline-6 (S58)",
+  "horsepower": 503,
+  "torque": 479,
+  "drivetrain": "RWD",
+  "transmission": "8-speed M Steptronic automatic",
+  "zeroToSixty": 3.4,
+  "topSpeed": 180,
+  "mpgCity": "16",
+  "mpgHighway": "23",
+  "msrp": "$76,900",
+  "fuelType": "Premium gasoline",
+  "features": ["M sport seats", "adaptive M suspension", "carbon fiber trim", "head-up display", "launch control"],
+  "reviews": [
+    {"source": "Car and Driver", "year": 2025, "score": 9, "summary": "The M3 Competition remains the benchmark sports sedan.", "pros": "Extraordinary engine, razor-sharp chassis", "cons": "Firm ride, polarizing styling"},
+    {"source": "Motor Trend", "year": 2025, "score": 9, "summary": "No sports sedan does more things better."}
+  ],
+  "rankings": [
+    {"source": "US News", "year": 2025, "category": "sports sedans", "rank": 2, "total": 18, "score": 91, "notes": "Praised for driving dynamics and engine character."},
+    {"source": "Car and Driver", "year": 2025, "category": "luxury sports cars", "rank": 1, "total": 12, "score": 88, "notes": "Editors choice award winner for the third consecutive year."}
+  ]
+}
+
+
+> {%
+    client.log("Chunks: " + response.body.storedChunkIds?.length);
+    client.log("Errors: " + JSON.stringify(response.body.errors));
+%}
+
+### 1.2 Ingest Tesla Model 3 (rich)
+POST http://localhost:8080/vehicles/ingest/rich
+Content-Type: application/json
+
+{
+  "vehicleId": "tesla-model3-2025-long-range",
+  "year": 2025,
+  "make": "Tesla",
+  "model": "Model 3",
+  "trim": "Long Range",
+  "bodyStyle": "Sedan",
+  "vehicleClass": "electric sedan",
+  "engine": "Dual motor electric",
+  "horsepower": 450,
+  "torque": 471,
+  "drivetrain": "AWD",
+  "transmission": "Single-speed automatic",
+  "zeroToSixty": 4.2,
+  "topSpeed": 145,
+  "mpgCity": "134",
+  "mpgHighway": "126",
+  "msrp": "$47,990",
+  "fuelType": "Electric",
+  "electricRangeMiles": 358,
+  "features": ["panoramic glass roof", "adaptive cruise control", "heated seats", "15-inch touchscreen", "autopilot"],
+  "reviews": [
+    {"source": "Car and Driver", "year": 2025, "score": 8, "summary": "The best value EV sedan on the market.", "pros": "Range, tech, value", "cons": "Interior quality, ride harshness"}
+  ],
+  "rankings": [
+    {"source": "US News", "year": 2025, "category": "electric cars", "rank": 3, "total": 25, "score": 87}
+  ]
+}
+
+> {%
+    client.log("Chunks: " + response.body.storedChunkIds?.length);
+%}
+
+###
+
+
+### ── Phase 2: Verify summaries populated ──────────────────────────────
+
+### 2.1 List all vehicle summaries
+### Expected: one row per ingested vehicle with hasEmbedding=true
+GET http://localhost:8080/vehicles/admin/summaries
+Content-Type: application/json
+
+> {%
+    client.log("Summaries: " + response.body?.length);
+    response.body?.forEach(s => {
+        client.log("  " + s.vehicleId + " - " + s.chunkCount + " chunks, embedding=" + s.hasEmbedding);
+    });
+%}
+
+###
+
+
+### ── Phase 3: Two-tier fleet search ───────────────────────────────────
+### 3.1 Fleet search - performance query
+### Expected: BMW M3 ranks higher than Tesla on performance
+### Check: tier1Ms (summary search) + totalMs (end-to-end)
+POST http://localhost:8080/vehicles/ask/fleet
+Content-Type: application/json
+
+{
+  "question": "Which vehicle has the best performance?",
+  "topK": 5
+}
+
+> {%
+    client.log("=== TWO-TIER RESULTS ===");
+    client.log("Tier 1 (summaries): " + response.body.tier1Ms + "ms");
+    client.log("Total: " + response.body.totalMs + "ms");
+    client.log("Candidates: " + response.body.candidates?.length);
+    response.body.candidates?.forEach(c => {
+        client.log("  " + c.vehicleName + " (score=" + c.score?.toFixed(3) + ")");
+    });
+    client.log("Detail results: " + response.body.results?.length);
+    response.body.results?.forEach(r => {
+        client.log("  #" + r.rank + " " + r.vehicleId + " - " + r.excerpt?.substring(0, 80));
+    });
+%}
+
+###
+
+### 3.2 Fleet search - fuel economy query
+### Expected: Tesla Model 3 ranks higher (134 MPGe vs 16 MPG)
+POST http://localhost:8080/vehicles/ask/fleet
+Content-Type: application/json
+
+{
+  "question": "Which vehicle has the best fuel economy?",
+  "topK": 5
+}
+
+> {%
+    client.log("Tier 1: " + response.body.tier1Ms + "ms, Total: " + response.body.totalMs + "ms");
+    response.body.candidates?.forEach(c => {
+        client.log("  " + c.vehicleName + " (score=" + c.score?.toFixed(3) + ")");
+    });
+%}
+
+###
+
+### 3.3 Fleet search - value query
+### Expected: Tesla Model 3 ranks higher ($47,990 vs $76,900)
+POST http://localhost:8080/vehicles/ask/fleet
+Content-Type: application/json
+
+{
+  "question": "Which car offers the best value for money?",
+  "topK": 5
+}
+
+> {%
+    client.log("Tier 1: " + response.body.tier1Ms + "ms, Total: " + response.body.totalMs + "ms");
+%}
+
+###
+
+### 3.4 Fleet search - safety query
+POST http://localhost:8080/vehicles/ask/fleet
+Content-Type: application/json
+
+{
+  "question": "Which vehicle has the best safety ratings?",
+  "topK": 5
+}
+
+###
+
+
+### ── Phase 4: Single-vehicle ask (existing, verify still works) ───────
+
+### 4.1 Single vehicle ask - BMW M3
+POST http://localhost:8080/vehicles/bmw-m3-2025-competition/ask
+Content-Type: application/json
+
+{
+  "question": "What is the horsepower and 0-60 time?",
+  "topK": 3
+}
+
+> {%
+    client.log("Answer: " + response.body.answer?.substring(0, 150));
+    client.log("Best score: " + response.body.bestScore);
+%}
+
+###
+
+### 4.2 Single vehicle ask - Tesla
+POST http://localhost:8080/vehicles/tesla-model3-2025-long-range/ask
+Content-Type: application/json
+
+{
+  "question": "What is the range and price?",
+  "topK": 3
+}
+
+###
+
+
+### ── Phase 5: ParadeDB hybrid search ──────────────────────────────────
+
+### 5.1 Hybrid search - balanced (0.7 vector, 0.3 BM25)
+POST http://localhost:8080/vehicles/ask/hybrid
+Content-Type: application/json
+
+{
+  "question": "sports sedan with best track performance",
+  "topK": 5,
+  "vectorWeight": 0.7
+}
+
+> {%
+    client.log("=== HYBRID RESULTS (0.7 vector) ===");
+    response.body?.forEach(h => {
+        client.log("  #" + h.rank + " " + h.vehicleId + " score=" + h.hybridScore?.toFixed(4) + " - " + h.excerpt?.substring(0, 80));
+    });
+%}
+
+###
+
+### 5.2 Hybrid search - keyword-heavy (0.3 vector, 0.7 BM25)
+POST http://localhost:8080/vehicles/ask/hybrid
+Content-Type: application/json
+
+{
+  "question": "automatic emergency braking standard",
+  "topK": 5,
+  "vectorWeight": 0.3
+}
+
+> {%
+    client.log("=== HYBRID RESULTS (0.3 vector) ===");
+    response.body?.forEach(h => {
+        client.log("  #" + h.rank + " " + h.vehicleId + " score=" + h.hybridScore?.toFixed(4));
+    });
+%}
+
+###
+
+### 5.3 Hybrid search - pure vector (1.0 vector, 0.0 BM25)
+POST http://localhost:8080/vehicles/ask/hybrid
+Content-Type: application/json
+
+{
+  "question": "electric car with longest range",
+  "topK": 5,
+  "vectorWeight": 1.0
+}
+
+###
+
+### 5.4 Hybrid search - pure BM25 (0.0 vector, 1.0 BM25)
+POST http://localhost:8080/vehicles/ask/hybrid
+Content-Type: application/json
+
+{
+  "question": "electric car with longest range",
+  "topK": 5,
+  "vectorWeight": 0.0
+}
+
+###
+
+
+### ── Phase 6: Existing fleet search (single-tier, backward compat) ────
+
+### 6.1 Old fleet search - should still work
+POST http://localhost:8080/vehicles/ask
+Content-Type: application/json
+
+{
+  "question": "Which vehicles have over 400 horsepower?",
+  "topK": 5
+}
+
+> {%
+    client.log("=== OLD FLEET (single-tier) ===");
+    response.body?.forEach(h => {
+        client.log("  #" + h.rank + " " + h.vehicleId + " - " + h.excerpt?.substring(0, 80));
+    });
+%}
+
+###
+
+
+### ── Phase 7: Bulk ingestion ──────────────────────────────────────────
+
+### 7.1 Bulk ingest 3 vehicles at once
+POST http://localhost:8080/vehicles/ingest/bulk
+Content-Type: application/json
+
+[
+  {
+    "vehicleId": "porsche-911-2025-carrera-s",
+    "year": 2025, "make": "Porsche", "model": "911", "trim": "Carrera S",
+    "bodyStyle": "Coupe", "vehicleClass": "sports car",
+    "engine": "3.0L twin-turbo flat-6", "horsepower": 443, "torque": 390,
+    "drivetrain": "RWD", "transmission": "8-speed PDK",
+    "zeroToSixty": 3.3, "topSpeed": 191,
+    "mpgCity": "18", "mpgHighway": "25", "msrp": "$120,100",
+    "fuelType": "Premium gasoline",
+    "features": ["sport chrono package", "PASM", "Bose surround sound"],
+    "reviews": [
+      {"source": "Car and Driver", "year": 2025, "score": 10, "summary": "The benchmark sports car, period."}
+    ]
+  },
+  {
+    "vehicleId": "ford-f150-2025-lariat",
+    "year": 2025, "make": "Ford", "model": "F-150", "trim": "Lariat",
+    "bodyStyle": "Pickup Truck", "vehicleClass": "full-size truck",
+    "engine": "3.5L EcoBoost V6", "horsepower": 400, "torque": 500,
+    "drivetrain": "4WD", "transmission": "10-speed automatic",
+    "mpgCity": "18", "mpgHighway": "24", "msrp": "$52,430",
+    "fuelType": "Regular gasoline",
+    "features": ["pro power onboard", "360-degree camera", "trailer brake controller"],
+    "reviews": [
+      {"source": "Motor Trend", "year": 2025, "score": 8, "summary": "Still the best-selling truck for a reason."}
+    ]
+  },
+  {
+    "vehicleId": "honda-crv-2025-sport-hybrid",
+    "year": 2025, "make": "Honda", "model": "CR-V", "trim": "Sport Hybrid",
+    "bodyStyle": "SUV", "vehicleClass": "compact SUV",
+    "engine": "2.0L Atkinson-cycle i-VTEC + electric motor", "horsepower": 204, "torque": 247,
+    "drivetrain": "AWD", "transmission": "CVT",
+    "mpgCity": "40", "mpgHighway": "34", "msrp": "$36,100",
+    "fuelType": "Regular gasoline",
+    "features": ["Honda Sensing suite", "wireless Apple CarPlay", "heated seats"],
+    "reviews": [
+      {"source": "Consumer Reports", "year": 2025, "score": 9, "summary": "The most practical compact SUV you can buy."}
+    ]
+  }
+]
+
+> {%
+    client.log("=== BULK INGEST ===");
+    client.log("Vehicles: " + response.body.totalVehicles);
+    client.log("Chunks: " + response.body.totalChunks);
+    client.log("Summaries: " + response.body.totalSummaries);
+    client.log("Elapsed: " + response.body.elapsedMs + "ms");
+    client.log("Errors: " + response.body.errors?.length);
+%}
+
+###
+
+### 7.2 Verify summaries after bulk ingest
+### Expected: 5 vehicles total (BMW, Tesla, Porsche, Ford, Honda)
+GET http://localhost:8080/vehicles/admin/summaries
+Content-Type: application/json
+
+> {%
+    client.log("Total summaries: " + response.body?.length);
+    response.body?.forEach(s => {
+        client.log("  " + s.year + " " + s.make + " " + s.model + " " + s.trim + " - " + s.chunkCount + " chunks");
+    });
+%}
+
+###
+
+### 7.3 Fleet search after bulk ingest - should now find 5 vehicles
+POST http://localhost:8080/vehicles/ask/fleet
+Content-Type: application/json
+
+{
+  "question": "Compare all available vehicles by price and performance",
+  "topK": 10
+}
+
+> {%
+    client.log("Candidates: " + response.body.candidates?.length);
+    client.log("Tier 1: " + response.body.tier1Ms + "ms, Total: " + response.body.totalMs + "ms");
+    response.body.candidates?.forEach(c => {
+        client.log("  " + c.vehicleName + " (score=" + c.score?.toFixed(3) + ")");
+    });
+%}
+
+###
+
+
+### ── Phase 8: Multi-agent integration ─────────────────────────────────
+
+### 8.1 Multi-agent vehicle query - should route to vehicle agent
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "What are the specs of the Porsche 911 2025 Carrera S?",
+  "topK": 5
+}
+
+> {%
+    client.log("Answer: " + response.body.answer?.substring(0, 200));
+%}
+
+###
+
+### 8.2 Multi-agent article + vehicle - should route to article agent
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "Show me top rated articles with vehicle specs",
+  "topK": 5
+}
+
+> {%
+    client.log("Answer: " + response.body.answer?.substring(0, 200));
+%}
+
+###
+
+
+### ══════════════════════════════════════════════════════════════════════
+### Checklist
+### ══════════════════════════════════════════════════════════════════════
+###
+### Phase 1-2: Ingestion + summaries
+###   ✓ Batch embed: "Embedding batch 0-N of N texts"
+###   ✓ Summary: "Vehicle summary upserted for..."
+###   ✓ GET /vehicles/admin/summaries shows all vehicles
+###
+### Phase 3: Two-tier fleet search
+###   ✓ tier1Ms and totalMs in response
+###   ✓ candidates list shows vehicles ranked by relevance
+###   ✓ results list shows detail chunks
+###
+### Phase 4: Single-vehicle (backward compat)
+###   ✓ Works without two-tier
+###
+### Phase 5: ParadeDB hybrid
+###   ✓ vectorWeight changes ranking
+###   ✓ Pure vector and pure BM25 both work
+###   ✓ If ParadeDB not set up, these return SQL errors (expected)
+###
+### Phase 6: Old fleet (backward compat)
+###   ✓ POST /vehicles/ask still works
+###
+### Phase 7: Bulk ingestion
+###   ✓ 3 vehicles ingested in one call
+###   ✓ Summaries populated for all 3
+###
+### Phase 8: Multi-agent
+###   ✓ Vehicle query → vehicle agent
+###   ✓ Article query → article agent
