@@ -12,7 +12,6 @@ Content-Type: application/json
   "vehicleClass": "sports sedan",
   "exteriorColor": "Isle of Man Green",
   "interiorColor": "Merino leather black",
-
   "engine": "3.0L twin-turbo inline-6 (S58)",
   "horsepower": 503,
   "torque": 479,

@@ -1,0 +1,25 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Dockerfile: pgvector + ParadeDB on PostgreSQL 16
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Builds a single image with both extensions:
+#   - pgvector 0.8.x (vector, halfvec, HNSW, IVFFlat)
+#   - ParadeDB pg_search (Tantivy-based BM25)
+#
+# Usage:
+#   docker build -t pgvector-paradedb:pg16 -f Dockerfile.postgres .
+#   Then update docker-compose.yml to use this image.
+#
+# Alternative: use ParadeDB's official image which includes pgvector:
+#   image: paradedb/paradedb:latest
+# ═══════════════════════════════════════════════════════════════════════
+
+FROM paradedb/paradedb:latest
+
+# ParadeDB's image is based on PostgreSQL 16 and includes:
+#   - pg_search (BM25/Tantivy)
+#   - pgvector (vector, halfvec, HNSW, IVFFlat)
+#   - pg_analytics (optional, DuckDB integration)
+#
+# No additional build steps needed — both extensions are pre-installed.
+# Just CREATE EXTENSION in your migration SQL.

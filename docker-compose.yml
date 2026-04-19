@@ -2,7 +2,11 @@ version: "3.9"
 
 services:
   postgres:
-    image: pgvector/pgvector:pg16
+    # ParadeDB includes pgvector + pg_search (BM25/Tantivy)
+    # Replaces pgvector/pgvector:pg16
+    # docker-compose.yml
+    # The 0.19.11-pg16 tag is built on PostgreSQL 16
+    image: paradedb/paradedb:0.19.11-pg16
     container_name: ai-rag-postgres
     restart: always
 

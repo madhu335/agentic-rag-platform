@@ -154,4 +154,8 @@ public class DefaultResultEvaluationPolicy implements ResultEvaluationPolicy {
             default -> 0.25;
         };
     }
+    // In DefaultResultEvaluationPolicy.java
+    public double getMinJudgeScore() {
+        return MIN_JUDGE_SCORE;
+    }
 }
