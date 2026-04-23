@@ -1,5 +1,6 @@
 package com.example.airagassistant.agentic.multi;
 
+import com.example.airagassistant.LlmClient;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +34,7 @@ public class SupervisorPlanner {
             "research", "vehicle", "communication", "article"
     );
 
-    private final ChatClient chatClient;
+    private final LlmClient llm;
 
     private final ObjectMapper objectMapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -107,7 +108,7 @@ public class SupervisorPlanner {
                 %s
                 """.formatted(safe(userRequest));
 
-        String response = chatClient.prompt(prompt).call().content();
+        String response = llm.answer(prompt, List.of());
         log.info("Supervisor planner response: {}", response);
 
         return parseAndValidate(response, docId);

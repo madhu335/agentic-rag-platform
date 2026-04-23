@@ -12,6 +12,10 @@ public class QueryRouter {
 
         String q = question.toLowerCase().trim();
 
+        if (containsAny(q, "motortrend", "article", "review", "rated", "rating")) {
+            return new RouteDecision(Route.AGENT, 0.95, "article_query");
+        }
+
         if (containsAny(q, "compare", "difference", "vs")) {
             return new RouteDecision(Route.AGENT, 0.90, "comparison_question");
         }

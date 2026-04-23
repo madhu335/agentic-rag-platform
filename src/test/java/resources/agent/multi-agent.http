@@ -68,6 +68,15 @@ Content-Type: application/json
 }
 
 ###
+POST http://localhost:8080/agent/multi
+Content-Type: application/json
+
+{
+  "prompt": "What did MotorTrend say about the BMW M3's performance on track?",
+  "docType": "article",
+  "docId": "motortrend-bmw-m3-2025-review",
+  "topK": 5
+}
 
 ### Vehicle: specific question about a vehicle
 POST http://localhost:8080/agent/multi

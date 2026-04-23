@@ -101,7 +101,7 @@ public class AgentSessionRunner {
             state = state.withResearch(new AgentSessionState.ResearchSnapshot(
                     result.answer(),
                     result.citedChunkIds(),
-                    result.bestScore(),
+                    result.retrievalScore(),
                     null,
                     result.retrievedChunkIds()
             ));

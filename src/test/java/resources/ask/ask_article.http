@@ -1,0 +1,49 @@
+### ============================================
+### BASE REQUEST (reuse this header)
+### ============================================
+
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+POST {{baseUrl}}/ask
+Content-Type: application/json
+
+{
+  "docType": "article_all",
+  "docId": "articles",
+  "question": "Best sports sedans?",
+  "topK": 5
+}
+
+### Single article, docId is optional in payload.
+POST {{baseUrl}}/articles/motortrend-bmw-m3-2025-review/ask
+Content-Type: application/json
+
+{
+  "docType": "article",
+  "docId": "motortrend-bmw-m3-2025-review",
+  "question": "Is the BMW M3 worth the price?",
+  "topK": 3,
+  "mode": "HYBRID"
+}
+
+### Global article search, searching across all articles
+POST {{baseUrl}}/ask
+Content-Type: application/json
+
+{
+  "docType": "article",
+  "docId": "articles",
+  "question": "Is the BMW M3 worth the price?",
+  "topK": 3,
+  "mode": "HYBRID"
+}
+
+### Article-specific service endpoint, domain-specific, Are you debugging article-only logic?
+POST {{baseUrl}}/articles/search
+Content-Type: application/json
+
+{
+  "question": "Show me articles with ratings over 9 out of 10",
+  "topK": 5
+}

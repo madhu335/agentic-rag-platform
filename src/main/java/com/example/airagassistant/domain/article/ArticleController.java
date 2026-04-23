@@ -113,7 +113,7 @@ public class ArticleController {
                 result.retrievedChunkIds(),
                 result.citedChunkIds(),
                 result.usedChunks(),
-                result.bestScore()
+                result.retrievalScore()
         );
     }
 

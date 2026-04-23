@@ -53,18 +53,26 @@ from langgraph.graph import END, START, StateGraph
 from .agents import research_agent, vehicle_agent, communication_agent
 from .state import MultiAgentState, Delegation, SubAgentResult
 
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-CHAT_MODEL = "llama3.1"
+VLLM_BASE_URL = os.getenv("VLLM_BASE_URL", "http://localhost:8001")
+VLLM_MODEL = os.getenv("VLLM_MODEL", "meta-llama/Meta-Llama-3.1-8B-Instruct")
 
 
 def _chat(prompt: str) -> str:
     r = httpx.post(
-        f"{OLLAMA_BASE_URL}/api/generate",
-        json={"model": CHAT_MODEL, "prompt": prompt, "stream": False},
+        f"{VLLM_BASE_URL}/v1/chat/completions",
+        json={
+            "model": VLLM_MODEL,
+            "temperature": 0.2,
+            "max_tokens": 512,
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+        },
         timeout=120.0,
     )
     r.raise_for_status()
-    return r.json()["response"].strip()
+    payload = r.json()
+    return payload["choices"][0]["message"]["content"].strip()
 
 
 # ═══════════════════════════════════════════════════════════════════════

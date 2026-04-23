@@ -1,25 +1,51 @@
-version: "3.9"
-
 services:
   postgres:
-    # ParadeDB includes pgvector + pg_search (BM25/Tantivy)
-    # Replaces pgvector/pgvector:pg16
-    # docker-compose.yml
-    # The 0.19.11-pg16 tag is built on PostgreSQL 16
     image: paradedb/paradedb:0.19.11-pg16
     container_name: ai-rag-postgres
     restart: always
-
     environment:
       POSTGRES_DB: ai_rag_assistant
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-
     ports:
       - "5432:5432"
-
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  triton:
+    image: triton-embed:local
+    container_name: triton
+    restart: always
+    ports:
+      - "8000:8000"
+      - "8002:8002"
+    volumes:
+      - C:\triton-model-repo:/models
+    runtime: nvidia
+    command:
+      - "tritonserver"
+      - "--model-repository=/models"
+
+  vllm:
+    image: vllm/vllm-openai:latest
+    container_name: vllm
+    restart: always
+    depends_on:
+      - postgres
+      - triton
+    ports:
+      - "8001:8000"
+    volumes:
+      - C:\Users\Madhu\.cache\huggingface:/root/.cache/huggingface
+    environment:
+      HF_TOKEN: ${HF_TOKEN}
+    runtime: nvidia
+    command:
+      - "meta-llama/Meta-Llama-3.1-8B-Instruct"
+      - "--gpu-memory-utilization"
+      - "0.75"
+      - "--max-model-len"
+      - "8192"
 
 volumes:
   postgres_data:

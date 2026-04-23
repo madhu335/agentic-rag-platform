@@ -53,7 +53,7 @@ public class ArticleRagService {
             throw new IllegalArgumentException("question cannot be blank");
 
         log.debug("Article ask — articleId='{}' question='{}'", articleId, question);
-        return ragAnswerService.answerWithMode(articleId, question, topK, mode);
+        return ragAnswerService.answerWithMode("article", articleId, question, topK, mode);
     }
 
     // ─── 2. Vehicle-scoped search ─────────────────────────────────────────────

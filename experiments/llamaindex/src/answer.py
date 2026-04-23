@@ -1,33 +1,56 @@
 """
 Answer stage.
 
-Java equivalent: RagAnswerService — takes retrieved chunks, formats a prompt,
-calls Ollama llama3.1, returns grounded answer.
-
-LlamaIndex equivalent (this file): RetrieverQueryEngine.from_args(retriever, llm).
-One line. That's the whole point of the framework.
+Use the local vLLM OpenAI-compatible endpoint directly after retrieval.
+This avoids LlamaIndex LLM adapter version conflicts.
 """
 
-from llama_index.core.query_engine import RetrieverQueryEngine
-from llama_index.core.retrievers import BaseRetriever
-from llama_index.llms.ollama import Ollama
+import httpx
 
-# Same LLM as application.properties `ollama.model=llama3.1`
-LLM_MODEL = "llama3.1"
-OLLAMA_BASE_URL = "http://localhost:11434"
+VLLM_BASE_URL = "http://localhost:8001/v1"
+VLLM_MODEL = "meta-llama/Meta-Llama-3.1-8B-Instruct"
 REQUEST_TIMEOUT = 120.0
 
 
-def build_llm() -> Ollama:
-    return Ollama(
-        model=LLM_MODEL,
-        base_url=OLLAMA_BASE_URL,
-        request_timeout=REQUEST_TIMEOUT,
+def _build_prompt(question: str, nodes: list) -> str:
+    chunks = []
+    for i, node in enumerate(nodes, 1):
+        text = node.node.get_content()
+        chunks.append(f"{i}. {text}")
+
+    context = "\n\n".join(chunks)
+
+    return f"""You are a helpful assistant.
+Answer only from the provided context.
+If the answer is not in the context, say: "I don't know based on the retrieved context."
+
+Context:
+{context}
+
+Question:
+{question}
+
+Answer:"""
+
+
+def _call_vllm(prompt: str) -> str:
+    response = httpx.post(
+        f"{VLLM_BASE_URL}/chat/completions",
+        json={
+            "model": VLLM_MODEL,
+            "temperature": 0.2,
+            "max_tokens": 512,
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+        },
+        timeout=REQUEST_TIMEOUT,
     )
+    response.raise_for_status()
+    payload = response.json()
+    return payload["choices"][0]["message"]["content"].strip()
 
 
-def build_query_engine(retriever: BaseRetriever) -> RetrieverQueryEngine:
-    llm = build_llm()
-    # TODO experiment: add node_postprocessors=[SentenceTransformerRerank(...)]
-    # to get a rough analogue of your Java HYBRID_RERANK mode.
-    return RetrieverQueryEngine.from_args(retriever=retriever, llm=llm)
+def answer_with_vllm(question: str, nodes: list) -> str:
+    prompt = _build_prompt(question, nodes)
+    return _call_vllm(prompt)

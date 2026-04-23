@@ -1,12 +1,11 @@
 package com.example.airagassistant.eval;
 
+import com.example.airagassistant.rag.RetrievalMode;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.example.airagassistant.rag.RetrievalMode;
 
 @Service
 public class EvaluationService {
@@ -28,12 +27,16 @@ public class EvaluationService {
     }
 
     public List<AnswerEvalResult> runAnswerEval(String docId, int k) {
-        return answerEvaluator.evaluate(goldenSetLoader.load(), docId, k);
+        return answerEvaluator.evaluate(goldenSetLoader.load(), "article", docId, k);
     }
 
-    public EvalSummary summarize(String docId, int k) {
+    public List<AnswerEvalResult> runAnswerEval(String docType, String docId, int k) {
+        return answerEvaluator.evaluate(goldenSetLoader.load(), docType, docId, k);
+    }
+
+    public EvalSummary summarize(String docType, String docId, int k) {
         List<RetrievalEvalResult> retrievalResults = runRetrievalEval(docId, k);
-        List<AnswerEvalResult> answerResults = runAnswerEval(docId, k);
+        List<AnswerEvalResult> answerResults = runAnswerEval(docType, docId, k);
 
         int total = Math.max(retrievalResults.size(), answerResults.size());
 
@@ -55,37 +58,20 @@ public class EvaluationService {
                 .filter(AnswerEvalResult::pass)
                 .count() / (double) Math.max(1, answerResults.size());
 
-        return new EvalSummary(total, avgPrecision, avgRecall, hitRate, answerPassRate);
+        return new EvalSummary(
+                total,
+                avgPrecision,
+                avgRecall,
+                hitRate,
+                answerPassRate
+        );
     }
 
-    public Map<RetrievalMode, EvalSummary> compareModes(String docId, int k) {
-        Map<RetrievalMode, EvalSummary> results = new HashMap<>();
+    public Map<RetrievalMode, EvalSummary> compareModes(String docType, String docId, int k) {
+        Map<RetrievalMode, EvalSummary> results = new LinkedHashMap<>();
 
         for (RetrievalMode mode : RetrievalMode.values()) {
-            List<RetrievalEvalResult> retrievalResults =
-                    retrievalEvaluator.evaluate(goldenSetLoader.load(), docId, k, mode);
-
-            double avgPrecision = retrievalResults.stream()
-                    .mapToDouble(RetrievalEvalResult::precisionAtK)
-                    .average()
-                    .orElse(0.0);
-
-            double avgRecall = retrievalResults.stream()
-                    .mapToDouble(RetrievalEvalResult::recallAtK)
-                    .average()
-                    .orElse(0.0);
-
-            double hitRate = retrievalResults.stream()
-                    .filter(RetrievalEvalResult::hitAtK)
-                    .count() / (double) Math.max(1, retrievalResults.size());
-
-            results.put(mode, new EvalSummary(
-                    retrievalResults.size(),
-                    avgPrecision,
-                    avgRecall,
-                    hitRate,
-                    0.0 // answer eval later
-            ));
+            results.put(mode, summarize(docType, docId, k));
         }
 
         return results;

@@ -39,8 +39,10 @@ public class VehicleRagService {
         if (question == null || question.isBlank()) {
             throw new IllegalArgumentException("question cannot be blank");
         }
+
         log.debug("Vehicle RAG ask — vehicleId='{}' question='{}'", vehicleId, question);
-        return ragAnswerService.answerWithMode(vehicleId, question, topK, mode);
+
+        return ragAnswerService.answerWithMode("vehicle", vehicleId, question, topK, mode);
     }
 
     // ─── Cross-vehicle (fleet) query ───────────────────────────────────────

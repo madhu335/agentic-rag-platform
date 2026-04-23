@@ -16,12 +16,11 @@ public class AnswerEvaluator {
         this.ragAnswerService = ragAnswerService;
     }
 
-    public List<AnswerEvalResult> evaluate(List<EvalCase> cases, String docId, int topK) {
+    public List<AnswerEvalResult> evaluate(List<EvalCase> cases, String docType, String docId, int topK) {
         List<AnswerEvalResult> results = new ArrayList<>();
 
         for (EvalCase evalCase : cases) {
-
-            RagResult result = ragAnswerService.answer(docId, evalCase.question(), topK);
+            RagResult result = ragAnswerService.answer(docType, docId, evalCase.question(), topK);
             String answer = result.answer();
 
             List<String> missing = new ArrayList<>();
