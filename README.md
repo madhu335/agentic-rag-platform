@@ -1,6 +1,6 @@
 # Agentic RAG Platform (Hybrid Search + AI Workflows)
 
-A production-grade agentic AI platform built with Spring Boot, pgvector, ParadeDB, and Ollama, supporting multi-agent orchestration, hybrid retrieval (BM25 + vector + RRF), semantic chunking, two-tier retrieval for fleet-scale search, batch ingestion, and full observability.
+A production-grade agentic AI platform built with Spring Boot, pgvector, ParadeDB, Triton, and vLLM, supporting multi-agent orchestration, hybrid retrieval (BM25 + vector + RRF), semantic chunking, two-tier retrieval for fleet-scale search, batch ingestion, and full observability.
 
 ---
 
@@ -53,12 +53,12 @@ User query
 
 ```
 User query
-  -> Embed (Ollama nomic-embed-text, 768d)
+  -> Embed (Triton text_embedding, 768d)
   -> BM25 keyword search (ParadeDB Tantivy or PostgreSQL tsvector)
   -> Vector search (pgvector halfvec cosine)
   -> RRF fusion (app-level or ParadeDB single-query)
-  -> Re-ranking (cosine second pass)
-  -> LLM synthesis (Ollama llama3.1)
+  -> Re-ranking (Triton cross_reranker or cosine second pass)
+  -> LLM synthesis (vLLM Meta-Llama-3.1-8B-Instruct)
   -> Judge evaluation (grounded/correct/complete)
   -> Response with citations
 ```
@@ -208,7 +208,7 @@ All ingestion paths use batch embedding and batch upsert:
 | Article (15 chunks) | 15 embed + 15 INSERT = 30 round-trips | 1 embed + 1 batch INSERT = 2 round-trips |
 | Bulk (50 vehicles x 14 chunks) | 700 round-trips | ~22 embed + 1 batch INSERT per page |
 
-Ollama's `/api/embed` endpoint accepts an `input` array for batch embedding. Sub-batches of 32 texts are sent per HTTP call. JDBC `BatchPreparedStatementSetter` handles batch INSERT/UPSERT.
+Triton batch embedding is used for ingestion. Sub-batches are sent per HTTP call to the `text_embedding` model, and JDBC `BatchPreparedStatementSetter` handles batch INSERT/UPSERT.
 
 ---
 
@@ -273,8 +273,8 @@ Each failed entry includes a `FailureAnalysis` with primary reason and actionabl
 | Runtime | Java 21 / Spring Boot 3.5 |
 | Vector store | PostgreSQL 16 + pgvector 0.8 (HNSW, IVFFlat, halfvec) |
 | Full-text search | ParadeDB pg_search (Tantivy BM25) |
-| Embeddings | Ollama nomic-embed-text (768d) |
-| LLM | Ollama llama3.1 (4.9GB) |
+| Embeddings | Triton `text_embedding` (768d) |
+| LLM | vLLM `meta-llama/Meta-Llama-3.1-8B-Instruct` |
 | Keyword search | PostgreSQL tsvector + ParadeDB BM25 |
 | Container | Docker (paradedb/paradedb:0.19.11-pg16) |
 | Observability | OpenTelemetry + LangSmith |
@@ -305,15 +305,17 @@ Each failed entry includes a `FailureAnalysis` with primary reason and actionabl
 
 ### LlamaIndex comparison (`experiments/llamaindex/`)
 
+### LlamaIndex comparison (`experiments/llamaindex/`)
+
 Python-based LlamaIndex experiment mirroring the Java RAG pipeline stage-by-stage:
-- Same Ollama models (nomic-embed-text + llama3.1)
+- Triton embeddings + vLLM answer generation
 - Same Postgres DB (pgvector table `data_llamaindex_chunks`)
 - Side-by-side retrieval comparison (vector, BM25, hybrid)
-- Finding: BM25 in LlamaIndex is in-memory Python (rank_bm25), not pg-side FTS
+- BM25 in LlamaIndex is in-memory Python (`rank_bm25`), not pg-side FTS
 
-### LangGraph multi-agent (`experiments/langgraph-multi/`)
+### LangGraph / LangGraph multi-agent (`experiments/langgraph/`, `experiments/langgraph-multi/`)
 
-Python-based multi-agent experiment using LangGraph for comparison with the Java supervisor pattern.
+Python-based graph and multi-agent experiments using Triton for embeddings and vLLM for planner / generation / judge, for comparison with the Java orchestration patterns.
 
 ---
 
@@ -322,13 +324,12 @@ Python-based multi-agent experiment using LangGraph for comparison with the Java
 ### Prerequisites
 - Java 21
 - Docker Desktop
-- Ollama with `nomic-embed-text` and `llama3.1` pulled
+- Triton running with `text_embedding` and `cross_reranker`
+- vLLM running with `meta-llama/Meta-Llama-3.1-8B-Instruct`
 
 ### Start infrastructure
 ```bash
-docker-compose up -d    # ParadeDB (pgvector + pg_search)
-ollama pull nomic-embed-text
-ollama pull llama3.1
+docker compose up -d    # Postgres + Triton + vLLM
 ```
 
 ### Run migration
@@ -344,11 +345,11 @@ docker exec -i ai-rag-postgres psql -U postgres -d ai_rag_assistant < V2__partit
 
 ### Seed data
 Run `.http` files in IntelliJ in order:
-1. `seed_vehicles.http` -- simple vehicle records
-2. `rich_vehicle_ingest.http` -- rich vehicle with semantic chunks
-3. `cms_article_test.http` -- MotorTrend articles
-4. `two-tier-retrieval-test.http` -- two-tier + hybrid tests
-5. `multi-agent-article-test.http` -- multi-agent flows
+1. `src/test/java/resources/ingestion/vehicle/seed_vehicles.http`
+2. `src/test/java/resources/ingestion/vehicle/rich_vehicle_ingest.http`
+3. `src/test/java/resources/performance/twoTier/two-tier-retrieval-test.http`
+4. `src/test/java/resources/agent/multi-agent.http`
+5. any scenario-specific files under `src/test/java/resources/ask/`, `stream/`, or `ingestion/article/`
 
 ### Run tests
 ```bash
