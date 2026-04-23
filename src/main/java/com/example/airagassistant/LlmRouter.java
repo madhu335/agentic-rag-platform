@@ -1,5 +1,6 @@
 package com.example.airagassistant;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
@@ -11,31 +12,50 @@ import java.util.function.Consumer;
 @Component
 public class LlmRouter implements LlmClient {
 
-    private final OpenAiClient openAi;
-    private final OllamaClient ollama;
+    private final String provider;
+    private final OpenAiClient openAiClient;
+    private final OllamaClient ollamaClient;
+    private final TritonVllmClient tritonVllmClient;
+    private final VllmClient vllmClient;
 
-    @Value("${llm.provider:openai}")
-    private String provider;
-
-    public LlmRouter(OpenAiClient openAi, OllamaClient ollama) {
-        this.openAi = openAi;
-        this.ollama = ollama;
+    public LlmRouter(
+            @Value("${llm.provider:ollama}") String provider,
+            ObjectProvider<OpenAiClient> openAiClientProvider,
+            ObjectProvider<OllamaClient> ollamaClientProvider,
+            ObjectProvider<TritonVllmClient> tritonVllmClientProvider,
+            ObjectProvider<VllmClient> vllmClientProvider
+    ) {
+        this.provider = provider;
+        this.openAiClient = openAiClientProvider.getIfAvailable();
+        this.ollamaClient = ollamaClientProvider.getIfAvailable();
+        this.tritonVllmClient = tritonVllmClientProvider.getIfAvailable();
+        this.vllmClient = vllmClientProvider.getIfAvailable();
     }
 
     @Override
     public String answer(String question, List<String> contextChunks) {
-        System.out.println("LlmRouter provider=" + provider);
-        return switch (provider.toLowerCase()) {
-            case "ollama" -> ollama.answer(question, contextChunks);
-            case "openai" -> openAi.answer(question, contextChunks);
-            default -> throw new IllegalArgumentException("Unknown llm.provider: " + provider);
+        return activeClient().answer(question, contextChunks);
+    }
+
+    @Override
+    public void streamAnswer(String question, List<String> contextChunks, Consumer<String> onToken) {
+        activeClient().streamAnswer(question, contextChunks, onToken);
+    }
+
+    private LlmClient activeClient() {
+        return switch (provider) {
+            case "openai" -> require(openAiClient, "openai");
+            case "triton-vllm" -> require(tritonVllmClient, "triton-vllm");
+            case "ollama" -> require(ollamaClient, "ollama");
+            case "vllm" -> require(vllmClient, "vllm");
+            default -> throw new IllegalStateException("Unsupported llm.provider: " + provider);
         };
     }
-    public void streamAnswer(String question, List<String> contextChunks, Consumer<String> onToken) {
-        if ("ollama".equalsIgnoreCase(provider)) {
-            ollama.streamAnswer(question, contextChunks, onToken);
-        } else {
-            ollama.streamAnswer(question, contextChunks, onToken);
+
+    private LlmClient require(LlmClient client, String name) {
+        if (client == null) {
+            throw new IllegalStateException("LLM provider bean not available: " + name);
         }
+        return client;
     }
 }

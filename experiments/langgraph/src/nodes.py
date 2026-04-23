@@ -33,7 +33,7 @@ from .state import Chunk, GraphState, JudgeResult
 
 # --- thresholds — must match the Java side for a fair comparison ---
 # RagAnswerService.java:16:  COSINE_LOW = 0.40 (was 0.55, relaxed for structured chunks)
-COSINE_LOW = 0.40
+COSINE_LOW = 0.02
 
 FALLBACK_ANSWER = "I don't know based on the ingested documents."
 
@@ -44,9 +44,11 @@ DB_NAME = os.getenv("DB_NAME", "ai_rag_assistant")
 DB_USER = os.getenv("DB_USERNAME", "postgres")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
 
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-EMBED_MODEL = "nomic-embed-text"
-CHAT_MODEL = "llama3.1"
+VLLM_BASE_URL = os.getenv("VLLM_BASE_URL", "http://localhost:8001")
+VLLM_MODEL = os.getenv("VLLM_MODEL", "meta-llama/Meta-Llama-3.1-8B-Instruct")
+
+TRITON_BASE_URL = os.getenv("TRITON_BASE_URL", "http://localhost:8000")
+TRITON_EMBED_MODEL = os.getenv("TRITON_EMBED_MODEL", "text_embedding")
 
 
 # =============================================================================
@@ -62,31 +64,60 @@ def _get_db_connection():
         password=DB_PASSWORD,
     )
 
-
 def _embed(text: str) -> list[float]:
-    """Call Ollama's embedding endpoint. Equivalent to OllamaEmbeddingClient.java."""
     response = httpx.post(
-        f"{OLLAMA_BASE_URL}/api/embeddings",
-        json={"model": EMBED_MODEL, "prompt": text},
+        f"{TRITON_BASE_URL}/v2/models/{TRITON_EMBED_MODEL}/infer",
+        json={
+            "inputs": [
+                {
+                    "name": "TEXT",
+                    "shape": [1, 1],
+                    "datatype": "BYTES",
+                    "data": [[text]],
+                }
+            ]
+        },
         timeout=60.0,
     )
-    response.raise_for_status()
-    return response.json()["embedding"]
 
+    print("EMBED status:", response.status_code)
+    print("EMBED body:", response.text)
+
+    response.raise_for_status()
+    payload = response.json()
+
+    outputs = payload.get("outputs", [])
+    if not outputs:
+        raise RuntimeError("Triton embedding response missing outputs")
+
+    embedding_output = next(
+        (o for o in outputs if o.get("name") == "EMBEDDING"),
+        outputs[0]
+    )
+
+    data = embedding_output.get("data", [])
+    if not data:
+        raise RuntimeError("Triton embedding response missing embedding data")
+
+    # Triton returns flat data for shape [1, 768]
+    return data
 
 def _chat(prompt: str) -> str:
-    """Call Ollama's chat endpoint. Equivalent to OllamaClient.complete()."""
     response = httpx.post(
-        f"{OLLAMA_BASE_URL}/api/generate",
+        f"{VLLM_BASE_URL}/v1/chat/completions",
         json={
-            "model": CHAT_MODEL,
-            "prompt": prompt,
-            "stream": False,
+            "model": VLLM_MODEL,
+            "temperature": 0.2,
+            "max_tokens": 512,
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
         },
         timeout=120.0,
     )
     response.raise_for_status()
-    return response.json()["response"].strip()
+    payload = response.json()
+    return payload["choices"][0]["message"]["content"].strip()
 
 
 def _significant_terms(question: str) -> set[str]:

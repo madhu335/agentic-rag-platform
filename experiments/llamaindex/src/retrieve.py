@@ -36,25 +36,23 @@ Mode = Literal["vector", "bm25", "hybrid"]
 DEFAULT_TOP_K = 5
 
 
+_ALL_NODES_CACHE = None
+
 def _load_all_nodes(index: VectorStoreIndex) -> list:
-    """
-    Pull every node out of the pgvector-backed store so BM25Retriever has
-    something to build its in-memory index over. For small-to-medium corpora
-    this is fine; for very large ones you'd want a different BM25 strategy
-    (e.g. Postgres FTS, which is what your Java side already does).
-    """
+    global _ALL_NODES_CACHE
+    if _ALL_NODES_CACHE is not None:
+        return _ALL_NODES_CACHE
+
     vector_store = index.vector_store
 
-    # Trick: query with a zero vector and a huge top_k to grab everything.
-    # LlamaIndex's PGVectorStore doesn't expose a "get all nodes" API, so this
-    # is the pragmatic workaround. The dummy vector doesn't matter because we
-    # only care about the node content, not the similarity ordering.
     dummy_query = VectorStoreQuery(
-        query_embedding=[0.0] * 768,  # nomic-embed-text dim
+        query_embedding=[0.0] * 768,
         similarity_top_k=10_000,
     )
     result = vector_store.query(dummy_query)
-    return result.nodes or []
+
+    _ALL_NODES_CACHE = result.nodes or []
+    return _ALL_NODES_CACHE
 
 
 def build_retriever(index: VectorStoreIndex, mode: Mode, top_k: int = DEFAULT_TOP_K) -> BaseRetriever:

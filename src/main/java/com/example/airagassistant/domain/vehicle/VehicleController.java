@@ -137,7 +137,7 @@ public class VehicleController {
                 result.retrievedChunkIds(),
                 result.citedChunkIds(),
                 result.usedChunks(),
-                result.bestScore()
+                result.retrievalScore()
         );
     }
 

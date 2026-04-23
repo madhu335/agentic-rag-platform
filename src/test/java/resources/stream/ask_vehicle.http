@@ -1,0 +1,16 @@
+### ============================================
+### BASE REQUEST (reuse this header)
+### ============================================
+
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+POST {{baseUrl}}/ask/stream
+Content-Type: application/json
+
+{
+  "docType": "vehicle",
+  "docId": "vehicles",
+  "question": "Show me sporty EVs",
+  "topK": 5
+}

@@ -1,4 +1,15 @@
-ollama:
-  base-url: http://localhost:11434
-  embedding:
-    model: nomic-embed-text
+embedding:
+  triton:
+    base-url: http://localhost:8000
+    model-name: text_embedding
+
+reranker:
+  triton:
+    base-url: http://localhost:8000
+    model-name: cross_reranker
+
+llm:
+  provider: triton-vllm
+  triton:
+    base-url: http://localhost:8000
+    model-name: llama-3.1-8b

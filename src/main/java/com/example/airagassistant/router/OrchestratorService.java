@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -26,12 +27,78 @@ public class OrchestratorService {
     private final JudgeService judgeService;
     private final TraceHelper traceHelper;
     private final ResultEvaluationPolicy resultEvaluationPolicy;
+    private final com.example.airagassistant.domain.article.service.ArticleRagService articleRagService;
+    private final com.example.airagassistant.LlmClient llmClient;
 
-    public OrchestratorResult handle(String question, String docId, int k) {
+    public OrchestratorResult handle(String question, String docType, String docId, int k) {
+        if (("article".equalsIgnoreCase(docType) || "article_all".equalsIgnoreCase(docType))
+                && "articles".equalsIgnoreCase(docId)) {
+
+            log.info("Routing global article query to ArticleRagService");
+
+            var hits = articleRagService.searchAllArticles(question, k);
+
+            if (hits.isEmpty()) {
+                return new OrchestratorResult(
+                        "ARTICLE_GLOBAL",
+                        "I don't know based on the ingested documents.",
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        0,
+                        null,
+                        "global_article_route",
+                        "article_global_no_hits",
+                        null
+                );
+            }
+
+            var contextChunks = hits.stream()
+                    .map(h -> "[" + h.chunkId() + "] " + h.excerpt())
+                    .limit(4)   // 🔥 reduce tokens
+                    .toList();
+            String groundedPrompt = buildGroundedPrompt(question, contextChunks);
+            String answer = llmClient.answer(groundedPrompt, contextChunks);
+
+            var citedChunkIds = hits.stream()
+                    .map(com.example.airagassistant.domain.article.service.ArticleRagService.ArticleSearchHit::chunkId)
+                    .toList();
+
+            var chunks = hits.stream()
+                    .map(h -> new OrchestratorResult.Chunk(h.chunkId(), h.excerpt()))
+                    .toList();
+
+            JudgeResult judge = null;
+
+            if (hits.get(0).score() < 0.12) {
+                judge = judgeService.evaluate(
+                        question,
+                        answer,
+                        chunks.stream().map(OrchestratorResult.Chunk::text).toList()
+                );
+            }
+
+            return new OrchestratorResult(
+                    "ARTICLE_GLOBAL",
+                    answer,
+                    citedChunkIds,
+                    citedChunkIds,
+                    List.of(),
+                    chunks,
+                    contextChunks.size(),
+                    hits.get(0).score(),
+                    "global_article_route",
+                    "article_global_success",
+                    judge
+            );
+        }
+
         RouteDecision decision = queryRouter.route(question);
 
         Map<String, Object> attrs = new LinkedHashMap<>();
         attrs.put("langsmith.span.kind", "chain");
+        attrs.put("langsmith.metadata.doc_type", docType);
         attrs.put("langsmith.metadata.doc_id", docId);
         attrs.put("langsmith.metadata.route", decision.route().name());
         attrs.put("langsmith.metadata.route_reason", decision.reason());
@@ -42,7 +109,7 @@ public class OrchestratorService {
 
                 var bm25 = runAttempt(
                         "BM25",
-                        () -> ragAnswerService.answerWithMode(docId, question, k, RetrievalMode.BM25),
+                        () -> ragAnswerService.answerWithMode(docType, docId, question, k, RetrievalMode.BM25),
                         decision.reason(),
                         "bm25_success",
                         question
@@ -59,7 +126,7 @@ public class OrchestratorService {
 
                 var hybrid = runAttempt(
                         "HYBRID",
-                        () -> ragAnswerService.answerWithMode(docId, question, k, RetrievalMode.HYBRID),
+                        () -> ragAnswerService.answerWithMode(docType, docId, question, k, RetrievalMode.HYBRID),
                         decision.reason(),
                         "hybrid_success",
                         question
@@ -76,7 +143,7 @@ public class OrchestratorService {
 
                 var hybridRerank = runAttempt(
                         "HYBRID_RERANK",
-                        () -> ragAnswerService.answerWithMode(docId, question, k, RetrievalMode.HYBRID_RERANK),
+                        () -> ragAnswerService.answerWithMode(docType, docId, question, k, RetrievalMode.HYBRID_RERANK),
                         decision.reason(),
                         "hybrid_rerank_success",
                         question
@@ -93,7 +160,7 @@ public class OrchestratorService {
 
                 var vector = runAttempt(
                         "VECTOR",
-                        () -> ragAnswerService.answerWithMode(docId, question, k, RetrievalMode.VECTOR),
+                        () -> ragAnswerService.answerWithMode(docType, docId, question, k, RetrievalMode.VECTOR),
                         decision.reason(),
                         "vector_success",
                         question
@@ -110,7 +177,7 @@ public class OrchestratorService {
 
                 var agentFallback = runAttempt(
                         "AGENT_FALLBACK",
-                        () -> agentService.answer(docId, question, k),
+                        () -> agentService.answer(docType, docId, question, k),
                         decision.reason(),
                         "all_retrievers_failed",
                         question
@@ -128,7 +195,7 @@ public class OrchestratorService {
 
             var agent = runAttempt(
                     "AGENT",
-                    () -> agentService.answer(docId, question, k),
+                    () -> agentService.answer(docType, docId, question, k),
                     decision.reason(),
                     "agent_direct",
                     question
@@ -168,8 +235,8 @@ public class OrchestratorService {
             resultAttrs.put("langsmith.metadata.decision_reason", decision.reason());
             resultAttrs.put("langsmith.metadata.outcome", result.outcome());
 
-            if (result.bestScore() != null) {
-                resultAttrs.put("langsmith.metadata.best_score", result.bestScore());
+            if (result.retrievalScore() != null) {
+                resultAttrs.put("langsmith.metadata.best_score", result.retrievalScore());
             }
 
             resultAttrs.put("langsmith.metadata.used_chunks", result.usedChunks());
@@ -186,9 +253,9 @@ public class OrchestratorService {
                 resultAttrs.put("langsmith.metadata.judge.skipped", true);
             }
 
-            log.info("MODE={}, bestScore={}, accepted={}, retry={}, reason={}",
+            log.info("MODE={}, retrievalScore={}, accepted={}, retry={}, reason={}",
                     result.routeUsed(),
-                    result.bestScore(),
+                    result.retrievalScore(),
                     decision.acceptable(),
                     decision.shouldRetry(),
                     decision.reason());
@@ -205,7 +272,7 @@ public class OrchestratorService {
             String outcome,
             String question
     ) {
-        var chunks = result.retrievedChunks().stream()
+        var chunks = result.chunks().stream()
                 .map(c -> new OrchestratorResult.Chunk(c.id(), c.text()))
                 .toList();
 
@@ -213,7 +280,7 @@ public class OrchestratorService {
         boolean shouldJudge =
                 "AGENT".equals(routeUsed) ||
                         "AGENT_FALLBACK".equals(routeUsed) ||
-                        (result.bestScore() != null && result.bestScore() >= 0.15);
+                        (result.retrievalScore() != null && result.retrievalScore() >= 0.15);
 
         if (shouldJudge) {
             judge = judgeService.evaluate(
@@ -228,12 +295,41 @@ public class OrchestratorService {
                 result.answer(),
                 result.retrievedChunkIds(),
                 result.citedChunkIds(),
+                result.cards(),
                 chunks,
                 result.usedChunks(),
-                result.bestScore(),
+                result.retrievalScore(),
                 reason,
                 outcome,
                 judge
         );
+    }
+
+    private String buildGroundedPrompt(String question, List<String> contextChunks) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("You are a precise automotive assistant.\n");
+        sb.append("Answer ONLY from the provided context.\n");
+        sb.append("Every claim must include at least one chunk citation like [chunk_id].\n");
+        sb.append("Every sentence must end with at least one citation like [chunk_id].\n");
+        sb.append("Be specific. If the question asks for the best models, name them directly and explain why using the cited evidence.\n");
+        sb.append("When listing best vehicles, give one short evidence-backed reason for each vehicle.\n");
+        sb.append("Do not use vague phrases like 'part of the comparison' without saying what that implies.\n");
+        sb.append("Do not say 'based on the articles' or similar filler unless necessary.\n\n");
+
+        sb.append("Format:\n");
+        sb.append("1. Vehicle name — why it stands out [chunk_id]\n");
+        sb.append("2. Vehicle name — why it stands out [chunk_id]\n");
+        sb.append("3. Vehicle name — why it stands out [chunk_id]\n\n");
+
+        sb.append("Context:\n");
+        for (String chunk : contextChunks) {
+            sb.append(chunk).append("\n");
+        }
+
+        sb.append("\nQuestion:\n").append(question).append("\n\n");
+        sb.append("Answer:\n");
+
+        return sb.toString();
     }
 }

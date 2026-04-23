@@ -27,7 +27,7 @@ public class DefaultResultEvaluationPolicy implements ResultEvaluationPolicy {
             return EvaluationDecision.rejected(false, true, "result_null");
         }
 
-        Double bestScore = result.bestScore();
+        Double bestScore = result.retrievalScore();
         String routeUsed = result.routeUsed();
 
         if (bestScore == null) {

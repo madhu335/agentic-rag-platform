@@ -3,6 +3,7 @@ package com.example.airagassistant;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 @Component("ollamaLlmClient")
+@ConditionalOnProperty(name = "llm.provider", havingValue = "ollama", matchIfMissing = true)
 public class OllamaClient implements LlmClient {
 
     private final RestTemplate restTemplate = new RestTemplate();

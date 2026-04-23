@@ -13,15 +13,15 @@ import java.util.List;
 
 /**
  * Sub-agent: Research
- *
+ * <p>
  * Owns: document retrieval, quality checking, retry with refined queries.
- *
+ * <p>
  * This agent wraps the existing ResearchTool (which calls OrchestratorService,
  * which runs the BM25→HYBRID→RERANK→VECTOR→AGENT cascade). It adds
  * divergence detection and bounded retry on top — the same logic that
  * AgentExecutorService does for research steps, extracted into a
  * self-contained agent.
- *
+ * <p>
  * The key difference from the single-agent approach: this agent has NO
  * knowledge of email, SMS, or vehicles. It does one thing well — retrieve
  * and validate information.
@@ -71,7 +71,7 @@ public class ResearchSubAgent {
                 }
 
                 log.info("ResearchSubAgent — attempt {} diverged/low-quality, retrying. " +
-                         "diverged={} lowQuality={}", attempts, diverged, lowQuality);
+                        "diverged={} lowQuality={}", attempts, diverged, lowQuality);
 
                 // Refine query for next attempt
                 query = refineQuery(query, result);
@@ -113,7 +113,7 @@ public class ResearchSubAgent {
         String refinedQuery = queryRefinementService.refineQuery(
                 query,
                 result != null ? result.answer() : null,
-                result != null ?  result.chunks() : null,
+                result != null ? result.chunks() : null,
                 result != null ? result.judge() : null
         );
         if (refinedQuery == null || refinedQuery.isBlank()) {

@@ -1,0 +1,16 @@
+### ============================================
+### BASE REQUEST (reuse this header)
+### ============================================
+
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+POST {{baseUrl}}/ask
+Content-Type: application/json
+
+{
+  "docType": "document",
+  "docId": "spring-boot-qa",
+  "question": "How does Spring Boot handle exceptions globally?",
+  "topK": 5
+}

@@ -1,6 +1,7 @@
 package com.example.airagassistant.agentic.multi.agents;
 
 import com.example.airagassistant.LlmClient;
+import com.example.airagassistant.agentic.dto.ChunkDto;
 import com.example.airagassistant.agentic.multi.SubAgentResult;
 import com.example.airagassistant.agentic.tools.vehicle.FetchVehicleSpecsTool;
 import com.example.airagassistant.domain.article.service.ArticleRagService;
@@ -40,14 +41,12 @@ class ArticleSubAgentTest {
         fetchSpecsTool = mock(FetchVehicleSpecsTool.class);
         llm = mock(LlmClient.class);
         judgeService = mock(JudgeService.class);
+        policy = new DefaultResultEvaluationPolicy();
         agent = new ArticleSubAgent(articleRagService, ragAnswerService, fetchSpecsTool, llm, judgeService, policy);
 
-        // Default judge stub — returns passing score so tests don't fail on judge threshold
         when(judgeService.evaluate(any(), any(), any()))
                 .thenReturn(new JudgeResult(true, true, true, 0.9, "ok"));
     }
-
-    // ─── Test data builders ───────────────────────────────────────────────
 
     private ArticleRagService.ArticleSearchHit articleHit(String articleId, String chunkId,
                                                           int rank, double score, String excerpt) {
@@ -62,18 +61,40 @@ class ArticleSubAgentTest {
         return new FetchVehicleSpecsTool.SpecChunk(chunkId, text, 0.9);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Routing tests — verify the task/args-based router picks the right path
-    // ═══════════════════════════════════════════════════════════════════════
+    private RagAnswerService.RagResult ragResult(
+            String answer,
+            List<String> citedChunkIds,
+            List<String> retrievedChunkIds,
+            int usedChunks,
+            double retrievalScore
+    ) {
+        List<ChunkDto> chunks = retrievedChunkIds.stream()
+                .map(id -> new ChunkDto(id, "mock text for " + id))
+                .toList();
+
+        return new RagAnswerService.RagResult(
+                answer,
+                List.of(),       // cards
+                chunks,          // chunks
+                citedChunkIds,
+                retrievedChunkIds,
+                usedChunks,
+                retrievalScore
+        );
+    }
 
     @Nested
     class Routing {
 
         @Test
         void routesToSingleArticleAskWhenArticleIdPresent() {
-            var ragResult = new RagAnswerService.RagResult(
-                    "M3 performance is excellent", List.of(), List.of("chunk:1"),
-                    List.of("chunk:1"), 1, 0.85);
+            var ragResult = ragResult(
+                    "M3 performance is excellent",
+                    List.of("chunk:1"),
+                    List.of("chunk:1"),
+                    1,
+                    0.85
+            );
 
             when(articleRagService.askArticle(eq("motortrend-bmw-m3-2025-review"),
                     eq("How does it perform?"), eq(5), eq(RetrievalMode.HYBRID)))
@@ -89,7 +110,7 @@ class ArticleSubAgentTest {
             assertEquals("M3 performance is excellent", result.summary());
             assertEquals("ask_article", result.metadata().get("operation"));
             verify(articleRagService).askArticle(any(), any(), anyInt(), any());
-            verifyNoInteractions(llm);  // askArticle path uses RagAnswerService internally
+            verifyNoInteractions(llm);
         }
 
         @Test
@@ -158,19 +179,18 @@ class ArticleSubAgentTest {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Single-article ask
-    // ═══════════════════════════════════════════════════════════════════════
-
     @Nested
     class SingleArticleAsk {
 
         @Test
         void returnsLlmAnswerFromRagAnswerService() {
-            var ragResult = new RagAnswerService.RagResult(
+            var ragResult = ragResult(
                     "The M3 has excellent track performance with the S58 engine.",
-                    List.of(), List.of("art:1", "art:10"),
-                    List.of("art:1"), 2, 0.92);
+                    List.of("art:1"),
+                    List.of("art:1", "art:10"),
+                    2,
+                    0.92
+            );
 
             when(articleRagService.askArticle("art-1", "performance?", 5, RetrievalMode.HYBRID))
                     .thenReturn(ragResult);
@@ -188,8 +208,6 @@ class ArticleSubAgentTest {
 
         @Test
         void fallsThroughToCrossArticleSearchWhenArticleIdIsBlank() {
-            // Blank articleId doesn't pass hasArg check, so routing falls through
-            // to cross-article search (which fails with no results)
             when(articleRagService.searchAllArticles(any(), anyInt())).thenReturn(List.of());
 
             Map<String, Object> args = Map.of("articleId", "  ");
@@ -213,8 +231,7 @@ class ArticleSubAgentTest {
 
         @Test
         void respectsModeArgument() {
-            var ragResult = new RagAnswerService.RagResult(
-                    "answer", List.of(), List.of(), List.of(), 1, 0.8);
+            var ragResult = ragResult("answer", List.of(), List.of(), 1, 0.8);
             when(articleRagService.askArticle(any(), any(), anyInt(), eq(RetrievalMode.VECTOR)))
                     .thenReturn(ragResult);
 
@@ -227,8 +244,7 @@ class ArticleSubAgentTest {
 
         @Test
         void defaultsToHybridWhenModeInvalid() {
-            var ragResult = new RagAnswerService.RagResult(
-                    "answer", List.of(), List.of(), List.of(), 1, 0.8);
+            var ragResult = ragResult("answer", List.of(), List.of(), 1, 0.8);
             when(articleRagService.askArticle(any(), any(), anyInt(), eq(RetrievalMode.HYBRID)))
                     .thenReturn(ragResult);
 
@@ -239,10 +255,6 @@ class ArticleSubAgentTest {
             verify(articleRagService).askArticle("art-1", "q", 5, RetrievalMode.HYBRID);
         }
     }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // Cross-article search
-    // ═══════════════════════════════════════════════════════════════════════
 
     @Nested
     class CrossArticleSearch {
@@ -265,7 +277,6 @@ class ArticleSubAgentTest {
             assertEquals(2, result.metadata().get("resultCount"));
             assertEquals("art-m3", result.metadata().get("topArticle"));
 
-            // Verify LLM was called with context built from hits
             verify(llm).answer(eq("best value?"), argThat(chunks ->
                     chunks.size() == 2
                             && chunks.get(0).contains("[art-m3:2]")
@@ -308,10 +319,6 @@ class ArticleSubAgentTest {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Vehicle-scoped search
-    // ═══════════════════════════════════════════════════════════════════════
-
     @Nested
     class VehicleScopedSearch {
 
@@ -333,7 +340,6 @@ class ArticleSubAgentTest {
             assertEquals("BMW M3 2025", result.metadata().get("vehicleQuery"));
             assertEquals(1, result.metadata().get("articleCount"));
 
-            // LLM called with article chunks as context
             verify(llm).answer(contains("BMW M3 2025"), argThat(chunks ->
                     chunks.size() == 2 && chunks.get(0).contains("M3 verdict")));
         }
@@ -352,16 +358,11 @@ class ArticleSubAgentTest {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Vehicle-enriched search (article → vehicle inter-agent communication)
-    // ═══════════════════════════════════════════════════════════════════════
-
     @Nested
     class VehicleEnrichedSearch {
 
         @Test
         void mergesArticleAndSpecChunksForLlmSynthesis() {
-            // Phase 1: article search returns hits
             var articleHits = List.of(
                     articleHit("motortrend-bmw-m3-2025-review", "mt-m3:1", 1, 0.9,
                             "2025 BMW M3 Competition — MotorTrend's top pick"),
@@ -370,7 +371,6 @@ class ArticleSubAgentTest {
 
             when(articleRagService.searchAllArticles(any(), anyInt())).thenReturn(articleHits);
 
-            // Phase 2: spec fetch — use answer() to route by vehicleId without NPE
             when(fetchSpecsTool.execute(any())).thenAnswer(invocation -> {
                 FetchVehicleSpecsTool.Input input = invocation.getArgument(0);
                 if (input.vehicleId().contains("bmw"))
@@ -380,15 +380,12 @@ class ArticleSubAgentTest {
                 return List.of();
             });
 
-            // Phase 3: LLM synthesis
             when(llm.answer(any(), any())).thenReturn("The M3 leads with 503hp vs the 911's 379hp.");
 
             SubAgentResult result = agent.execute("top ranked vehicle articles with specs", Map.of());
 
             assertTrue(result.success());
             assertEquals("The M3 leads with 503hp vs the 911's 379hp.", result.summary());
-
-            // Citations include both article and spec chunk IDs
             assertTrue(result.citations().contains("mt-m3:1"));
             assertTrue(result.citations().contains("mt-911:1"));
             assertTrue(result.citations().contains("bmw-m3:specs"));
@@ -403,7 +400,6 @@ class ArticleSubAgentTest {
 
             when(articleRagService.searchAllArticles(any(), anyInt())).thenReturn(articleHits);
 
-            // BMW specs succeed, Porsche specs fail
             when(fetchSpecsTool.execute(any())).thenAnswer(invocation -> {
                 FetchVehicleSpecsTool.Input input = invocation.getArgument(0);
                 if (input.vehicleId().contains("bmw"))
@@ -427,7 +423,6 @@ class ArticleSubAgentTest {
                     articleHit("motortrend-bmw-m3-2025-review", "mt-m3:1", 1, 0.9, "M3 review"));
             when(articleRagService.searchAllArticles(any(), anyInt())).thenReturn(articleHits);
 
-            // Spec fetch returns empty (vehicle not ingested in vehicle domain)
             when(fetchSpecsTool.execute(any())).thenReturn(List.of());
             when(llm.answer(any(), any())).thenReturn("Article-only answer.");
 
@@ -435,7 +430,6 @@ class ArticleSubAgentTest {
 
             assertTrue(result.success());
             assertEquals(0, result.metadata().get("specs_resolved"));
-            // LLM gets article chunks only
             verify(llm).answer(any(), argThat(chunks -> chunks.size() == 1));
         }
 
@@ -460,12 +454,10 @@ class ArticleSubAgentTest {
                     .thenReturn(List.of(specChunk("tesla:specs", "Model 3 specs")));
             when(llm.answer(any(), any())).thenReturn("answer");
 
-            // Supervisor passes explicit vehicleIds
             Map<String, Object> args = Map.of("vehicleIds", "tesla-model3-2025,bmw-m3-2025");
 
             agent.execute("top ranked with specs", args);
 
-            // Should use the explicit IDs, not try to extract from articleId
             verify(fetchSpecsTool).execute(argThat(input ->
                     input.vehicleId().equals("tesla-model3-2025")));
             verify(fetchSpecsTool).execute(argThat(input ->
@@ -474,7 +466,6 @@ class ArticleSubAgentTest {
 
         @Test
         void extractsVehicleIdFromMotortrendArticleIdConvention() {
-            // articleId = "motortrend-bmw-m3-2025-review" → vehicleId = "bmw-m3-2025"
             var articleHits = List.of(
                     articleHit("motortrend-bmw-m3-2025-review", "mt:1", 1, 0.9, "content"));
             when(articleRagService.searchAllArticles(any(), anyInt())).thenReturn(articleHits);
@@ -489,7 +480,6 @@ class ArticleSubAgentTest {
 
         @Test
         void deduplicatesVehicleIds() {
-            // Two articles about the same vehicle should only trigger one spec fetch
             var articleHits = List.of(
                     articleHit("motortrend-bmw-m3-2025-review", "mt-r:1", 1, 0.9, "review"),
                     articleHit("motortrend-bmw-m3-2025-comparison", "mt-c:1", 2, 0.85, "comparison"));
@@ -499,13 +489,11 @@ class ArticleSubAgentTest {
 
             agent.execute("top ranked with specs", Map.of());
 
-            // "bmw-m3-2025" extracted from both articles, but fetch called only once
             verify(fetchSpecsTool, times(1)).execute(any());
         }
 
         @Test
         void limitsVehicleIdsToFive() {
-            // 6 articles about different vehicles, but we cap at 5 spec fetches
             var articleHits = List.of(
                     articleHit("motortrend-car-a-2025-review", "a:1", 1, 0.9, "a"),
                     articleHit("motortrend-car-b-2025-review", "b:1", 2, 0.88, "b"),
@@ -519,20 +507,17 @@ class ArticleSubAgentTest {
 
             agent.execute("top ranked with specs", Map.of());
 
-            // Max 5 parallel fetches, not 6
             verify(fetchSpecsTool, times(5)).execute(any());
         }
 
         @Test
         void parallelFetchActuallyRunsConcurrently() throws Exception {
-            // Simulate slow spec fetches to verify they don't run serially
             var articleHits = List.of(
                     articleHit("motortrend-car-a-2025-review", "a:1", 1, 0.9, "a"),
                     articleHit("motortrend-car-b-2025-review", "b:1", 2, 0.88, "b"),
                     articleHit("motortrend-car-c-2025-review", "c:1", 3, 0.86, "c"));
             when(articleRagService.searchAllArticles(any(), anyInt())).thenReturn(articleHits);
 
-            // Each fetch sleeps 200ms. If serial: ~600ms. If parallel: ~200ms.
             when(fetchSpecsTool.execute(any())).thenAnswer(invocation -> {
                 Thread.sleep(200);
                 String vid = invocation.getArgument(0, FetchVehicleSpecsTool.Input.class).vehicleId();
@@ -546,9 +531,6 @@ class ArticleSubAgentTest {
 
             assertTrue(result.success());
             assertEquals(3, result.metadata().get("specs_resolved"));
-
-            // If truly parallel, should complete well under 600ms.
-            // Allow generous margin for CI/slow machines but still catch serial execution.
             assertTrue(elapsed < 500,
                     "Expected parallel execution (<500ms) but took " + elapsed + "ms");
         }
@@ -559,7 +541,6 @@ class ArticleSubAgentTest {
                     articleHit("motortrend-bmw-m3-2025-review", "mt:1", 1, 0.9, "review"));
             when(articleRagService.searchAllArticles(any(), anyInt())).thenReturn(articleHits);
 
-            // Spec with 800 chars of text
             String longText = "x".repeat(800);
             when(fetchSpecsTool.execute(any()))
                     .thenReturn(List.of(specChunk("bmw:specs", longText)));
@@ -567,20 +548,14 @@ class ArticleSubAgentTest {
 
             agent.execute("top ranked with specs", Map.of());
 
-            // LLM context should have truncated spec text (spec prefix + max ~500 chars + "...")
             verify(llm).answer(any(), argThat(chunks -> {
                 String spec = chunks.stream()
                         .filter(c -> c.contains("bmw:specs"))
                         .findFirst().orElse("");
-                // Should be truncated — well under the original 800 chars
                 return spec.length() < 600;
             }));
         }
     }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // LLM synthesis verification (applies to cross-article and enriched)
-    // ═══════════════════════════════════════════════════════════════════════
 
     @Nested
     class LlmSynthesis {
@@ -609,7 +584,6 @@ class ArticleSubAgentTest {
 
             agent.execute("top ranked cars with specs", Map.of());
 
-            // The enriched question should contain the original question and citation rules
             verify(llm).answer(argThat(q ->
                     q.contains("top ranked cars with specs")
                             && q.contains("INSTRUCTIONS")), any());
@@ -628,10 +602,6 @@ class ArticleSubAgentTest {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Edge cases
-    // ═══════════════════════════════════════════════════════════════════════
-
     @Nested
     class EdgeCases {
 
@@ -641,7 +611,6 @@ class ArticleSubAgentTest {
                     .thenReturn(List.of(articleHit("a", "c:1", 1, 0.7, "ex")));
             when(llm.answer(any(), any())).thenReturn("answer");
 
-            // null task should fall through to cross-article search
             SubAgentResult result = agent.execute(null, Map.of());
 
             assertTrue(result.success());
@@ -654,7 +623,6 @@ class ArticleSubAgentTest {
                     .thenReturn(List.of(articleHit("a", "c:1", 1, 0.7, "ex")));
             when(llm.answer(any(), any())).thenReturn("answer");
 
-            // null args should not throw NPE
             SubAgentResult result = agent.execute("search", null);
 
             assertTrue(result.success());
@@ -662,8 +630,6 @@ class ArticleSubAgentTest {
 
         @Test
         void handlesNonMotortrendArticleIdsForVehicleExtraction() {
-            // articleId doesn't follow motortrend convention — falls through to using
-            // the full articleId as vehicleId (which will probably return empty specs)
             var hits = List.of(articleHit("custom-article-123", "ca:1", 1, 0.9, "content"));
             when(articleRagService.searchAllArticles(any(), anyInt())).thenReturn(hits);
             when(fetchSpecsTool.execute(any())).thenReturn(List.of());
@@ -671,7 +637,6 @@ class ArticleSubAgentTest {
 
             agent.execute("top ranked with specs", Map.of());
 
-            // Uses full articleId as vehicleId since no "motortrend-" prefix
             verify(fetchSpecsTool).execute(argThat(input ->
                     input.vehicleId().equals("custom-article-123")));
         }
@@ -694,7 +659,6 @@ class ArticleSubAgentTest {
             when(fetchSpecsTool.execute(any())).thenReturn(List.of());
             when(llm.answer(any(), any())).thenReturn("answer");
 
-            // vehicleIds as a List (Jackson would parse JSON arrays this way)
             Map<String, Object> args = Map.of("vehicleIds", List.of("tesla-3", "bmw-m3"));
             agent.execute("top ranked with specs", args);
 

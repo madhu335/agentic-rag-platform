@@ -2,6 +2,7 @@ package com.example.airagassistant;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -14,6 +15,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 @Component("openAiLlmClient")
+@ConditionalOnProperty(name = "llm.provider", havingValue = "ollama", matchIfMissing = true)
 public class OpenAiClient implements LlmClient{
 
     private final HttpClient http = HttpClient.newBuilder()

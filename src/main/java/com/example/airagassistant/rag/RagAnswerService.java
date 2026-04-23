@@ -1,8 +1,13 @@
 package com.example.airagassistant.rag;
 
 import com.example.airagassistant.LlmClient;
+import com.example.airagassistant.rag.VehicleCardDto;
+import com.example.airagassistant.agentic.dto.ChunkDto;
+import com.example.airagassistant.agentic.mapper.VehicleSummaryMapper;
+import com.example.airagassistant.rag.retrieval.VehicleSummaryService;
 import com.example.airagassistant.trace.TraceHelper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -11,12 +16,13 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RagAnswerService {
 
-    private static final double COSINE_LOW  = 0.40;
+    private static final double COSINE_LOW = 0.40;
     private static final double COSINE_HIGH = 0.70;
 
-    private static final double RRF_LOW  = 0.04;
+    private static final double RRF_LOW = 0.04;
     private static final double RRF_HIGH = 0.08;
 
     private static final String FALLBACK = "I don't know based on the ingested documents.";
@@ -25,9 +31,12 @@ public class RagAnswerService {
     private final ReRankService reRankService;
     private final LlmClient llm;
     private final TraceHelper traceHelper;
+    private final VehicleSummaryService vehicleSummaryService;
+    private final VehicleSummaryMapper summaryMapper;
 
-    public RagResult answerWithMode(String docId, String question, int topK, RetrievalMode mode) {
+    public RagResult answerWithMode(String docType, String docId, String question, int topK, RetrievalMode mode) {
         Map<String, Object> attrs = new LinkedHashMap<>();
+        attrs.put("langsmith.metadata.doc_type", docType);
         attrs.put("langsmith.metadata.doc_id", docId);
         attrs.put("gen_ai.prompt.0.content", question);
         attrs.put("langsmith.metadata.top_k", topK);
@@ -37,6 +46,7 @@ public class RagAnswerService {
             List<SearchHit> hits = traceHelper.run(
                     "retrieve-chunks-" + mode.name().toLowerCase(),
                     Map.of(
+                            "langsmith.metadata.doc_type", docType,
                             "langsmith.metadata.doc_id", docId,
                             "langsmith.metadata.top_k", topK,
                             "langsmith.metadata.retrieval_mode", mode.name()
@@ -65,19 +75,19 @@ public class RagAnswerService {
                 );
             }
 
-            Double bestScore = rankedHits.isEmpty() ? null : rankedHits.get(0).score();
-            addBestScore(bestScore);
+            Double retrievalScore = rankedHits.isEmpty() ? null : rankedHits.get(0).score();
+            addBestScore(retrievalScore);
 
             if (rankedHits.isEmpty()) {
                 addFallbackAttributes("no_hits");
-                return fallback(bestScore);
+                return fallback(retrievalScore);
             }
 
             String topText = rankedHits.get(0).record().text();
 
-            if (!passesKeywordGuard(question, bestScore, topText)) {
+            if (!passesKeywordGuard(question, retrievalScore, topText)) {
                 addFallbackAttributes("keyword_guard");
-                return fallback(bestScore);
+                return fallback(retrievalScore);
             }
 
             List<SearchHit> usableHits = rankedHits.stream()
@@ -92,14 +102,13 @@ public class RagAnswerService {
                     () -> {
                         List<String> contextChunks = buildCitedContext(usableHits);
                         List<String> retrievedChunkIds = extractChunkIds(usableHits);
-                        List<RetrievedChunk> retrievedChunks = extractRetrievedChunks(usableHits);
 
                         Map<String, Object> resultAttrs = new LinkedHashMap<>();
                         resultAttrs.put("gen_ai.completion.0.usable.count", usableHits.size());
                         resultAttrs.put("gen_ai.completion.0.context.count", contextChunks.size());
                         traceHelper.addAttributes(resultAttrs);
 
-                        return new ContextBuildResult(contextChunks, retrievedChunkIds, retrievedChunks);
+                        return new ContextBuildResult(contextChunks, retrievedChunkIds);
                     }
             );
 
@@ -129,17 +138,19 @@ public class RagAnswerService {
 
             return new RagResult(
                     answer,
-                    contextResult.retrievedChunks(),
-                    contextResult.retrievedChunkIds(),
+                    buildVehicleCards(docType, docId, question, topK),
+                    toChunkDtos(usableHits),
                     citedChunkIds,
+                    contextResult.retrievedChunkIds(),
                     contextResult.contextChunks().size(),
-                    bestScore
+                    retrievalScore
             );
         });
     }
 
-    public RagResult answer(String docId, String question, int topK) {
+    public RagResult answer(String docType, String docId, String question, int topK) {
         Map<String, Object> attrs = new LinkedHashMap<>();
+        attrs.put("langsmith.metadata.doc_type", docType);
         attrs.put("langsmith.metadata.doc_id", docId);
         attrs.put("gen_ai.prompt.0.content", question);
         attrs.put("langsmith.metadata.top_k", topK);
@@ -148,6 +159,7 @@ public class RagAnswerService {
             List<SearchHit> hits = traceHelper.run(
                     "retrieve-chunks",
                     Map.of(
+                            "langsmith.metadata.doc_type", docType,
                             "langsmith.metadata.doc_id", docId,
                             "langsmith.metadata.top_k", topK
                     ),
@@ -171,19 +183,19 @@ public class RagAnswerService {
                     }
             );
 
-            Double bestScore = reranked.isEmpty() ? null : reranked.get(0).score();
-            addBestScore(bestScore);
+            Double retrievalScore = reranked.isEmpty() ? null : reranked.get(0).score();
+            addBestScore(retrievalScore);
 
             if (reranked.isEmpty()) {
                 addFallbackAttributes("no_hits");
-                return fallback(bestScore);
+                return fallback(retrievalScore);
             }
 
             String topText = reranked.get(0).record().text();
 
-            if (!passesKeywordGuard(question, bestScore, topText)) {
+            if (!passesKeywordGuard(question, retrievalScore, topText)) {
                 addFallbackAttributes("keyword_guard");
-                return fallback(bestScore);
+                return fallback(retrievalScore);
             }
 
             List<SearchHit> usableHits = reranked.stream()
@@ -198,14 +210,13 @@ public class RagAnswerService {
                     () -> {
                         List<String> contextChunks = buildCitedContext(usableHits);
                         List<String> retrievedChunkIds = extractChunkIds(usableHits);
-                        List<RetrievedChunk> retrievedChunks = extractRetrievedChunks(usableHits);
 
                         Map<String, Object> resultAttrs = new LinkedHashMap<>();
                         resultAttrs.put("gen_ai.completion.0.usable.count", usableHits.size());
                         resultAttrs.put("gen_ai.completion.0.context.count", contextChunks.size());
                         traceHelper.addAttributes(resultAttrs);
 
-                        return new ContextBuildResult(contextChunks, retrievedChunkIds, retrievedChunks);
+                        return new ContextBuildResult(contextChunks, retrievedChunkIds);
                     }
             );
 
@@ -235,27 +246,27 @@ public class RagAnswerService {
 
             return new RagResult(
                     answer,
-                    contextResult.retrievedChunks(),
-                    contextResult.retrievedChunkIds(),
+                    buildVehicleCards(docType, docId, question, topK),
+                    toChunkDtos(usableHits),
                     citedChunkIds,
+                    contextResult.retrievedChunkIds(),
                     contextResult.contextChunks().size(),
-                    bestScore
+                    retrievalScore
             );
         });
     }
 
-    // Backward-compatible token-only stream
-    public void streamAnswer(String docId, String question, int topK, Consumer<String> onToken) {
-        streamAnswerEvents(docId, question, topK, event -> {
+    public void streamAnswer(String docType, String docId, String question, int topK, Consumer<String> onToken) {
+        streamAnswerEvents(docType, docId, question, topK, event -> {
             if ("token".equals(event.type()) && event.payload() instanceof TokenPayload tokenPayload) {
                 onToken.accept(tokenPayload.value());
             }
         });
     }
 
-    // New rich event stream for better UX
-    public void streamAnswerEvents(String docId, String question, int topK, Consumer<StreamEvent> onEvent) {
+    public void streamAnswerEvents(String docType, String docId, String question, int topK, Consumer<StreamEvent> onEvent) {
         Map<String, Object> attrs = new LinkedHashMap<>();
+        attrs.put("langsmith.metadata.doc_type", docType);
         attrs.put("langsmith.metadata.doc_id", docId);
         attrs.put("gen_ai.prompt.0.content", question);
         attrs.put("langsmith.metadata.top_k", topK);
@@ -263,9 +274,19 @@ public class RagAnswerService {
         onEvent.accept(new StreamEvent("status", new StatusPayload("retrieving", "Retrieving relevant chunks")));
 
         traceHelper.run("rag-answer-stream", attrs, () -> {
+            List<VehicleCardDto> cards = buildVehicleCards(docType, docId, question, topK);
+            if (cards == null) {
+                cards = List.of();
+            }
+
+            Map<String, Object> sourcesPayload = new LinkedHashMap<>();
+            sourcesPayload.put("cards", cards);
+            onEvent.accept(new StreamEvent("sources", sourcesPayload));
+
             List<SearchHit> hits = traceHelper.run(
                     "retrieve-chunks",
                     Map.of(
+                            "langsmith.metadata.doc_type", docType,
                             "langsmith.metadata.doc_id", docId,
                             "langsmith.metadata.top_k", topK
                     ),
@@ -294,44 +315,44 @@ public class RagAnswerService {
                     }
             );
 
-            Double bestScore = reranked.isEmpty() ? null : reranked.get(0).score();
-            addBestScore(bestScore);
+            Double retrievalScore = reranked.isEmpty() ? null : reranked.get(0).score();
+            addBestScore(retrievalScore);
 
             if (reranked.isEmpty()) {
                 addFallbackAttributes("no_hits");
-                RagResult fallbackResult = fallback(bestScore);
+                RagResult fallbackResult = fallback(retrievalScore);
 
                 onEvent.accept(new StreamEvent("token", new TokenPayload(fallbackResult.answer())));
-                onEvent.accept(new StreamEvent(
-                        "done",
-                        new DonePayload(
-                                fallbackResult.answer(),
-                                List.of(),
-                                List.of(),
-                                0,
-                                bestScore
-                        )
-                ));
+
+                Map<String, Object> payload = new LinkedHashMap<>();
+                payload.put("answer", fallbackResult.answer());
+                payload.put("citedChunkIds", List.of());
+                payload.put("retrievedChunkIds", List.of());
+                payload.put("usedChunks", 0);
+                payload.put("retrievalScore", retrievalScore);
+                payload.put("cards", cards);
+
+                onEvent.accept(new StreamEvent("done", payload));
                 return null;
             }
 
             String topText = reranked.get(0).record().text();
 
-            if (!passesKeywordGuard(question, bestScore, topText)) {
+            if (!passesKeywordGuard(question, retrievalScore, topText)) {
                 addFallbackAttributes("keyword_guard");
-                RagResult fallbackResult = fallback(bestScore);
+                RagResult fallbackResult = fallback(retrievalScore);
 
                 onEvent.accept(new StreamEvent("token", new TokenPayload(fallbackResult.answer())));
-                onEvent.accept(new StreamEvent(
-                        "done",
-                        new DonePayload(
-                                fallbackResult.answer(),
-                                List.of(),
-                                List.of(),
-                                0,
-                                bestScore
-                        )
-                ));
+
+                Map<String, Object> payload = new LinkedHashMap<>();
+                payload.put("answer", fallbackResult.answer());
+                payload.put("citedChunkIds", List.of());
+                payload.put("retrievedChunkIds", List.of());
+                payload.put("usedChunks", 0);
+                payload.put("retrievalScore", retrievalScore);
+                payload.put("cards", cards);
+
+                onEvent.accept(new StreamEvent("done", payload));
                 return null;
             }
 
@@ -347,19 +368,15 @@ public class RagAnswerService {
                     () -> {
                         List<String> contextChunks = buildCitedContext(usableHits);
                         List<String> retrievedChunkIds = extractChunkIds(usableHits);
-                        List<RetrievedChunk> retrievedChunks = extractRetrievedChunks(usableHits);
 
                         Map<String, Object> resultAttrs = new LinkedHashMap<>();
                         resultAttrs.put("gen_ai.completion.0.usable.count", usableHits.size());
                         resultAttrs.put("gen_ai.completion.0.context.count", contextChunks.size());
                         traceHelper.addAttributes(resultAttrs);
 
-                        return new ContextBuildResult(contextChunks, retrievedChunkIds, retrievedChunks);
+                        return new ContextBuildResult(contextChunks, retrievedChunkIds);
                     }
             );
-
-            List<SourcePayload> sources = buildSourcePayloads(usableHits);
-            onEvent.accept(new StreamEvent("sources", new SourcesPayload(sources)));
 
             onEvent.accept(new StreamEvent(
                     "status",
@@ -390,44 +407,65 @@ public class RagAnswerService {
             finalAttrs.put("gen_ai.completion.0.cited.count", citedChunkIds.size());
             traceHelper.addAttributes(finalAttrs);
 
-            onEvent.accept(new StreamEvent(
-                    "done",
-                    new DonePayload(
-                            finalAnswer,
-                            citedChunkIds,
-                            contextResult.retrievedChunkIds(),
-                            contextResult.contextChunks().size(),
-                            bestScore
-                    )
-            ));
+            Map<String, Object> donePayload = new LinkedHashMap<>();
+            donePayload.put("answer", finalAnswer);
+            donePayload.put("citedChunkIds", citedChunkIds);
+            donePayload.put("retrievedChunkIds", contextResult.retrievedChunkIds());
+            donePayload.put("usedChunks", contextResult.contextChunks().size());
+            donePayload.put("retrievalScore", retrievalScore);
+            donePayload.put("cards", cards);
 
+            onEvent.accept(new StreamEvent("done", donePayload));
             return null;
         });
     }
 
-    private List<SourcePayload> buildSourcePayloads(List<SearchHit> hits) {
-        List<SourcePayload> sources = new ArrayList<>();
-        int rank = 1;
-
-        for (SearchHit hit : hits) {
-            sources.add(new SourcePayload(
-                    hit.record().id(),
-                    preview(hit.record().text()),
-                    hit.score(),
-                    rank++
-            ));
+    private List<VehicleCardDto> buildVehicleCards(String docType, String docId, String question, int topK) {
+        if (!shouldBuildVehicleCards(docType, docId)) {
+            return List.of();
         }
 
-        return sources;
+        try {
+            return vehicleSummaryService.searchSummaries(question, topK).stream()
+                    .map(summaryMapper::toCard)
+                    .toList();
+        } catch (Exception e) {
+            log.warn("Failed to build vehicle cards for docType='{}', docId='{}': {}", docType, docId, e.getMessage());
+            return List.of();
+        }
     }
 
-    private String preview(String text) {
-        String compressed = compress(text);
-        if (compressed == null) {
-            return "";
+    private boolean shouldBuildVehicleCards(String docType, String docId) {
+        if (docType == null || docId == null || docId.isBlank()) {
+            log.info("VehicleCards: docType/docId invalid -> FALSE");
+            return false;
         }
-        String trimmed = compressed.trim().replaceAll("\\s+", " ");
-        return trimmed.length() <= 220 ? trimmed : trimmed.substring(0, 220) + "...";
+
+        String type = docType.trim().toLowerCase(Locale.ROOT);
+        String id = docId.trim().toLowerCase(Locale.ROOT);
+
+        if (!type.equals("vehicle")) {
+            log.info("VehicleCards: docType='{}' is not vehicle -> FALSE", docType);
+            return false;
+        }
+
+        boolean result = id.equals("fleet")
+                || id.equals("vehicles")
+                || id.equals("all-vehicles")
+                || id.equals("*");
+
+        log.info("VehicleCards: docType='{}', docId='{}', normalizedDocId='{}', result={}",
+                docType, docId, id, result);
+        return result;
+    }
+
+    private List<ChunkDto> toChunkDtos(List<SearchHit> hits) {
+        return hits.stream()
+                .map(hit -> new ChunkDto(
+                        hit.record().id(),
+                        hit.record().text()
+                ))
+                .toList();
     }
 
     private void addBestScore(Double bestScore) {
@@ -557,7 +595,7 @@ public class RagAnswerService {
 
         boolean isRrfScore = bestScore < 0.5;
 
-        double low  = isRrfScore ? RRF_LOW  : COSINE_LOW;
+        double low = isRrfScore ? RRF_LOW : COSINE_LOW;
         double high = isRrfScore ? RRF_HIGH : COSINE_HIGH;
 
         if (bestScore < low) return false;
@@ -571,23 +609,15 @@ public class RagAnswerService {
                 .toList();
     }
 
-    private List<RetrievedChunk> extractRetrievedChunks(List<SearchHit> hits) {
-        return hits.stream()
-                .map(hit -> new RetrievedChunk(
-                        hit.record().id(),
-                        hit.record().text()
-                ))
-                .toList();
-    }
-
-    private RagResult fallback(Double bestScore) {
+    private RagResult fallback(Double retrievalScore) {
         return new RagResult(
                 FALLBACK,
                 List.of(),
                 List.of(),
                 List.of(),
+                List.of(),
                 0,
-                bestScore
+                retrievalScore
         );
     }
 
@@ -720,54 +750,35 @@ public class RagAnswerService {
 
     private record ContextBuildResult(
             List<String> contextChunks,
-            List<String> retrievedChunkIds,
-            List<RetrievedChunk> retrievedChunks
-    ) {}
-
-    public record RetrievedChunk(
-            String id,
-            String text
-    ) {}
+            List<String> retrievedChunkIds
+    ) {
+    }
 
     public record RagResult(
             String answer,
-            List<RetrievedChunk> retrievedChunks,
-            List<String> retrievedChunkIds,
+            List<VehicleCardDto> cards,
+            List<ChunkDto> chunks,
             List<String> citedChunkIds,
+            List<String> retrievedChunkIds,
             int usedChunks,
-            Double bestScore
-    ) {}
+            Double retrievalScore
+    ) {
+    }
 
     public record StreamEvent(
             String type,
             Object payload
-    ) {}
+    ) {
+    }
 
     public record StatusPayload(
             String stage,
             String message
-    ) {}
+    ) {
+    }
 
     public record TokenPayload(
             String value
-    ) {}
-
-    public record SourcePayload(
-            String id,
-            String preview,
-            Double score,
-            int rank
-    ) {}
-
-    public record SourcesPayload(
-            List<SourcePayload> chunks
-    ) {}
-
-    public record DonePayload(
-            String answer,
-            List<String> citedChunkIds,
-            List<String> retrievedChunkIds,
-            int usedChunks,
-            Double bestScore
-    ) {}
+    ) {
+    }
 }

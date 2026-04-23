@@ -119,11 +119,11 @@ public class ArticleSubAgent {
             metadata.put("articleId", articleId);
             metadata.put("operation", "ask_article");
             metadata.put("usedChunks", result.usedChunks());
-            metadata.put("bestScore", result.bestScore());
+            metadata.put("bestScore", result.retrievalScore());
 
             return SubAgentResult.success(
                     "article", result.answer(),
-                    result.citedChunkIds(), result.bestScore(),
+                    result.citedChunkIds(), result.retrievalScore(),
                     null, metadata
             );
 

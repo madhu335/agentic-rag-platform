@@ -29,10 +29,11 @@ DB_PORT = int(os.getenv("DB_PORT", "5432"))
 DB_NAME = os.getenv("DB_NAME", "ai_rag_assistant")
 DB_USER = os.getenv("DB_USERNAME", "postgres")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-EMBED_MODEL = "nomic-embed-text"
-CHAT_MODEL = "llama3.1"
+VLLM_BASE_URL = os.getenv("VLLM_BASE_URL", "http://localhost:8001")
+VLLM_MODEL = os.getenv("VLLM_MODEL", "meta-llama/Meta-Llama-3.1-8B-Instruct")
 
+TRITON_BASE_URL = os.getenv("TRITON_BASE_URL", "http://localhost:8000")
+TRITON_EMBED_MODEL = os.getenv("TRITON_EMBED_MODEL", "text_embedding")
 COSINE_LOW = 0.40
 FALLBACK = "I don't know based on the ingested documents."
 
@@ -50,22 +51,58 @@ def _get_db():
 
 def _embed(text: str) -> list[float]:
     r = httpx.post(
-        f"{OLLAMA_BASE_URL}/api/embeddings",
-        json={"model": EMBED_MODEL, "prompt": text},
+        f"{TRITON_BASE_URL}/v2/models/{TRITON_EMBED_MODEL}/infer",
+        json={
+            "inputs": [
+                {
+                    "name": "TEXT",        # ✅ FIXED
+                    "shape": [1, 1],       # ✅ FIXED
+                    "datatype": "BYTES",
+                    "data": [[text]],      # ✅ FIXED
+                }
+            ]
+        },
         timeout=60.0,
     )
+
+    print("EMBED status:", r.status_code)
+    print("EMBED body:", r.text)
+
     r.raise_for_status()
-    return r.json()["embedding"]
+    payload = r.json()
+
+    outputs = payload.get("outputs", [])
+    if not outputs:
+        raise RuntimeError("Triton embedding response missing outputs")
+
+    embedding_output = next(
+        (o for o in outputs if o.get("name") == "EMBEDDING"),
+        outputs[0]
+    )
+
+    data = embedding_output.get("data", [])
+    if not data:
+        raise RuntimeError("Triton embedding response missing embedding data")
+
+    return data
 
 
 def _chat(prompt: str) -> str:
     r = httpx.post(
-        f"{OLLAMA_BASE_URL}/api/generate",
-        json={"model": CHAT_MODEL, "prompt": prompt, "stream": False},
+        f"{VLLM_BASE_URL}/v1/chat/completions",
+        json={
+            "model": VLLM_MODEL,
+            "temperature": 0.2,
+            "max_tokens": 512,
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+        },
         timeout=120.0,
     )
     r.raise_for_status()
-    return r.json()["response"].strip()
+    payload = r.json()
+    return payload["choices"][0]["message"]["content"].strip()
 
 
 def _vector_search(doc_id: str, query_vec: list[float], top_k: int) -> list[dict]:

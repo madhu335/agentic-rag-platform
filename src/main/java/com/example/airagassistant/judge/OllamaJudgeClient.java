@@ -11,14 +11,14 @@ import java.util.List;
 @ConditionalOnProperty(name = "judge.provider", havingValue = "ollama")
 public class OllamaJudgeClient implements JudgeClient {
 
-    private final LlmClient ollamaClient;
+    private final LlmClient llmClient;
 
-    public OllamaJudgeClient(@Qualifier("ollamaLlmClient") LlmClient ollamaClient) {
-        this.ollamaClient = ollamaClient;
+    public OllamaJudgeClient(LlmClient llmClient) {
+        this.llmClient = llmClient;
     }
 
     @Override
     public String evaluate(String prompt, List<String> contextChunks) {
-        return ollamaClient.answer(prompt, contextChunks);
+        return llmClient.answer(prompt, contextChunks);
     }
 }

@@ -6,8 +6,9 @@ Typical workflow:
     # One time (or whenever sample-data/ changes):
     python -m src.run_pipeline --ingest
 
-    # Then, as many times as you want — goes straight to retrieval, no embedding:
+    # Then, as many times as you want — goes straight to retrieval.
     python -m src.run_pipeline --mode vector
+    python -m src.run_pipeline --mode bm25
     python -m src.run_pipeline --mode hybrid
     python -m src.run_pipeline --mode hybrid --question "What engine does the M3 use?"
 """
@@ -16,7 +17,7 @@ import argparse
 import time
 from pathlib import Path
 
-from .answer import build_query_engine
+from .answer import answer_with_vllm
 from .ingest import build_index, load_index
 from .retrieve import build_retriever
 
@@ -36,14 +37,12 @@ def do_ingest() -> None:
 
 
 def do_query(mode: str, question: str | None, top_k: int) -> None:
-    # Reconnect to pg; no embedding cost.
     t0 = time.perf_counter()
     index = load_index()
     t_load = time.perf_counter() - t0
     print(f"[timing] index load: {t_load:.3f}s")
 
     retriever = build_retriever(index, mode=mode, top_k=top_k)  # type: ignore[arg-type]
-    query_engine = build_query_engine(retriever)
 
     questions = [question] if question else DEFAULT_QUESTIONS
 
@@ -53,13 +52,21 @@ def do_query(mode: str, question: str | None, top_k: int) -> None:
         print("-" * 72)
 
         t0 = time.perf_counter()
-        response = query_engine.query(q)
-        t_query = time.perf_counter() - t0
+        source_nodes = retriever.retrieve(q)
+        t_retrieve = time.perf_counter() - t0
 
-        print(f"A: {response}")
-        print(f"\n[timing] query ({mode}): {t_query:.2f}s")
-        print(f"[retrieval] {len(response.source_nodes)} source node(s):")
-        for i, node in enumerate(response.source_nodes, 1):
+        t1 = time.perf_counter()
+        answer = answer_with_vllm(q, source_nodes)
+        t_answer = time.perf_counter() - t1
+
+        t_query = t_retrieve + t_answer
+
+        print(f"A: {answer}")
+        print(f"\n[timing] retrieve ({mode}): {t_retrieve:.2f}s")
+        print(f"[timing] answer (vllm): {t_answer:.2f}s")
+        print(f"[timing] query ({mode}): {t_query:.2f}s")
+        print(f"[retrieval] {len(source_nodes)} source node(s):")
+        for i, node in enumerate(source_nodes, 1):
             score = f"{node.score:.4f}" if node.score is not None else "n/a"
             snippet = node.node.get_content()[:120].replace("\n", " ")
             print(f"  {i}. score={score}  {snippet}...")

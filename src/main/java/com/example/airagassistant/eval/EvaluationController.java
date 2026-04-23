@@ -1,13 +1,16 @@
 package com.example.airagassistant.eval;
 
-import com.example.airagassistant.rag.*;
+import com.example.airagassistant.rag.EmbeddingClient;
+import com.example.airagassistant.rag.PgVectorStore;
+import com.example.airagassistant.rag.ReRankService;
+import com.example.airagassistant.rag.RetrievalMode;
+import com.example.airagassistant.rag.SearchHit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +25,6 @@ public class EvaluationController {
     private final EmbeddingClient embeddingClient;
     private final VehicleEvaluationService vehicleEvaluationService;
 
-
     @GetMapping("/retrieval")
     public List<RetrievalEvalResult> retrievalEval(
             @RequestParam String docId,
@@ -33,26 +35,29 @@ public class EvaluationController {
 
     @GetMapping("/answer")
     public List<AnswerEvalResult> answerEval(
+            @RequestParam(defaultValue = "article") String docType,
             @RequestParam String docId,
             @RequestParam(defaultValue = "5") int k
     ) {
-        return evaluationService.runAnswerEval(docId, k);
+        return evaluationService.runAnswerEval(docType, docId, k);
     }
 
     @GetMapping("/report")
     public EvalSummary report(
+            @RequestParam(defaultValue = "article") String docType,
             @RequestParam String docId,
             @RequestParam(defaultValue = "5") int k
     ) {
-        return evaluationService.summarize(docId, k);
+        return evaluationService.summarize(docType, docId, k);
     }
 
     @GetMapping("/compare")
     public Map<RetrievalMode, EvalSummary> compare(
+            @RequestParam(defaultValue = "article") String docType,
             @RequestParam String docId,
             @RequestParam(defaultValue = "5") int k
     ) {
-        return evaluationService.compareModes(docId, k);
+        return evaluationService.compareModes(docType, docId, k);
     }
 
     @GetMapping("/debug")
@@ -68,10 +73,6 @@ public class EvaluationController {
                 hybridIds(docId, question, k),
                 hybridRerankIds(docId, question, k)
         );
-    }
-    @GetMapping("/vehicles/recall/report")
-    public VehicleEvaluationService.EvalReport runVehicleEval() {
-        return vehicleEvaluationService.runGoldenSet();
     }
 
     private List<SearchHit> vectorSearch(String docId, String question, int k) {
@@ -92,6 +93,7 @@ public class EvaluationController {
         List<SearchHit> hits = hybridSearch(docId, question, k);
         return reRankService.rerank(question, hits);
     }
+
     private List<String> vectorIds(String docId, String question, int k) {
         return vectorSearch(docId, question, k).stream()
                 .map(hit -> hit.record().id())

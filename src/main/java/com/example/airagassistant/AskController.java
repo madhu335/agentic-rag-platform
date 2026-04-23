@@ -1,6 +1,7 @@
 package com.example.airagassistant;
 
-import com.example.airagassistant.judge.JudgeResult;
+import com.example.airagassistant.agentic.dto.AskResponse;
+import com.example.airagassistant.agentic.dto.ChunkDto;
 import com.example.airagassistant.rag.RagAnswerService;
 import com.example.airagassistant.rag.RagAnswerService.StreamEvent;
 import com.example.airagassistant.router.OrchestratorResult;
@@ -32,22 +33,7 @@ public class AskController {
 
     private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
 
-    public record AskRequest(String docId, String question, Integer topK) {}
-
-    public record AskResponse(
-            String answer,
-            List<String> retrievedChunkIds,
-            List<String> citedChunkIds,
-            List<ChunkDto> chunks,
-            int usedChunks,
-            Double bestScore,
-            JudgeResult judge
-    ) {}
-
-    public record ChunkDto(
-            String id,
-            String text
-    ) {}
+    public record AskRequest(String docType, String docId, String question, Integer topK) {}
 
     @PostMapping("/ask")
     public AskResponse ask(@RequestBody AskRequest req) {
@@ -58,20 +44,24 @@ public class AskController {
         Map<String, Object> attrs = new LinkedHashMap<>();
         attrs.put("langsmith.span.kind", "chain");
         attrs.put("gen_ai.prompt.0.content", req.question());
+        attrs.put("langsmith.metadata.doc_type", req.docType());
         attrs.put("langsmith.metadata.doc_id", req.docId());
         attrs.put("langsmith.metadata.top_k", topK);
 
         return traceHelper.run("ask-request", attrs, () -> {
             OrchestratorResult result = orchestratorService.handle(
                     req.question(),
+                    req.docType(),
                     req.docId(),
                     topK
             );
 
             log.info(
-                    "Route={} Score={} JudgeScore={} Outcome={}",
+                    "Route={} DocType={} DocId={} Score={} JudgeScore={} Outcome={}",
                     result.routeUsed(),
-                    result.bestScore(),
+                    req.docType(),
+                    req.docId(),
+                    result.retrievalScore(),
                     result.judge() != null ? result.judge().score() : null,
                     result.outcome()
             );
@@ -84,12 +74,13 @@ public class AskController {
 
             return new AskResponse(
                     result.answer(),
-                    result.retrievedChunkIds(),
                     result.citedChunkIds(),
-                    chunks,
+                    result.retrievedChunkIds(),
                     result.usedChunks(),
-                    result.bestScore(),
-                    result.judge()
+                    result.retrievalScore(),
+                    result.judge(),
+                    result.cards(),
+                    chunks
             );
         });
     }
@@ -101,8 +92,8 @@ public class AskController {
         attrs.put("langsmith.metadata.reason", result.reason());
         attrs.put("langsmith.metadata.outcome", result.outcome());
 
-        if (result.bestScore() != null) {
-            attrs.put("langsmith.metadata.best_score", result.bestScore());
+        if (result.retrievalScore() != null) {
+            attrs.put("langsmith.metadata.best_score", result.retrievalScore());
         }
 
         if (result.judge() != null) {
@@ -117,20 +108,29 @@ public class AskController {
 
     @GetMapping("/orchestrate")
     public OrchestratorResult orchestrate(
+            @RequestParam String docType,
             @RequestParam String docId,
             @RequestParam String question,
             @RequestParam(defaultValue = "5") int k
     ) {
-        return orchestratorService.handle(question, docId, k);
+        return orchestratorService.handle(question, docType, docId, k);
     }
 
     private void validateRequest(AskRequest req) {
-        if (req == null || req.question() == null || req.question().isBlank()) {
-            throw new BadRequestException("question is required");
+        if (req == null) {
+            throw new BadRequestException("request is required");
+        }
+
+        if (req.docType() == null || req.docType().isBlank()) {
+            throw new BadRequestException("docType is required");
         }
 
         if (req.docId() == null || req.docId().isBlank()) {
             throw new BadRequestException("docId is required");
+        }
+
+        if (req.question() == null || req.question().isBlank()) {
+            throw new BadRequestException("question is required");
         }
     }
 
@@ -142,9 +142,9 @@ public class AskController {
     }
 
     @PostMapping(value = "/ask/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter askStream(@RequestParam String docId,
-                                @RequestParam String question,
-                                @RequestParam(defaultValue = "5") int topK) {
+    public SseEmitter askStream(@RequestBody AskRequest req) {
+        validateRequest(req);
+        int topK = (req.topK() == null || req.topK() <= 0) ? 5 : req.topK();
 
         SseEmitter emitter = new SseEmitter(0L);
 
@@ -152,20 +152,63 @@ public class AskController {
             try {
                 emitter.send(SseEmitter.event()
                         .name("start")
-                        .data(Map.of(
-                                "docId", docId,
-                                "question", question,
+                        .data(mapOfNullable(
+                                "docType", req.docType(),
+                                "docId", req.docId(),
+                                "question", req.question(),
                                 "topK", topK
                         ), MediaType.APPLICATION_JSON));
 
-                ragAnswerService.streamAnswerEvents(docId, question, topK, event -> sendEvent(emitter, event));
+                emitter.send(SseEmitter.event()
+                        .name("status")
+                        .data(mapOfNullable(
+                                "stage", "retrieving",
+                                "message", "Retrieving relevant chunks"
+                        ), MediaType.APPLICATION_JSON));
+
+                OrchestratorResult result = orchestratorService.handle(
+                        req.question(),
+                        req.docType(),
+                        req.docId(),
+                        topK
+                );
+
+                emitter.send(SseEmitter.event()
+                        .name("sources")
+                        .data(mapOfNullable(
+                                "cards", result.cards() != null ? result.cards() : List.of()
+                        ), MediaType.APPLICATION_JSON));
+
+                emitter.send(SseEmitter.event()
+                        .name("status")
+                        .data(mapOfNullable(
+                                "stage", "answering",
+                                "message", "Generating answer"
+                        ), MediaType.APPLICATION_JSON));
+
+                if (result.answer() != null && !result.answer().isBlank()) {
+                    emitter.send(SseEmitter.event()
+                            .name("token")
+                            .data(mapOfNullable("value", result.answer()), MediaType.APPLICATION_JSON));
+                }
+
+                emitter.send(SseEmitter.event()
+                        .name("done")
+                        .data(mapOfNullable(
+                                "answer", result.answer() != null ? result.answer() : "",
+                                "citedChunkIds", result.citedChunkIds() != null ? result.citedChunkIds() : List.of(),
+                                "retrievedChunkIds", result.retrievedChunkIds() != null ? result.retrievedChunkIds() : List.of(),
+                                "usedChunks", result.usedChunks(),
+                                "retrievalScore", result.retrievalScore(),
+                                "cards", result.cards() != null ? result.cards() : List.of()
+                        ), MediaType.APPLICATION_JSON));
 
                 emitter.complete();
             } catch (Exception e) {
                 try {
                     emitter.send(SseEmitter.event()
                             .name("error")
-                            .data(Map.of(
+                            .data(mapOfNullable(
                                     "message", e.getMessage() != null ? e.getMessage() : "Streaming failed"
                             ), MediaType.APPLICATION_JSON));
                 } catch (IOException ignored) {
@@ -185,5 +228,21 @@ public class AskController {
         } catch (IOException e) {
             throw new RuntimeException("Failed to send SSE event", e);
         }
+    }
+
+    private Map<String, Object> mapOfNullable(Object... keyValues) {
+        if (keyValues.length % 2 != 0) {
+            throw new IllegalArgumentException("keyValues must contain an even number of entries");
+        }
+
+        Map<String, Object> map = new LinkedHashMap<>();
+        for (int i = 0; i < keyValues.length; i += 2) {
+            Object key = keyValues[i];
+            if (!(key instanceof String s)) {
+                throw new IllegalArgumentException("Map key must be a String at index " + i);
+            }
+            map.put(s, keyValues[i + 1]);
+        }
+        return map;
     }
 }

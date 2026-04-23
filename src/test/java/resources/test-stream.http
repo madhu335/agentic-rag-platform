@@ -1,8 +1,0 @@
-### Rich SSE stream
-POST http://localhost:8080/ask/stream
-Accept: text/event-stream
-Content-Type: application/x-www-form-urlencoded
-
-docId=spring-boot-qa
-    &question=Explain lazy loading versus eager loading
-    &topK=5

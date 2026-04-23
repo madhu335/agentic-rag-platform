@@ -1,0 +1,49 @@
+### ============================================
+### BASE REQUEST (reuse this header)
+### ============================================
+
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+POST {{baseUrl}}/ask
+Content-Type: application/json
+
+{
+  "docType": "vehicle",
+  "docId": "vehicles",
+  "question": "Show me sporty EVs",
+  "topK": 5
+}
+
+### ── 6. Recall chunk (:20 or :21)
+### Expected: adaptive cruise recall, fuel injector recall
+POST http://localhost:8080/vehicles/bmw-m3-2025-competition/ask
+Content-Type: application/json
+
+{
+  "question": "Are there any open recalls on the M3?",
+  "topK": 3,
+  "mode": "HYBRID"
+}
+
+### ── 8. Cross-chunk query — should fuse performance + cost
+### Expected: answer references both engine AND ownership cost
+POST http://localhost:8080/vehicles/bmw-m3-2025-competition/ask
+Content-Type: application/json
+
+{
+  "question": "Is the M3 worth the price given its performance?",
+  "topK": 3,
+  "mode": "HYBRID"
+}
+
+### ── 6. Recall chunk (:20 or :21)
+### Expected: adaptive cruise recall, fuel injector recall
+POST http://localhost:8080/vehicles/bmw-m3-2025-competition/ask
+Content-Type: application/json
+
+{
+  "question": "Are there any open recalls on the M3?",
+  "topK": 3,
+  "mode": "HYBRID"
+}

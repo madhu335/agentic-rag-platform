@@ -3,6 +3,7 @@ package com.example.airagassistant.llm.ollama;
 import com.example.airagassistant.rag.EmbeddingClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -28,7 +29,8 @@ import java.util.List;
  *   If you see truncation warnings in Ollama logs, lower BATCH_SIZE.
  */
 @Slf4j
-@Component("ollamaEmbeddingClient")
+@Component
+@ConditionalOnProperty(name = "embedding.provider", havingValue = "ollama", matchIfMissing = true)
 public class OllamaEmbeddingClient implements EmbeddingClient {
 
     private static final int BATCH_SIZE = 32;
