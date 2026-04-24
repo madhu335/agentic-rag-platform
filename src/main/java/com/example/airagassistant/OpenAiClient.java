@@ -1,92 +1,106 @@
 package com.example.airagassistant;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.*;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.*;
 import java.util.function.Consumer;
 
-@Component("openAiLlmClient")
-@ConditionalOnProperty(name = "llm.provider", havingValue = "ollama", matchIfMissing = true)
-public class OpenAiClient implements LlmClient{
+@Slf4j
+@Component("openAiClient")
+public class OpenAiClient implements LlmClient {
 
-    private final HttpClient http = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(15))
-            .build();
-
+    private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper om = new ObjectMapper();
 
-    @Value("${openai.api.key}")
+    @Value("${openai.base-url:http://localhost:8001}")
+    private String baseUrl;
+
+    @Value("${openai.api.key:}")
     private String apiKey;
 
-    @Value("${openai.model:gpt-4.1-mini}")
+    @Value("${openai.model:meta-llama/Meta-Llama-3.1-8B-Instruct}")
     private String model;
 
     @Override
     public String answer(String question, List<String> contextChunks) {
         try {
-            if (apiKey == null || apiKey.isBlank()) {
-                throw new IllegalStateException("Missing OPENAI_API_KEY (set env var or openai.api.key).");
-            }
-
             String context = String.join("\n\n---\n\n", contextChunks);
 
-            // Chat Completions-style payload (simple + widely supported)
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("model", model);
+            payload.put("temperature", 0.2);
 
             List<Map<String, String>> messages = new ArrayList<>();
-            messages.add(Map.of(
-                    "role", "system",
-                    "content", "You are a helpful assistant. Answer ONLY using the provided context. If missing, say you don't know."
-            ));
-            messages.add(Map.of(
-                    "role", "user",
-                    "content", "CONTEXT:\n" + context + "\n\nQUESTION:\n" + question
-            ));
+
+            Map<String, String> system = new LinkedHashMap<>();
+            system.put("role", "system");
+            system.put("content", "You are a helpful assistant. Answer ONLY using the provided context. If missing, say you don't know.");
+            messages.add(system);
+
+            Map<String, String> user = new LinkedHashMap<>();
+            user.put("role", "user");
+            user.put("content", "CONTEXT:\n" + context + "\n\nQUESTION:\n" + question);
+            messages.add(user);
+
             payload.put("messages", messages);
-            payload.put("temperature", 0.2);
+
+            String cleanBaseUrl = baseUrl.endsWith("/")
+                    ? baseUrl.substring(0, baseUrl.length() - 1)
+                    : baseUrl;
+
+            String url = cleanBaseUrl + "/v1/chat/completions";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+            if (apiKey != null && !apiKey.isBlank()) {
+                headers.setBearerAuth(apiKey);
+            }
 
             String json = om.writeValueAsString(payload);
 
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.openai.com/v1/chat/completions"))
-                    .timeout(Duration.ofSeconds(30))
-                    .header("Authorization", "Bearer " + apiKey)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
-                    .build();
+            log.info("OpenAI-compatible URL={}", url);
+            log.info("OpenAI-compatible payload length={}", json.length());
+            log.debug("OpenAI-compatible payload={}", json);
 
-            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpEntity<String> request = new HttpEntity<>(json, headers);
 
-            if (resp.statusCode() >= 300) {
-                throw new RuntimeException("OpenAI error " + resp.statusCode() + ": " + resp.body());
+            ResponseEntity<String> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    request,
+                    String.class
+            );
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new RuntimeException("OpenAI-compatible error "
+                        + response.getStatusCode().value()
+                        + ": "
+                        + response.getBody());
             }
 
-            // Parse: choices[0].message.content
-            Map<?, ?> root = om.readValue(resp.body(), Map.class);
-            List<?> choices = (List<?>) root.get("choices");
-            Map<?, ?> first = (Map<?, ?>) choices.get(0);
-            Map<?, ?> message = (Map<?, ?>) first.get("message");
-            return String.valueOf(message.get("content"));
+            JsonNode root = om.readTree(response.getBody());
+            return root.path("choices")
+                    .get(0)
+                    .path("message")
+                    .path("content")
+                    .asText();
 
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("OpenAI-compatible client call failed", e);
         }
     }
 
     @Override
     public void streamAnswer(String question, List<String> contextChunks, Consumer<String> onToken) {
-        // Temporary fallback (non-streaming)
-        String fullAnswer = answer(question, contextChunks);
-        onToken.accept(fullAnswer);
+        onToken.accept(answer(question, contextChunks));
     }
 }

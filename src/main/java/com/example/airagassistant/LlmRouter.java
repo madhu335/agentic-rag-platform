@@ -17,19 +17,22 @@ public class LlmRouter implements LlmClient {
     private final OllamaClient ollamaClient;
     private final TritonVllmClient tritonVllmClient;
     private final VllmClient vllmClient;
+    private final ClaudeClient claudeClient;
 
     public LlmRouter(
             @Value("${llm.provider:ollama}") String provider,
             ObjectProvider<OpenAiClient> openAiClientProvider,
             ObjectProvider<OllamaClient> ollamaClientProvider,
             ObjectProvider<TritonVllmClient> tritonVllmClientProvider,
-            ObjectProvider<VllmClient> vllmClientProvider
+            ObjectProvider<VllmClient> vllmClientProvider,
+            ObjectProvider<ClaudeClient> claudeClientProvider
     ) {
         this.provider = provider;
         this.openAiClient = openAiClientProvider.getIfAvailable();
         this.ollamaClient = ollamaClientProvider.getIfAvailable();
         this.tritonVllmClient = tritonVllmClientProvider.getIfAvailable();
         this.vllmClient = vllmClientProvider.getIfAvailable();
+        this.claudeClient = claudeClientProvider.getIfAvailable();
     }
 
     @Override
@@ -48,6 +51,7 @@ public class LlmRouter implements LlmClient {
             case "triton-vllm" -> require(tritonVllmClient, "triton-vllm");
             case "ollama" -> require(ollamaClient, "ollama");
             case "vllm" -> require(vllmClient, "vllm");
+            case "claude" -> require(claudeClient, "claude");
             default -> throw new IllegalStateException("Unsupported llm.provider: " + provider);
         };
     }

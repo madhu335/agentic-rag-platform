@@ -1,19 +1,16 @@
 package com.example.airagassistant.judge;
 
 import com.example.airagassistant.LlmClient;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Component
-@ConditionalOnProperty(name = "judge.provider", havingValue = "ollama")
-public class OllamaJudgeClient implements JudgeClient {
+public class DefaultJudgeClient implements JudgeClient {
 
     private final LlmClient llmClient;
 
-    public OllamaJudgeClient(LlmClient llmClient) {
+    public DefaultJudgeClient(LlmClient llmClient) {
         this.llmClient = llmClient;
     }
 
