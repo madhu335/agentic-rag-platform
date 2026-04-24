@@ -1,4 +1,94 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ai_rag_assistant}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-init-sql: SET ivfflat.probes = 10
+
+  jpa:
+    show-sql: false   # 🔥 disables SQL printing
+    properties:
+      hibernate:
+        format_sql: false
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+  ai:
+    otel:
+      tracing:
+        enabled: false
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        options:
+          model: llama3.1
+
+# =========================
+# LLM Provider, vllm, openai, claude
+# =========================
+llm:
+  provider: vllm
+
+  vllm:
+    base-url: http://localhost:8001
+    model: meta-llama/Meta-Llama-3.1-8B-Instruct
+
+  triton:
+    base-url: http://localhost:8000
+    model-name: llama-3.1-8b
+
+# =========================
+# OpenAI-compatible
+# =========================
+openai:
+  base-url: http://localhost:8001
+  api:
+    key: ${OPENAI_API_KEY:}
+  model: meta-llama/Meta-Llama-3.1-8B-Instruct
+
+# =========================
+# OpenAI-Real
+# =========================
+#openai:
+#  base-url: https://api.openai.com
+#  api:
+#    key: ${OPENAI_API_KEY}
+#  model: gpt-4o-mini
+
+# =========================
+# Claude
+# =========================
+claude:
+  base-url: https://api.anthropic.com
+  api:
+    key: ${ANTHROPIC_API_KEY:}
+  model: claude-sonnet-4-6
+
+# =========================
+# Ollama
+# =========================
+ollama:
+  base-url: http://localhost:11434
+  model: llama3.1
+  embedding:
+    model: nomic-embed-text
+
+# =========================
+# Judge: vllm, openai, claude
+# =========================
+judge:
+  provider: vllm
+
+# =========================
+# Triton embedding + reranker
+# =========================
 embedding:
+  provider: triton
   triton:
     base-url: http://localhost:8000
     model-name: text_embedding
@@ -8,8 +98,39 @@ reranker:
     base-url: http://localhost:8000
     model-name: cross_reranker
 
-llm:
-  provider: triton-vllm
-  triton:
-    base-url: http://localhost:8000
-    model-name: llama-3.1-8b
+# =========================
+# Retrieval tuning
+# =========================
+vehicle:
+  search:
+    summary-top-k: 10
+    detail-top-k: 5
+    hybrid-vector-weight: 0.7
+
+  bulk:
+    page-size: 50
+    embed-batch-size: 32
+
+# =========================
+# LOGGING (🔥 CLEAN RAG ONLY)
+# =========================
+logging:
+  level:
+    root: INFO
+
+    # 🔥 YOUR APP (focus here)
+    com.example.airagassistant: INFO
+    com.example.airagassistant.router: DEBUG
+    com.example.airagassistant.rag: DEBUG
+    com.example.airagassistant.agent: DEBUG
+    com.example.airagassistant.agentic: DEBUG
+    com.example.airagassistant.eval: DEBUG
+    com.example.airagassassistant.judge: DEBUG
+
+    # ❌ Disable SQL noise
+    org.hibernate.SQL: OFF
+    org.hibernate.orm.jdbc.bind: OFF
+    org.hibernate.type.descriptor.sql: OFF
+    org.springframework.jdbc.core: OFF
+    org.springframework.jdbc.datasource: OFF
+    org.springframework.orm.jpa: OFF

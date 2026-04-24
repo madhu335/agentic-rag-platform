@@ -11,6 +11,7 @@ Measured with `cloc` v2.08, code-only (excludes blanks and comments).
 |-------------|--------------:|--------------------:|------:|:-----------------:|
 | Ingestion   | 230 LOC       | ~70 LOC             | 3.3x  | 11 / 4            |
 | Retrieval   | 657 LOC       | ~70 LOC             | 9.4x  | 9 / 4             |
+
 | Answer      | 596 LOC       | ~30 LOC             | 19.9x | 5 / 4             |
 | **Total**   | **1,483 LOC** | **195 LOC**         | **7.6x** | **25 / 4**     |
 

@@ -8,17 +8,17 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-@ConditionalOnProperty(name = "judge.provider", havingValue = "openai")
-public class OpenAiJudgeClient implements JudgeClient {
+@ConditionalOnProperty(name = "judge.provider", havingValue = "claude")
+public class ClaudeJudgeClient implements JudgeClient {
 
-    private final LlmClient openAiClient;
+    private final LlmClient claudeClient;
 
-    public OpenAiJudgeClient(@Qualifier("openAiClient") LlmClient openAiClient) {
-        this.openAiClient = openAiClient;
+    public ClaudeJudgeClient(@Qualifier("claudeClient") LlmClient claudeClient) {
+        this.claudeClient = claudeClient;
     }
 
     @Override
     public String evaluate(String prompt, List<String> contextChunks) {
-        return openAiClient.answer(prompt, contextChunks);
+        return claudeClient.answer(prompt, contextChunks);
     }
 }
