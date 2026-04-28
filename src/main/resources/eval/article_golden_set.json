@@ -1,0 +1,167 @@
+[
+  {
+    "entryId": "A1-DIRECT-001",
+    "query": "what does the MotorTrend BMW M3 review say",
+    "expectedArticleIds": ["motortrend-bmw-m3-2025-review"],
+    "acceptableArticleIds": ["motortrend-sports-sedan-comparison-2025"],
+    "category": "DIRECT_LOOKUP", "difficulty": "EASY", "source": "MANUAL",
+    "minimumRecallCount": 1,
+    "expectedChunkIds": ["motortrend-bmw-m3-2025-review:1"],
+    "notes": "Identity+verdict chunk should be the top hit — article-level summary"
+  },
+  {
+    "entryId": "A1-DIRECT-002",
+    "query": "Tesla Model 3 Long Range review",
+    "expectedArticleIds": ["motortrend-tesla-model3-2025-review"],
+    "acceptableArticleIds": ["motortrend-ev-vs-hybrid-cost-2025"],
+    "category": "DIRECT_LOOKUP", "difficulty": "EASY", "source": "MANUAL",
+    "minimumRecallCount": 1,
+    "expectedChunkIds": ["motortrend-tesla-model3-2025-review:1"]
+  },
+  {
+    "entryId": "A1-DIRECT-003",
+    "query": "Corvette Z06 track test",
+    "expectedArticleIds": ["motortrend-corvette-z06-2025-track"],
+    "acceptableArticleIds": [],
+    "category": "DIRECT_LOOKUP", "difficulty": "EASY", "source": "MANUAL",
+    "minimumRecallCount": 1
+  },
+  {
+    "entryId": "A2-COMP-001",
+    "query": "how does the M3 compare to the C63 and CT4-V",
+    "expectedArticleIds": ["motortrend-sports-sedan-comparison-2025"],
+    "acceptableArticleIds": ["motortrend-bmw-m3-2025-review"],
+    "category": "COMPARISON", "difficulty": "EASY", "source": "MANUAL",
+    "minimumRecallCount": 1,
+    "expectedChunkIds": ["motortrend-sports-sedan-comparison-2025:1"]
+  },
+  {
+    "entryId": "A2-COMP-002",
+    "query": "sports sedan comparison articles",
+    "expectedArticleIds": ["motortrend-sports-sedan-comparison-2025"],
+    "acceptableArticleIds": ["motortrend-bmw-m3-2025-review", "motortrend-corvette-z06-2025-track"],
+    "category": "COMPARISON", "difficulty": "MEDIUM", "source": "USER_LOG",
+    "minimumRecallCount": 1
+  },
+  {
+    "entryId": "A2-COMP-003",
+    "query": "EV versus hybrid ownership cost",
+    "expectedArticleIds": ["motortrend-ev-vs-hybrid-cost-2025"],
+    "acceptableArticleIds": [],
+    "category": "COMPARISON", "difficulty": "EASY", "source": "MANUAL",
+    "minimumRecallCount": 1,
+    "expectedChunkIds": ["motortrend-ev-vs-hybrid-cost-2025:1"]
+  },
+  {
+    "entryId": "A3-RANK-001",
+    "query": "best fuel economy cars 2025",
+    "expectedArticleIds": ["motortrend-best-fuel-economy-2025"],
+    "acceptableArticleIds": ["motortrend-ev-vs-hybrid-cost-2025"],
+    "category": "RANKING", "difficulty": "EASY", "source": "USER_LOG",
+    "minimumRecallCount": 1,
+    "expectedChunkIds": ["motortrend-best-fuel-economy-2025:1"]
+  },
+  {
+    "entryId": "A3-RANK-002",
+    "query": "best family SUV under 40000",
+    "expectedArticleIds": ["motortrend-best-family-suv-under-40k-2025"],
+    "acceptableArticleIds": ["motortrend-best-fuel-economy-2025"],
+    "category": "RANKING", "difficulty": "EASY", "source": "USER_LOG",
+    "minimumRecallCount": 1
+  },
+  {
+    "entryId": "A3-RANK-003",
+    "query": "highest rated sports car this year",
+    "expectedArticleIds": ["motortrend-corvette-z06-2025-track"],
+    "acceptableArticleIds": ["motortrend-bmw-m3-2025-review", "motortrend-sports-sedan-comparison-2025"],
+    "category": "RANKING", "difficulty": "HARD", "source": "LLM_ASSISTED",
+    "minimumRecallCount": 1
+  },
+  {
+    "entryId": "A4-VEH-001",
+    "query": "which articles mention the BMW M3",
+    "expectedArticleIds": ["motortrend-bmw-m3-2025-review", "motortrend-sports-sedan-comparison-2025"],
+    "acceptableArticleIds": [],
+    "category": "VEHICLE_MENTION", "difficulty": "MEDIUM", "source": "MANUAL",
+    "minimumRecallCount": 2,
+    "notes": "Many-to-many test — any article featuring the M3 should surface"
+  },
+  {
+    "entryId": "A4-VEH-002",
+    "query": "articles about the Tesla Model 3",
+    "expectedArticleIds": ["motortrend-tesla-model3-2025-review", "motortrend-ev-vs-hybrid-cost-2025"],
+    "acceptableArticleIds": [],
+    "category": "VEHICLE_MENTION", "difficulty": "MEDIUM", "source": "MANUAL",
+    "minimumRecallCount": 2
+  },
+  {
+    "entryId": "A4-VEH-003",
+    "query": "articles featuring the Honda CR-V Hybrid",
+    "expectedArticleIds": ["motortrend-best-fuel-economy-2025", "motortrend-best-family-suv-under-40k-2025"],
+    "acceptableArticleIds": [],
+    "category": "VEHICLE_MENTION", "difficulty": "MEDIUM", "source": "USER_LOG",
+    "minimumRecallCount": 2
+  },
+  {
+    "entryId": "A5-SEM-001",
+    "query": "what do reviewers like about the M3",
+    "expectedArticleIds": ["motortrend-bmw-m3-2025-review"],
+    "acceptableArticleIds": ["motortrend-sports-sedan-comparison-2025"],
+    "category": "SEMANTIC", "difficulty": "MEDIUM", "source": "USER_LOG",
+    "minimumRecallCount": 1,
+    "expectedChunkIds": ["motortrend-bmw-m3-2025-review:3"],
+    "notes": "Pros/cons chunk — chunk index 3"
+  },
+  {
+    "entryId": "A5-SEM-002",
+    "query": "how did the Corvette Z06 perform on track",
+    "expectedArticleIds": ["motortrend-corvette-z06-2025-track"],
+    "acceptableArticleIds": [],
+    "category": "SEMANTIC", "difficulty": "MEDIUM", "source": "MANUAL",
+    "minimumRecallCount": 1,
+    "expectedChunkIds": ["motortrend-corvette-z06-2025-track:10"],
+    "notes": "Section chunk — Track performance (orderIndex 1, chunk index 10)"
+  },
+  {
+    "entryId": "A5-SEM-003",
+    "query": "long-term impressions of electric trucks",
+    "expectedArticleIds": ["motortrend-rivian-r1t-2025-longterm"],
+    "acceptableArticleIds": [],
+    "category": "SEMANTIC", "difficulty": "HARD", "source": "LLM_ASSISTED",
+    "minimumRecallCount": 1
+  },
+  {
+    "entryId": "A6-CROSS-001",
+    "query": "which cars have the best combined mpg",
+    "expectedArticleIds": ["motortrend-best-fuel-economy-2025"],
+    "acceptableArticleIds": ["motortrend-ev-vs-hybrid-cost-2025", "motortrend-best-family-suv-under-40k-2025"],
+    "category": "CROSS_ARTICLE", "difficulty": "HARD", "source": "LLM_ASSISTED",
+    "minimumRecallCount": 1
+  },
+  {
+    "entryId": "A6-CROSS-002",
+    "query": "real-world off-road capability of electric vehicles",
+    "expectedArticleIds": ["motortrend-rivian-r1t-2025-longterm"],
+    "acceptableArticleIds": [],
+    "category": "CROSS_ARTICLE", "difficulty": "HARD", "source": "LLM_ASSISTED",
+    "minimumRecallCount": 1
+  },
+  {
+    "entryId": "EDGE-ART-001",
+    "query": "xyzabc article review",
+    "expectedArticleIds": [],
+    "acceptableArticleIds": [],
+    "category": "DIRECT_LOOKUP", "difficulty": "EDGE_CASE", "source": "MANUAL",
+    "minimumRecallCount": 0,
+    "notes": "Nonsense query — system must return empty or fallback gracefully"
+  },
+  {
+    "entryId": "EDGE-ART-002",
+    "query": "M3",
+    "expectedArticleIds": ["motortrend-bmw-m3-2025-review"],
+    "acceptableArticleIds": ["motortrend-sports-sedan-comparison-2025"],
+    "category": "DIRECT_LOOKUP", "difficulty": "EDGE_CASE", "source": "MANUAL",
+    "minimumRecallCount": 1,
+    "notes": "Short token — BM25 fallback to vector for sub-3-char tokens"
+  }
+]

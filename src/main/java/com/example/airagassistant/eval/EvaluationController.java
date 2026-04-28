@@ -24,6 +24,7 @@ public class EvaluationController {
     private final ReRankService reRankService;
     private final EmbeddingClient embeddingClient;
     private final VehicleEvaluationService vehicleEvaluationService;
+    private final ArticleEvaluationService articleEvaluationService;
 
     @GetMapping("/retrieval")
     public List<RetrievalEvalResult> retrievalEval(
@@ -74,6 +75,18 @@ public class EvaluationController {
                 hybridRerankIds(docId, question, k)
         );
     }
+
+    @GetMapping("/vehicles/recall/report")
+    public VehicleEvaluationService.EvalReport runVehicleEval() {
+        return vehicleEvaluationService.runGoldenSet();
+    }
+
+    @GetMapping("/articles/recall/report")
+    public ArticleEvaluationService.EvalReport runArticleEval() {
+        return articleEvaluationService.runGoldenSet();
+    }
+
+    // ─── existing private helpers below — unchanged ───────────────────────────
 
     private List<SearchHit> vectorSearch(String docId, String question, int k) {
         List<Double> qVec = embeddingClient.embed(question);
