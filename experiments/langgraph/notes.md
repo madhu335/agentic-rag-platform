@@ -28,6 +28,13 @@ experiment, so no separate ingestion is needed.
 | Score thresholds & gates | You write it | You still write it |
 | Judge logic | You write it | You still write it |
 
+On the Java side the judge is now routed by `JudgeRouter` against
+`judge.provider` — Claude, OpenAI, or (default) whatever `LlmRouter` is
+using. This LangGraph port calls vLLM directly for the judge step to
+match the Java default (`judge.provider=vllm` → `DefaultJudgeClient` →
+vLLM). Swapping to Claude here would be one httpx client; the graph
+structure doesn't change.
+
 The pattern: LangGraph commoditizes the *structure* of the workflow.
 Everything that's actually domain-specific — what each node does, what
 gets retrieved, how prompts are shaped, what counts as "grounded" — is
