@@ -14,10 +14,7 @@ Content-Type: application/json
   "vehicles": [
     {
       "vehicleId": "bmw-m3-2025-competition",
-      "year": 2025,
-      "make": "BMW",
-      "model": "M3",
-      "trim": "Competition",
+      "year": 2025, "make": "BMW", "model": "M3", "trim": "Competition",
       "role": "primary"
     }
   ],
@@ -53,16 +50,9 @@ Content-Type: application/json
   ],
 
   "rating": {
-    "overall": 9.2,
-    "performance": 9.8,
-    "comfort": 7.8,
-    "interior": 8.5,
-    "technology": 8.2,
-    "practicality": 7.5,
-    "value": 8.0,
-    "verdictLabel": "Top Pick"
+    "overall": 9.2, "performance": 9.8, "comfort": 7.8, "interior": 8.5,
+    "technology": 8.2, "practicality": 7.5, "value": 8.0, "verdictLabel": "Top Pick"
   },
-
   "tags": ["sports sedan", "track car", "daily driver", "enthusiast"],
   "priceAsTestedMsrp": "$89,450",
   "wordCount": 2400
@@ -84,25 +74,12 @@ Content-Type: application/json
   "updatedDate": null,
 
   "vehicles": [
-    {
-      "vehicleId": "bmw-m3-2025-competition",
-      "year": 2025, "make": "BMW", "model": "M3", "trim": "Competition",
-      "role": "primary"
-    },
-    {
-      "vehicleId": "mercedes-amg-c63-2025",
-      "year": 2025, "make": "Mercedes-AMG", "model": "C63", "trim": "S E Performance",
-      "role": "competitor"
-    },
-    {
-      "vehicleId": "cadillac-ct4v-2025-blackwing",
-      "year": 2025, "make": "Cadillac", "model": "CT4-V", "trim": "Blackwing",
-      "role": "competitor"
-    }
+    { "vehicleId": "bmw-m3-2025-competition",     "year": 2025, "make": "BMW",          "model": "M3",    "trim": "Competition",       "role": "primary" },
+    { "vehicleId": "mercedes-amg-c63-2025",       "year": 2025, "make": "Mercedes-AMG", "model": "C63",   "trim": "S E Performance",   "role": "competitor" },
+    { "vehicleId": "cadillac-ct4v-2025-blackwing","year": 2025, "make": "Cadillac",     "model": "CT4-V", "trim": "Blackwing",         "role": "competitor" }
   ],
 
   "verdict": "The BMW M3 Competition wins this comparison by a meaningful margin. Its combination of engine character, chassis balance, and daily usability is unmatched. The Cadillac CT4-V Blackwing earns a strong second place — its Blackwing V8 delivers emotion the M3's turbo six cannot. The Mercedes-AMG C63 S E Performance disappoints: its hybrid powertrain adds weight and complexity without improving the driving experience.",
-
   "pros": "BMW M3: best chassis balance, strongest resale value. Cadillac CT4-V: best engine sound, best value. Mercedes C63: most powerful on paper",
   "cons": "BMW M3: expensive, firm ride. Cadillac CT4-V: dated interior, smaller dealer network. Mercedes C63: heavy hybrid system, highest price, worst fuel economy",
 
@@ -122,17 +99,306 @@ Content-Type: application/json
   ],
 
   "rating": {
-    "overall": 9.2,
-    "performance": 9.5,
-    "comfort": 7.8,
-    "interior": 8.5,
-    "technology": 8.2,
-    "practicality": 7.5,
-    "value": 8.8,
-    "verdictLabel": "Top Pick"
+    "overall": 9.2, "performance": 9.5, "comfort": 7.8, "interior": 8.5,
+    "technology": 8.2, "practicality": 7.5, "value": 8.8, "verdictLabel": "Top Pick"
   },
-
   "tags": ["sports sedan", "comparison test", "track car", "BMW M3", "Cadillac CT4-V"],
   "priceAsTestedMsrp": "$89,450",
   "wordCount": 1800
 }
+
+###
+
+### ── 3. Tesla Model 3 long-range review
+POST http://localhost:8080/articles/ingest
+Content-Type: application/json
+
+{
+  "articleId": "motortrend-tesla-model3-2025-review",
+  "slug": "2025-tesla-model-3-long-range-review",
+  "title": "2025 Tesla Model 3 Long Range Review: Refined Yet Familiar",
+  "articleType": "first_drive",
+  "author": "Kristen Lee",
+  "publishDate": "2025-02-18",
+  "updatedDate": null,
+
+  "vehicles": [
+    { "vehicleId": "tesla-model3-2025-long-range", "year": 2025, "make": "Tesla", "model": "Model 3", "trim": "Long Range AWD", "role": "primary" }
+  ],
+
+  "verdict": "The refreshed Model 3 Long Range addresses most of the outgoing car's complaints — the ride is better, interior materials are improved, and range is up. But the minimalist interior and Tesla's insistence on removing physical stalks remain polarizing. If the range and Supercharger network matter to you, nothing else at this price is close.",
+  "pros": "358-mile range, Supercharger access, strong acceleration, refined ride after refresh, lowest cost-per-mile in segment",
+  "cons": "No turn-signal stalk, touchscreen-only climate controls, build quality still inconsistent, divisive interior minimalism",
+
+  "bodyText": "Tesla's 2025 Model 3 refresh — codenamed Highland — brings meaningful improvements without changing the fundamental character of the car. The Long Range AWD version now delivers 358 miles of EPA-rated range, up from 333 miles in the outgoing model, thanks to a combination of aerodynamic refinements and a more efficient battery pack. Acceleration remains one of the Model 3's defining traits. Zero to 60 mph happens in 4.2 seconds in the Long Range, which feels quicker than the numbers suggest because the torque arrives instantly. The revised suspension is the biggest functional change. Previous Model 3s rode harshly on anything but smooth pavement. The refresh adds frequency-selective dampers that do a noticeably better job absorbing broken surfaces. Interior improvements focus on material quality. Soft-touch surfaces now cover more of the dashboard and door panels. The ambient lighting strip running the width of the dashboard adds warmth the outgoing car lacked. The 15.4-inch center touchscreen is the only interface for climate, navigation, media, and most vehicle settings. Tesla has doubled down on the touchscreen-only approach by removing the turn-signal stalk — indicators now live on the steering wheel as capacitive buttons. This is the most controversial change and will divide buyers. On the Supercharger network, the Model 3 remains unmatched. Tesla's DC fast charging stations outnumber every other charging network combined, and the integration with the car's software is seamless. Charging curves are strong: 10 to 80 percent takes about 27 minutes at a V3 Supercharger. At $48,990 the Long Range AWD sits in an increasingly crowded segment. But no competitor matches its combination of range, charging network, and software ecosystem.",
+
+  "sections": [
+    {
+      "sectionTitle": "Range and charging",
+      "content": "EPA-rated range is 358 miles. Real-world highway range is closer to 310 miles at 75 mph. Supercharger V3 stations deliver a 10-80% charge in approximately 27 minutes. Home charging on a 240V outlet adds about 30 miles of range per hour. The Tesla Supercharger network includes over 2,500 stations in North America, significantly more than competing networks. Recent opening of Supercharger access to third-party EVs via NACS adapter does not impact charging speed for Tesla vehicles.",
+      "orderIndex": 1
+    },
+    {
+      "sectionTitle": "Interior",
+      "content": "The refreshed interior uses higher-quality materials throughout. The steering wheel is wrapped in perforated synthetic leather. Door panels have fabric inserts. The 15.4-inch touchscreen is responsive and the software receives regular over-the-air updates. Storage is excellent — the frunk, trunk, and sub-trunk provide more usable space than the exterior suggests. The elimination of the turn-signal stalk is the most controversial change and requires approximately two weeks to adapt to.",
+      "orderIndex": 2
+    }
+  ],
+
+  "rating": {
+    "overall": 8.6, "performance": 8.5, "comfort": 7.9, "interior": 7.5,
+    "technology": 9.5, "practicality": 8.8, "value": 9.0, "verdictLabel": "Recommended"
+  },
+  "tags": ["electric vehicle", "sedan", "long range", "family car", "Tesla"],
+  "priceAsTestedMsrp": "$52,990",
+  "wordCount": 2100
+}
+
+###
+
+### ── 4. Fuel economy ranking article
+POST http://localhost:8080/articles/ingest
+Content-Type: application/json
+
+{
+  "articleId": "motortrend-best-fuel-economy-2025",
+  "slug": "2025-best-fuel-economy-rankings",
+  "title": "2025 Fuel Economy Rankings: The Most Efficient Non-EV Cars You Can Buy",
+  "articleType": "ranking",
+  "author": "Scott Evans",
+  "publishDate": "2025-01-20",
+  "updatedDate": "2025-03-01",
+
+  "vehicles": [
+    { "vehicleId": "toyota-camry-2025-xse-hybrid",   "year": 2025, "make": "Toyota", "model": "Camry",   "trim": "XSE Hybrid",   "role": "primary" },
+    { "vehicleId": "honda-crv-2025-sport-hybrid",    "year": 2025, "make": "Honda",  "model": "CR-V",    "trim": "Sport Hybrid", "role": "primary" }
+  ],
+
+  "verdict": "If you want the best gasoline fuel economy in 2025, hybrids dominate. The Toyota Camry XSE Hybrid leads our rankings at 52 combined mpg — a remarkable figure for a midsize sedan. The Honda CR-V Sport Hybrid follows closely at 40 combined mpg, impressive for a compact SUV. Both prove that you do not need to go fully electric to dramatically cut fuel costs.",
+  "pros": "Camry Hybrid: best-in-class combined mpg, Toyota reliability. CR-V Hybrid: best mpg among compact SUVs, Honda dependability",
+  "cons": "Camry Hybrid: conservative styling, CVT drone under hard acceleration. CR-V Hybrid: hybrid premium over gas-only, some road noise at highway speeds",
+
+  "bodyText": "Fuel economy leadership in 2025 belongs almost entirely to hybrids. Our rankings focus on vehicles real buyers actually purchase — no plug-in hybrids, no EVs, no obscure subcompacts that nobody buys. The Toyota Camry XSE Hybrid sits at the top with 52 combined mpg (51 city, 53 highway). That number would have been astonishing a decade ago and remains exceptional today. Toyota's fifth-generation hybrid system pairs a 2.5-liter Atkinson-cycle four-cylinder with two electric motors and an eCVT transmission. Total system output is 232 horsepower. The Honda CR-V Sport Hybrid delivers 40 combined mpg (43 city, 36 highway) in a compact SUV that seats five comfortably. Honda's two-motor hybrid system operates differently than Toyota's — most of the time the gas engine acts as a generator powering the electric motors that drive the wheels. It feels smoother in city driving than the Toyota system. Annual fuel cost estimates assume 15,000 miles driven per year at $3.50 per gallon. The Camry Hybrid costs approximately $1,010 per year to fuel. The CR-V Hybrid costs approximately $1,310 per year. For comparison, a non-hybrid compact SUV like the base CR-V costs approximately $1,640 per year. Over five years of ownership the fuel savings of the hybrid CR-V versus the gasoline version is $1,650. The hybrid premium is roughly $2,800, meaning the hybrid breaks even at approximately 8.5 years of ownership at current gas prices. If gas prices rise or you drive more than 15,000 miles annually, the break-even point moves closer.",
+
+  "sections": [
+    {
+      "sectionTitle": "Top-ranked fuel economy sedans",
+      "content": "Toyota Camry XSE Hybrid leads at 52 combined mpg. Honda Accord Hybrid follows at 48 combined mpg. Hyundai Sonata Hybrid rates at 47 combined mpg. All three use gasoline-electric hybrid powertrains with CVT transmissions. The Camry's lead is attributable to Toyota's fifth-generation hybrid system, which improves highway efficiency over the previous generation by approximately 8%.",
+      "orderIndex": 1
+    },
+    {
+      "sectionTitle": "Top-ranked fuel economy SUVs",
+      "content": "Honda CR-V Sport Hybrid leads compact SUVs at 40 combined mpg. Toyota RAV4 Hybrid follows at 39 combined mpg. Ford Escape Hybrid rates at 37 combined mpg. Kia Sportage Hybrid rates at 36 combined mpg. The CR-V Hybrid's efficiency advantage is most pronounced in city driving where its 43 city mpg leads the segment.",
+      "orderIndex": 2
+    },
+    {
+      "sectionTitle": "Ownership cost analysis",
+      "content": "Annual fuel cost estimates assume 15,000 miles at $3.50 per gallon. Camry Hybrid: $1,010 annual fuel cost, five-year total $5,050. CR-V Hybrid: $1,310 annual fuel cost, five-year total $6,550. Total ownership cost including depreciation, insurance, and maintenance favors both hybrids over their gasoline counterparts within five years for average drivers.",
+      "orderIndex": 3
+    }
+  ],
+
+  "rating": {
+    "overall": 9.0, "performance": 7.0, "comfort": 8.2, "interior": 8.0,
+    "technology": 7.8, "practicality": 9.2, "value": 9.5, "verdictLabel": "Top Pick"
+  },
+  "tags": ["fuel economy", "hybrid", "rankings", "family car", "efficiency"],
+  "priceAsTestedMsrp": "$34,995",
+  "wordCount": 1500
+}
+
+###
+
+### ── 5. Buyer's guide — family SUVs under $40k
+POST http://localhost:8080/articles/ingest
+Content-Type: application/json
+
+{
+  "articleId": "motortrend-best-family-suv-under-40k-2025",
+  "slug": "2025-best-family-suv-under-40000-buyers-guide",
+  "title": "Best Family SUVs Under $40,000 in 2025: A Buyer's Guide",
+  "articleType": "buyers_guide",
+  "author": "Duncan Brady",
+  "publishDate": "2025-03-28",
+  "updatedDate": null,
+
+  "vehicles": [
+    { "vehicleId": "honda-crv-2025-sport-hybrid",    "year": 2025, "make": "Honda",  "model": "CR-V",    "trim": "Sport Hybrid", "role": "primary" }
+  ],
+
+  "verdict": "For families prioritizing reliability, fuel economy, and resale value under $40,000, the 2025 Honda CR-V Sport Hybrid is our overall pick. It combines 40 mpg combined with genuine three-row utility, a spacious cabin, and Honda's strong reliability history. Competitors offer specific strengths — the Toyota RAV4 Hybrid's off-road trim, the Hyundai Tucson's tech — but the CR-V wins on the balance of virtues that matter most to family buyers.",
+  "pros": "Excellent fuel economy, spacious interior, strong safety scores, Honda reliability, good resale value",
+  "cons": "CVT drone, interior styling conservative, not the fastest in the segment",
+
+  "bodyText": "Family SUV buyers in 2025 face an embarrassment of riches. Nearly every mainstream brand has a capable compact or midsize SUV priced under $40,000, and fuel-sipping hybrid options now dominate the category. Our buyer's guide focuses on the vehicles that balance purchase price, running costs, and practicality — the variables that actually matter once the excitement of a new car fades. The Honda CR-V Sport Hybrid leads our overall picks at $34,995 starting price. At 40 combined mpg it leads the segment in fuel economy, and Honda's real-world reliability data places it among the top three most dependable compact SUVs over a five-year ownership period. The Toyota RAV4 Hybrid is a very close second at 39 combined mpg and starts at $33,050. Its TRD Off-Road trim adds genuine capability that the CR-V cannot match if you anticipate actually using the SUV for light off-pavement adventures. The Hyundai Tucson Hybrid rounds out our top three at $34,510. Its strengths are tech features — the largest standard touchscreen in the segment and better in-cabin connectivity than the Honda or Toyota. If you prioritize technology over reliability history, it's worth considering. All three hybrids cost approximately $1,300 per year to fuel at 15,000 annual miles. A non-hybrid compact SUV in the same price range costs approximately $1,650 per year — a $350 per year difference, or $1,750 over five years. That's before accounting for hybrid tax incentives in some states. For buyers prioritizing lower purchase price over long-term fuel savings, the non-hybrid Honda CR-V EX starts at $31,495 and delivers 30 combined mpg, which is still respectable for the class.",
+
+  "sections": [
+    {
+      "sectionTitle": "Top pick — Honda CR-V Sport Hybrid",
+      "content": "Starting at $34,995 the Honda CR-V Sport Hybrid offers the best combination of fuel economy, reliability, and practicality in the family SUV segment under $40,000. 40 combined mpg, excellent crash-test scores, 76.5 cubic feet of cargo space with second row folded, and Honda's well-earned reliability reputation make it the default recommendation for most family buyers.",
+      "orderIndex": 1
+    },
+    {
+      "sectionTitle": "Ownership cost breakdown",
+      "content": "At 15,000 miles per year the CR-V Hybrid costs approximately $1,310 annually in fuel at $3.50 per gallon. Insurance averages $1,650 per year for a typical driver. Maintenance through 60,000 miles averages $2,100 total. Three-year depreciation holds at approximately 38%, which is best-in-class for the segment. Total five-year ownership cost averages $28,400 excluding the original purchase price.",
+      "orderIndex": 2
+    }
+  ],
+
+  "rating": {
+    "overall": 8.8, "performance": 7.5, "comfort": 8.5, "interior": 8.2,
+    "technology": 8.0, "practicality": 9.4, "value": 9.3, "verdictLabel": "Top Pick"
+  },
+  "tags": ["family car", "SUV", "under $40000", "hybrid", "buyers guide"],
+  "priceAsTestedMsrp": "$36,200",
+  "wordCount": 1650
+}
+
+###
+
+### ── 6. Rivian R1T long-term test
+POST http://localhost:8080/articles/ingest
+Content-Type: application/json
+
+{
+  "articleId": "motortrend-rivian-r1t-2025-longterm",
+  "slug": "2025-rivian-r1t-adventure-long-term-test",
+  "title": "Living With the 2025 Rivian R1T Adventure: A Long-Term Review",
+  "articleType": "long_term",
+  "author": "Miguel Cortina",
+  "publishDate": "2025-04-10",
+  "updatedDate": null,
+
+  "vehicles": [
+    { "vehicleId": "rivian-r1t-2025-adventure", "year": 2025, "make": "Rivian", "model": "R1T", "trim": "Adventure", "role": "primary" }
+  ],
+
+  "verdict": "After twelve months and 24,000 miles, the Rivian R1T Adventure has earned a spot in our garage as the most capable electric truck on sale today. Off-road performance is genuinely class-leading — the quad-motor system and air suspension translate into capability that matches or exceeds dedicated gasoline-powered off-road trucks. The Ford F-150 Lightning is a more conventional alternative, but the Rivian offers a uniqueness of character that no legacy truck manufacturer can currently match.",
+  "pros": "Exceptional off-road capability, premium interior materials, unique gear tunnel storage, over-the-air updates improve the truck over time, 835 hp and 908 lb-ft of torque",
+  "cons": "Charging network still depends on third-party infrastructure, polarizing exterior styling, price escalates rapidly with options, service center network remains sparse outside major metros",
+
+  "bodyText": "Twelve months into our long-term test of the Rivian R1T Adventure, the truck has been less of a science experiment than we expected and more of a capable daily driver with genuine off-road credibility. Range anxiety has been the smallest issue. EPA-rated range is 328 miles, and we've consistently seen 280 to 310 miles in mixed real-world driving. On road trips, we've relied on a mix of Electrify America and Tesla Supercharger stations (the latter via the NACS adapter Rivian now provides). Charging sessions have been reliable but slower than we'd prefer — 10 to 80 percent takes about 45 minutes at a 350kW fast charger. Off-road performance is where the R1T has genuinely surprised us. The quad-motor configuration — one motor per wheel — enables torque vectoring that feels almost supernatural on rocky or uneven terrain. The air suspension lifts the truck from 8 inches ride height to 14 inches, enabling serious clearance without compromising on-road manners. We've taken the R1T to Moab, to the Rubicon Trail, and on countless less-demanding excursions. It's completed all of them without drama. The interior wears well. After 24,000 miles, the vegan leather surfaces show minor wear at the highest-use points but nothing concerning. The large 15.6-inch touchscreen has received multiple over-the-air updates during our ownership, and the software feels more polished now than when we took delivery. Service has been the main friction point. Rivian's direct-sales and direct-service model means fewer locations, and when something went wrong (a minor software bug with the air suspension) we waited three weeks for an appointment. Reliability during those 24,000 miles has been otherwise excellent — no mechanical issues, no battery degradation beyond the expected curve, and the truck has never left us stranded.",
+
+  "sections": [
+    {
+      "sectionTitle": "Off-road capability",
+      "content": "The quad-motor configuration enables torque vectoring at each wheel. Air suspension provides 8 to 14 inches of ride height. The R1T has genuine rock-crawling ability — it completed the Rubicon Trail without damage and without requiring a skid plate upgrade. Approach angle at maximum ride height is 34 degrees, departure angle is 30 degrees, breakover angle is 26 degrees. Wading depth is rated at 3 feet.",
+      "orderIndex": 1
+    },
+    {
+      "sectionTitle": "Charging experience",
+      "content": "EPA-rated range is 328 miles. Real-world range varies from 280 to 310 miles depending on speed and temperature. DC fast charging from 10 to 80 percent takes approximately 45 minutes at 350kW stations. Home charging via a Level 2 (240V) connection adds approximately 25 miles of range per hour. Rivian's adapter now enables Tesla Supercharger access, dramatically expanding usable fast-charging infrastructure.",
+      "orderIndex": 2
+    }
+  ],
+
+  "rating": {
+    "overall": 9.0, "performance": 9.5, "comfort": 8.6, "interior": 9.0,
+    "technology": 8.8, "practicality": 8.2, "value": 7.5, "verdictLabel": "Recommended"
+  },
+  "tags": ["electric truck", "off-road", "long-term test", "adventure"],
+  "priceAsTestedMsrp": "$89,900",
+  "wordCount": 2000
+}
+
+###
+
+### ── 7. Corvette Z06 track test
+POST http://localhost:8080/articles/ingest
+Content-Type: application/json
+
+{
+  "articleId": "motortrend-corvette-z06-2025-track",
+  "slug": "2025-corvette-z06-track-test",
+  "title": "2025 Chevrolet Corvette Z06 Track Test: America's Supercar",
+  "articleType": "track_test",
+  "author": "Christian Seabaugh",
+  "publishDate": "2025-02-25",
+  "updatedDate": null,
+
+  "vehicles": [
+    { "vehicleId": "chevrolet-corvette-2025-z06", "year": 2025, "make": "Chevrolet", "model": "Corvette", "trim": "Z06", "role": "primary" }
+  ],
+
+  "verdict": "The Corvette Z06 delivers supercar performance at a fraction of supercar pricing. Its 670-horsepower naturally aspirated flat-plane-crank V8 is a masterpiece, and the car's handling rivals cars costing three times as much. This is the best performance-per-dollar on sale in 2025.",
+  "pros": "Exotic-car performance, extraordinary engine note, relatively attainable pricing, better everyday usability than a Porsche 911 GT3",
+  "cons": "Interior materials trail the price point's European competitors, ride harsh even in tour mode, visibility compromised by low seating position",
+
+  "bodyText": "The Chevrolet Corvette Z06 represents something genuinely rare — a naturally aspirated supercar in 2025. While the rest of the performance world has embraced turbocharging, hybridization, and in many cases full electrification, Chevrolet has built the Z06 around a 5.5-liter flat-plane-crank V8 that revs to 8,600 rpm and produces 670 horsepower without any forced induction. On our test track the Z06 posted a lap time of 1:24.8 — faster than the Porsche 911 GT3 at $240,000 and within striking distance of the Porsche 911 Turbo S. Zero to 60 mph takes 2.6 seconds. The quarter mile passes in 10.5 seconds at 131 mph. These are genuinely exotic-car numbers from a $115,000 Chevrolet. The engine is the star of the show. The LT6 flat-plane V8 produces a sound closer to a Ferrari 458 than any previous American V8. Redline is 8,600 rpm and the engine pulls hard all the way there. It's a naturally aspirated experience that is disappearing from the market, and the Corvette Z06 may be the last affordable example of the breed. Handling is remarkable. The mid-engine layout places the powertrain behind the driver for ideal weight distribution — 40 percent front, 60 percent rear. Magnetic ride control suspension keeps the body remarkably flat through fast corners while delivering surprising compliance over imperfect pavement. The Corvette Z06's interior is its weakest aspect. Materials and design are several steps behind Porsche and Ferrari at the same price point. The infotainment system is functional but unremarkable.",
+
+  "sections": [
+    {
+      "sectionTitle": "Track performance",
+      "content": "Test track lap time 1:24.8 at Willow Springs. Zero to 60 mph in 2.6 seconds. Quarter mile 10.5 seconds at 131 mph. Lateral acceleration 1.17g on skidpad. 60 to 0 mph braking in 92 feet. The Z06 out-performs the Porsche 911 GT3 ($240,000) and matches cars costing two to three times as much. Tire wear on track is high — expect to replace Michelin Cup 2 R tires every 1,500 track miles.",
+      "orderIndex": 1
+    },
+    {
+      "sectionTitle": "Engine and exhaust",
+      "content": "The LT6 is a 5.5-liter naturally aspirated flat-plane-crank V8 producing 670 horsepower at 8,400 rpm and 460 lb-ft of torque at 6,300 rpm. Redline is 8,600 rpm. The exhaust note has been compared favorably to the Ferrari 458 — high-revving, musical, and unlike any previous American V8. Recommended fuel is 93 octane premium.",
+      "orderIndex": 2
+    }
+  ],
+
+  "rating": {
+    "overall": 9.4, "performance": 10.0, "comfort": 6.5, "interior": 7.0,
+    "technology": 7.8, "practicality": 5.5, "value": 9.6, "verdictLabel": "Top Pick"
+  },
+  "tags": ["sports car", "supercar", "track car", "naturally aspirated", "American"],
+  "priceAsTestedMsrp": "$127,500",
+  "wordCount": 1850
+}
+
+###
+
+### ── 8. EV vs hybrid cost comparison
+POST http://localhost:8080/articles/ingest
+Content-Type: application/json
+
+{
+  "articleId": "motortrend-ev-vs-hybrid-cost-2025",
+  "slug": "2025-ev-versus-hybrid-ownership-cost-analysis",
+  "title": "EV vs Hybrid in 2025: Which Saves More Money Over Five Years?",
+  "articleType": "analysis",
+  "author": "Alex Leanse",
+  "publishDate": "2025-01-10",
+  "updatedDate": "2025-04-05",
+
+  "vehicles": [
+    { "vehicleId": "tesla-model3-2025-long-range",    "year": 2025, "make": "Tesla",  "model": "Model 3", "trim": "Long Range AWD", "role": "primary" },
+    { "vehicleId": "toyota-camry-2025-xse-hybrid",    "year": 2025, "make": "Toyota", "model": "Camry",   "trim": "XSE Hybrid",     "role": "competitor" }
+  ],
+
+  "verdict": "Over a five-year ownership window at 15,000 miles annually, the Tesla Model 3 Long Range saves approximately $4,200 in running costs versus the Toyota Camry Hybrid. However, the Tesla costs approximately $14,000 more to purchase. The crossover point where the Tesla becomes cheaper to own is roughly year nine for the average driver. For drivers exceeding 20,000 annual miles, the crossover point moves to year six.",
+  "pros": "EV: lowest per-mile running cost, no oil changes, instant torque, home charging convenience. Hybrid: lower upfront cost, no charging anxiety, existing fuel infrastructure, lower insurance premiums",
+  "cons": "EV: higher insurance, battery replacement risk beyond 8 years, depreciation unpredictability. Hybrid: battery replacement still required on older examples, slightly higher fuel cost than EV",
+
+  "bodyText": "The question of whether to buy an electric vehicle or a hybrid in 2025 ultimately comes down to math — and the math has shifted significantly over the last two years. Our analysis compares two segment-defining vehicles: the 2025 Tesla Model 3 Long Range AWD at $48,990 and the 2025 Toyota Camry XSE Hybrid at $34,995. On fuel and energy costs alone, the Tesla wins decisively. At home charging rates averaging $0.14 per kWh nationally, the Model 3 costs approximately $580 per year to fuel at 15,000 miles. The Camry Hybrid at 52 combined mpg and $3.50 per gallon costs approximately $1,010 per year. That's a $430 per year advantage for the Tesla, or $2,150 over five years. Maintenance favors the Tesla further. EVs have no oil changes, no spark plugs, no timing belts. Brake wear is reduced through regenerative braking — Tesla owners frequently report brake pads lasting 100,000 miles versus 50,000 for most hybrids. Cabin filter and tire rotation are essentially the complete maintenance schedule. Total five-year maintenance for the Model 3 averages $1,200. For the Camry Hybrid it's approximately $3,150. Insurance is where EVs fall behind. The Tesla Model 3 averages $2,150 per year to insure. The Camry Hybrid averages $1,550. Over five years that's $3,000 extra for the Tesla. Depreciation is the largest single cost of new car ownership and the hardest to predict. Tesla depreciation patterns have stabilized significantly since 2023, with current Model 3s retaining approximately 51% of MSRP after three years. Camry Hybrids retain approximately 64% — one of the best depreciation curves in the industry. Combining all running costs, the Tesla saves $4,200 over five years in operating expenses. But its higher purchase price and worse depreciation mean the total cost of ownership still favors the Camry through year eight for the average driver.",
+
+  "sections": [
+    {
+      "sectionTitle": "Fuel versus electricity cost",
+      "content": "At 15,000 miles annually and $3.50 per gallon, the Toyota Camry Hybrid costs approximately $1,010 per year to fuel. The Tesla Model 3 Long Range at $0.14 per kWh home charging costs approximately $580 per year. The EV's fuel cost advantage is $430 per year, or $2,150 over five years. Public DC fast charging at commercial rates of $0.40 per kWh would raise the Tesla's fuel cost to approximately $1,650 per year — at which point the hybrid becomes cheaper to run on fuel alone.",
+      "orderIndex": 1
+    },
+    {
+      "sectionTitle": "Maintenance cost over five years",
+      "content": "Five-year maintenance for the Tesla Model 3 averages $1,200 including cabin filter replacements, tire rotations, and one brake fluid service. For the Toyota Camry Hybrid five-year maintenance averages $3,150 including oil changes every 10,000 miles, cabin filter replacements, tire rotations, brake service, and one 60,000-mile major service. Tesla's maintenance cost advantage is $1,950 over the five-year window.",
+      "orderIndex": 2
+    },
+    {
+      "sectionTitle": "Insurance and depreciation",
+      "content": "Tesla Model 3 insurance averages $2,150 per year versus $1,550 for the Toyota Camry Hybrid, giving the hybrid a $3,000 advantage over five years. Three-year depreciation favors the Camry Hybrid at 36% versus the Model 3's 49%. Five-year depreciation is approximately 58% for the Tesla versus 48% for the Camry Hybrid. Depreciation is the dominant factor in total cost of ownership.",
+      "orderIndex": 3
+    }
+  ],
+
+  "rating": {
+    "overall": 0, "performance": 0, "comfort": 0, "interior": 0,
+    "technology": 0, "practicality": 0, "value": 0, "verdictLabel": "Analysis"
+  },
+  "tags": ["EV", "hybrid", "ownership cost", "analysis", "electric vehicle"],
+  "priceAsTestedMsrp": null,
+  "wordCount": 1950
+}
+
+###

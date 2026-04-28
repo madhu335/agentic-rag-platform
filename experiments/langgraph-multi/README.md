@@ -5,9 +5,16 @@ Compares Java SupervisorAgent vs LangGraph multi-agent graph.
 ## Stack (UPDATED)
 
 - Planner → vLLM
-- Embeddings → Triton
+- Embeddings → Triton (`text_embedding`, 768d)
+- Reranker → Triton (`cross_reranker`)
 - Retrieval → Postgres (pgvector)
 - Answer → vLLM
+- Judge → vLLM (matches Java `judge.provider=vllm` default via
+  `DefaultJudgeClient`)
+
+Mirrors Java's `LlmRouter` + `JudgeRouter` with `llm.provider=vllm` and
+`judge.provider=vllm`. Swap either side independently by changing the
+client class — same pattern as on the Java side.
 
 ---
 
@@ -66,10 +73,21 @@ bmw-m3-2025-competition
 
 ## Triton Contract
 
-Input:
-- TEXT
-- BYTES
-- shape [batch,1]
+Mirrors the Java `TritonEmbeddingClient` and `TritonRerankerClient`:
+
+**Embedding (`text_embedding`):**
+- Endpoint: `POST /v2/models/text_embedding/infer`
+- Input: `TEXT`, datatype `BYTES`, shape `[batch, 1]`
+- Output: `EMBEDDING`, shape `[batch, dim]` — reshape from the flat list
+
+**Reranker (`cross_reranker`):**
+- Endpoint: `POST /v2/models/cross_reranker/infer`
+- Inputs: `QUERY` + `DOCUMENT`, each `BYTES`, each shape `[N, 1]` where
+  `N = documents.size()` (query is duplicated `N` times)
+- Output: `SCORE`, shape `[N, 1]` (may deserialize as nested list) or
+  flat `[N]` — handle both
+
+Both clients block up to 60s per call; batch size is bounded upstream.
 
 ---
 

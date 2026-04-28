@@ -3,12 +3,14 @@ package com.example.airagassistant.domain.article.service;
 import com.example.airagassistant.rag.EmbeddingClient;
 import com.example.airagassistant.rag.PgVectorStore;
 import com.example.airagassistant.rag.RagAnswerService;
+import com.example.airagassistant.rag.ReRankService;
 import com.example.airagassistant.rag.RetrievalMode;
 import com.example.airagassistant.rag.SearchHit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -40,6 +42,7 @@ public class ArticleRagService {
     private final RagAnswerService ragAnswerService;
     private final EmbeddingClient  embeddingClient;
     private final PgVectorStore    vectorStore;
+    private final ReRankService    reRankService;
 
     // ─── 1. Single-article ask ────────────────────────────────────────────────
 
@@ -116,7 +119,21 @@ public class ArticleRagService {
         List<Double> queryVector = embeddingClient.embed(question);
         List<SearchHit> vectorHits  = vectorStore.searchAllWithScores(queryVector, topK * 3, "article");
         List<SearchHit> keywordHits = vectorStore.keywordSearchAll(question, topK * 3, "article");
-        List<SearchHit> fused       = fuseRRF(vectorHits, keywordHits, candidateK);
+
+        // ─── Weak-retrieval floor ────────────────────────────────────────────
+        // Mirrors VehicleRagService.searchAllVehicles. If neither vector nor
+        // BM25 found anything meaningful, the query is almost certainly
+        // out-of-domain or nonsense. Returning an empty list short-circuits
+        // the EDGE_CASE_LEAK failure mode the article golden set caught.
+        double bestVector  = vectorHits.isEmpty()  ? 0 : vectorHits.get(0).score();
+        double bestKeyword = keywordHits.isEmpty() ? 0 : keywordHits.get(0).score();
+        if (bestVector < 0.50 && bestKeyword < 0.2) {
+            log.warn("Rejecting low-quality article retrieval: vector={} keyword={} q='{}'",
+                    bestVector, bestKeyword, question);
+            return List.of();
+        }
+
+        List<SearchHit> fused = fuseRRF(vectorHits, keywordHits, candidateK);
 
         // Apply rating filter if question contains a score threshold
         RatingFilter ratingFilter = RatingFilter.parse(question);
@@ -126,9 +143,47 @@ public class ArticleRagService {
             fused = applyRatingFilter(fused, ratingFilter);
         }
 
+        // ─── Cross-encoder rerank ────────────────────────────────────────────
+        // Promotes the chunks the cross-encoder actually finds most relevant
+        // before the chunk-type priority pass. Recall stays the same (same
+        // candidate pool), precision goes up because better-matching chunks
+        // float to the top within each priority tier.
+        List<SearchHit> reranked;
+        try {
+            reranked = reRankService.rerank(question, fused);
+        } catch (Exception e) {
+            // Fail-open to protect recall — if Triton is unhealthy, fall back
+            // to the RRF-fused order rather than dropping the request.
+            log.warn("Article reranker failed; falling back to fused order. q='{}'",
+                    question, e);
+            reranked = fused;
+        }
+
+        // ─── Dedup: keep best chunk per article ──────────────────────────────
+        // Article queries naturally pull multiple chunks from the same article
+        // (identity + ratings + pros_cons + sections all match "Tesla Model 3
+        // review"). Returning all of them as ArticleSearchHits inflates the
+        // result count without adding article-level information and tanks
+        // article-level precision in eval. Keep the highest-scoring chunk per
+        // article — order by reranker score desc — then proceed with chunk-type
+        // priority sort within that deduplicated set.
+        Map<String, SearchHit> bestPerArticle = new LinkedHashMap<>();
+        for (SearchHit hit : reranked) {
+            String articleId = extractArticleId(hit.record().id());
+            bestPerArticle.merge(articleId, hit,
+                    (existing, candidate) ->
+                            candidate.score() > existing.score() ? candidate : existing);
+        }
+        List<SearchHit> dedupedByArticle = bestPerArticle.values().stream()
+                .sorted((a, b) -> Double.compare(b.score(), a.score()))
+                .toList();
+
+        log.debug("Article dedup: {} chunks → {} unique articles",
+                reranked.size(), dedupedByArticle.size());
+
         // Prefer article-level chunks (identity/ratings/pros_cons) over body windows
         // for cross-article queries — gives cleaner answers
-        List<SearchHit> ranked = rankByChunkPreference(fused, question);
+        List<SearchHit> ranked = rankByChunkPreference(dedupedByArticle, question);
 
         return ranked.stream()
                 .limit(topK)

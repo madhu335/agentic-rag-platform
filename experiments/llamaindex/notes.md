@@ -91,6 +91,20 @@ Where the framework gains speed:
 - **Swap components with a config change.** OpenAI instead of Ollama? Change one import. Qdrant instead of in-memory? One line on `StorageContext`.
 - **Built-in evals.** `llama_index.core.evaluation` has faithfulness / relevancy / correctness evaluators out of the box. The Java side would need these hand-rolled.
 
+Where the gap has closed on the Java side:
+
+- **Provider swapping is now one property.** `LlmRouter` and `JudgeRouter`
+  read `llm.provider` / `judge.provider` and dispatch to vLLM, Triton-vLLM,
+  OpenAI-compatible, Claude, or Ollama via `@ConditionalOnProperty` beans.
+  Embeddings are behind `TritonEmbeddingAdapter` implementing the existing
+  `EmbeddingClient` interface. "Switch to Claude for judge" is a config
+  change on the Java side too now — not as breezy as LlamaIndex's import
+  swap, but the ceremony is one line in `application.yml`.
+- **Answer and judge are decoupled.** Setting `llm.provider=vllm` and
+  `judge.provider=claude` runs a local answer model with Claude as the
+  judge. LlamaIndex's built-in evaluators use the same `Settings.llm` by
+  default; decoupling them takes custom wiring.
+
 ## When to pick which
 
 - **LlamaIndex** when: fast prototyping, swapping components often, the team doesn't want to own retrieval internals, standard chunking/fusion is good enough, built-in evals are desired.

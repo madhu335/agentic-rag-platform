@@ -4,9 +4,15 @@ Ports your Java RAG orchestration into a LangGraph state machine.
 
 ## Stack (UPDATED)
 
-- Embeddings → Triton
-- LLM → vLLM
+- Embeddings → Triton (`text_embedding`)
+- Reranker → Triton (`cross_reranker`)
+- LLM → vLLM (answer + judge)
 - DB → Postgres (pgvector)
+
+Mirrors the Java stack: the Java side runs `LlmRouter` (default
+`llm.provider=vllm`) and `JudgeRouter` (default `judge.provider=vllm` →
+`DefaultJudgeClient` → same vLLM). This port uses the same endpoint for
+both answer and judge so the comparison stays like-for-like.
 
 ---
 

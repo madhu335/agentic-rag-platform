@@ -25,10 +25,17 @@ This gives you concrete answers for:
 
 | Layer | System |
 |------|--------|
-| Embeddings | Triton (`http://localhost:8000`) |
-| LLM | vLLM (`http://localhost:8001/v1`) |
+| Embeddings | Triton `text_embedding` (`http://localhost:8000`) |
+| Reranker | Triton `cross_reranker` (`http://localhost:8000`) |
+| LLM | vLLM `meta-llama/Meta-Llama-3.1-8B-Instruct` (`http://localhost:8001/v1`) |
+| Judge | vLLM (Java side: `DefaultJudgeClient` wrapping `LlmRouter`) |
 | DB | Postgres (`ai_rag_assistant`) |
 | Table | `data_llamaindex_chunks` |
+
+The Java side reaches these through `LlmRouter` / `JudgeRouter` /
+`TritonEmbeddingAdapter` / `TritonRerankerClient`. This experiment calls
+vLLM and Triton directly with `httpx` so the comparison is framework vs
+framework, not wrapper vs wrapper.
 
 ---
 

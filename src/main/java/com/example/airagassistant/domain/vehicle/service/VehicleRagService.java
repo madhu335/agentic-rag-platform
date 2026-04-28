@@ -1,5 +1,6 @@
 package com.example.airagassistant.domain.vehicle.service;
 
+import com.example.airagassistant.LlmClient;
 import com.example.airagassistant.rag.EmbeddingClient;
 import com.example.airagassistant.rag.PgVectorStore;
 import com.example.airagassistant.rag.RagAnswerService;
@@ -24,6 +25,7 @@ public class VehicleRagService {
     private final RagAnswerService ragAnswerService;
     private final EmbeddingClient embeddingClient;
     private final PgVectorStore vectorStore;
+    private final LlmClient llmClient;
 
     // ─── Single-vehicle query ──────────────────────────────────────────────
 
@@ -44,9 +46,96 @@ public class VehicleRagService {
 
         return ragAnswerService.answerWithMode("vehicle", vehicleId, question, topK, mode);
     }
+    private boolean isRelevantAfterRetrieval(String question, List<SearchHit> hits) {
+        if (hits == null || hits.isEmpty()) {
+            return false;
+        }
 
+        String context = hits.stream()
+                .limit(5)
+                .map(h -> h.record().id() + "\n" + h.record().text())
+                .reduce("", (a, b) -> a + "\n\n---\n\n" + b);
+
+        String prompt = """
+            You are a strict retrieval relevance judge for a vehicle search system.
+
+            Decide whether the retrieved context actually answers the user's query.
+
+            Rules:
+            - Return false if the query is gibberish or unknown.
+            - Return false if the context only matches generic words like "vehicle", "car", or "specs".
+            - Return true only if the retrieved context clearly matches the specific user request.
+            - Return false ONLY if the context is clearly unrelated (e.g., gibberish queries, no overlap in topic).
+            - Return true if the context contains information that could plausibly help answer the query, even partially.
+            - Do not explain.
+
+            Return ONLY valid JSON:
+            {"relevant": true}
+            or
+            {"relevant": false}
+
+            User query:
+            %s
+
+            Retrieved context:
+            %s
+            """.formatted(question, context);
+
+        try {
+            String response = llmClient.answer(prompt, List.of());
+
+            log.info("Vehicle retrieval relevance judge response: {}", response);
+
+            String normalized = response.toLowerCase()
+                    .replace(" ", "")
+                    .replace("\n", "")
+                    .replace("\r", "");
+
+            return normalized.contains("\"relevant\":true");
+
+        } catch (Exception e) {
+            log.warn("Vehicle retrieval relevance judge failed; allowing results. query='{}'", question, e);
+            return true; // fail-open to protect recall
+        }
+    }
     // ─── Cross-vehicle (fleet) query ───────────────────────────────────────
+    public List<SearchHit> searchAllVehicles(String question, int topK, String docType) {
+        if (question == null || question.isBlank()) {
+            throw new IllegalArgumentException("question cannot be blank");
+        }
 
+        // Fetch a wider pool so numeric post-filter has enough candidates
+        int candidateK = Math.max(topK * 3, 12);
+        List<Double> queryVector = embeddingClient.embed(question);
+        List<SearchHit> vectorHits  = vectorStore.searchAllWithScores(queryVector, candidateK, docType);
+        List<SearchHit> keywordHits = vectorStore.keywordSearchAll(question, candidateK, docType);
+        double bestVector = vectorHits.isEmpty() ? 0 : vectorHits.get(0).score();
+        double bestKeyword = keywordHits.isEmpty() ? 0 : keywordHits.get(0).score();
+
+        boolean weakVector = bestVector < 0.50;
+        boolean weakKeyword = bestKeyword < 0.2;
+
+        if (weakVector && weakKeyword) {
+            log.warn("Rejecting low-quality retrieval: vector={} keyword={} q={}",
+                    bestVector, bestKeyword, question);
+            return List.of();
+        }
+        List<SearchHit> fused       = fuseRRF(vectorHits, keywordHits, candidateK);
+
+        // Apply numeric boost/penalty if the question has a threshold expression
+        NumericFilter filter = NumericFilter.parse(question);
+        if (filter != null) {
+            log.debug("Fleet search numeric filter — field={} op={} value={}",
+                    filter.field(), filter.operator(), filter.value());
+            fused = applyNumericBoost(fused, filter);
+        }
+        if (!isRelevantAfterRetrieval(question, fused)) {
+            log.warn("Vehicle chunks rejected by relevance judge — query='{}'", question);
+            return List.of();
+        }
+
+        return fused.stream().limit(topK).toList();
+    }
     /**
      * Searches across ALL ingested vehicles.
      *
@@ -67,6 +156,17 @@ public class VehicleRagService {
         List<Double> queryVector = embeddingClient.embed(question);
         List<SearchHit> vectorHits  = vectorStore.searchAllWithScores(queryVector, candidateK);
         List<SearchHit> keywordHits = vectorStore.keywordSearchAll(question, candidateK);
+        double bestVector = vectorHits.isEmpty() ? 0 : vectorHits.get(0).score();
+        double bestKeyword = keywordHits.isEmpty() ? 0 : keywordHits.get(0).score();
+
+        boolean weakVector = bestVector < 0.50;
+        boolean weakKeyword = bestKeyword < 0.2;
+
+        if (weakVector && weakKeyword) {
+            log.warn("Rejecting low-quality retrieval: vector={} keyword={} q={}",
+                    bestVector, bestKeyword, question);
+            return List.of();
+        }
         List<SearchHit> fused       = fuseRRF(vectorHits, keywordHits, candidateK);
 
         // Apply numeric boost/penalty if the question has a threshold expression
@@ -76,9 +176,14 @@ public class VehicleRagService {
                     filter.field(), filter.operator(), filter.value());
             fused = applyNumericBoost(fused, filter);
         }
+        if (!isRelevantAfterRetrieval(question, fused)) {
+            log.warn("Vehicle chunks rejected by relevance judge — query='{}'", question);
+            return List.of();
+        }
 
         return fused.stream().limit(topK).toList();
     }
+
 
     // ─── Numeric post-filter ───────────────────────────────────────────────
 

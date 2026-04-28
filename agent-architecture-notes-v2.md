@@ -82,8 +82,9 @@ the binary decision that `OrchestratorService.handle()` branches on.
 
 The router is deliberately simple — string matching, no LLM call. This is
 a design choice, not a limitation. An LLM-based classifier would be more
-accurate but would add latency (one more round-trip to Ollama) to every
-request, including simple factual questions that don't need agent reasoning.
+accurate but would add latency (one more round-trip to whichever model
+`LlmRouter` resolves to) to every request, including simple factual
+questions that don't need agent reasoning.
 The keyword approach is fast, deterministic, and easy to debug. For the
 current corpus and query shapes, it routes correctly in practice.
 
@@ -134,7 +135,8 @@ producers. `PlannerService` applies three layers of validation:
 
 1. **JSON extraction** — strips markdown code fences, finds the first
    `{...}` object, strips JS-style comments. Same lenient parsing pattern
-   used in `JudgeService`.
+   used in `JudgeService`, which accepts output from any provider the
+   `JudgeRouter` resolves to (Claude, OpenAI, vLLM, or Ollama).
 
 2. **Step validation** — each step is checked against an allowlist
    (`INITIAL_ALLOWED_STEPS` or `CONTINUATION_ALLOWED_STEPS` depending on
@@ -144,13 +146,13 @@ producers. `PlannerService` applies three layers of validation:
 
 3. **Execution rule enforcement** — structural constraints that the LLM
    might violate:
-   - Email steps are blocked until research has completed (if research is
-     in the plan)
-   - `send` without a prior `email` step gets downgraded to `email`
-   - `send_sms` without prior `compose_sms` gets a `compose_sms` inserted
-   - Missing recipients/subjects get safe defaults (`hr@company.com`,
-     `Requested Summary`)
-   - Vehicle steps pass through without ordering constraints
+    - Email steps are blocked until research has completed (if research is
+      in the plan)
+    - `send` without a prior `email` step gets downgraded to `email`
+    - `send_sms` without prior `compose_sms` gets a `compose_sms` inserted
+    - Missing recipients/subjects get safe defaults (`hr@company.com`,
+      `Requested Summary`)
+    - Vehicle steps pass through without ordering constraints
 
 This three-layer validation means **the planner can produce any garbage
 and the system will either fix it or stop safely**. The LLM is treated as

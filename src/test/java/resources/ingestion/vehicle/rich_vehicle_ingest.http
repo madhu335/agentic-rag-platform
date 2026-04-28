@@ -225,3 +225,26 @@ Content-Type: application/json
 
   "summary": "The 2025 BMW M3 Competition is the benchmark sports sedan with a 503hp twin-turbo S58 inline-6, 0-60 in 3.4 seconds, and a chassis tuned equally for the track and the daily commute."
 }
+
+### Ingest Rivian rit 2025 adventure
+POST http://localhost:8080/vehicles/ingest/rich
+Content-Type: application/json
+
+{
+  "vehicleId": "rivian-r1t-2025-adventure",
+  "year": 2025,
+  "make": "Rivian",
+  "model": "R1T",
+  "trim": "Adventure",
+  "bodyStyle": "Pickup Truck",
+  "engine": "Quad motor electric",
+  "horsepower": 835,
+  "torque": 908,
+  "drivetrain": "AWD",
+  "transmission": "Single-speed automatic",
+  "mpgCity": "N/A",
+  "mpgHighway": "N/A",
+  "msrp": "$73,000",
+  "features": ["gear tunnel storage", "camp kitchen", "air compressor", "tank turn capability", "14-inch driver display"],
+  "summary": "All-electric adventure truck with 835hp quad motors, 314-mile range, and unique gear tunnel storage."
+}
