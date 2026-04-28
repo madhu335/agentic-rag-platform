@@ -20,13 +20,13 @@ import java.util.stream.Collectors;
 public class VehicleEvaluationService {
 
     private final VehicleRagService vehicleRagService;
-    private final PgVectorStore     vectorStore;
-    private final EmbeddingClient   embeddingClient;
-    private final JdbcTemplate      jdbcTemplate;
-    private final ObjectMapper      objectMapper;
+    private final PgVectorStore vectorStore;
+    private final EmbeddingClient embeddingClient;
+    private final JdbcTemplate jdbcTemplate;
+    private final ObjectMapper objectMapper;
 
     private static final double RECALL_TARGET = 0.85;
-    private static final int    DEFAULT_TOP_K = 5;
+    private static final int DEFAULT_TOP_K = 13;
 
     // ─── Run ──────────────────────────────────────────────────────────────────
 
@@ -45,7 +45,7 @@ public class VehicleEvaluationService {
 
     private EntryResult evaluate(GoldenEntry entry) {
         try {
-            List<SearchHit> hits = vehicleRagService.searchAllVehicles(entry.query(), DEFAULT_TOP_K);
+            List<SearchHit> hits = vehicleRagService.searchAllVehicles(entry.query(), DEFAULT_TOP_K, entry.docType);
 
             List<String> returnedVehicleIds = hits.stream()
                     .map(h -> extractVehicleId(h.record().id()))
@@ -56,17 +56,17 @@ public class VehicleEvaluationService {
                     .map(h -> h.record().id())
                     .toList();
 
-            Set<String> expected   = new HashSet<>(entry.expectedVehicleIds());
-            Set<String> returned   = new HashSet<>(returnedVehicleIds);
+            Set<String> expected = new HashSet<>(entry.expectedVehicleIds());
+            Set<String> returned = new HashSet<>(returnedVehicleIds);
             Set<String> acceptable = new HashSet<>(entry.acceptableVehicleIds());
 
-            long correctCount    = returned.stream().filter(expected::contains).count();
+            long correctCount = returned.stream().filter(expected::contains).count();
             long acceptableCount = returned.stream()
                     .filter(v -> acceptable.contains(v) && !expected.contains(v)).count();
 
-            double recall    = expected.isEmpty() ? 1.0 : (double) correctCount / expected.size();
+            double recall = expected.isEmpty() ? 1.0 : (double) correctCount / expected.size();
             double precision = returned.isEmpty() ? 1.0 : (double) correctCount / returned.size();
-            boolean passed   = correctCount >= entry.minimumRecallCount();
+            boolean passed = correctCount >= entry.minimumRecallCount();
 
             // Edge case: nonsense query must return nothing meaningful
             if (entry.expectedVehicleIds().isEmpty() && entry.minimumRecallCount() == 0) {
@@ -104,22 +104,22 @@ public class VehicleEvaluationService {
     /**
      * Inspects missed vehicles and returns a human-readable diagnosis explaining
      * exactly WHY retrieval failed — missing chunks, wrong vocabulary, low scores, etc.
-     *
+     * <p>
      * Failure reasons:
-     *  MISSING_CHUNKS        — expected vehicle has no chunks at all in document_chunks
-     *  MISSING_CHUNK_TYPE    — vehicle ingested but specific chunk type not present
-     *                          (e.g. no ownership_cost chunk — ingested via simple /ingest)
-     *  LOW_SCORE             — chunk exists but scores too low to make top-K
-     *  VOCABULARY_MISMATCH   — chunk exists and scores ok but wrong vocabulary
-     *  OUTRANKED             — chunk exists but less relevant vehicles scored higher
-     *  EDGE_CASE_LEAK        — nonsense query returned results it should not have
+     * MISSING_CHUNKS        — expected vehicle has no chunks at all in document_chunks
+     * MISSING_CHUNK_TYPE    — vehicle ingested but specific chunk type not present
+     * (e.g. no ownership_cost chunk — ingested via simple /ingest)
+     * LOW_SCORE             — chunk exists but scores too low to make top-K
+     * VOCABULARY_MISMATCH   — chunk exists and scores ok but wrong vocabulary
+     * OUTRANKED             — chunk exists but less relevant vehicles scored higher
+     * EDGE_CASE_LEAK        — nonsense query returned results it should not have
      */
     private FailureAnalysis diagnose(GoldenEntry entry,
                                      Set<String> missedVehicleIds,
                                      List<String> returnedChunkIds,
                                      List<SearchHit> hits) {
-        List<String> reasons     = new ArrayList<>();
-        List<String> chunkGaps   = new ArrayList<>();
+        List<String> reasons = new ArrayList<>();
+        List<String> chunkGaps = new ArrayList<>();
         List<String> suggestions = new ArrayList<>();
 
         // Edge case: nonsense query leaked results
@@ -230,16 +230,16 @@ public class VehicleEvaluationService {
         try {
             int idx = Integer.parseInt(indexStr);
             return switch (expectedType) {
-                case "performance"    -> idx == 2;
+                case "performance" -> idx == 2;
                 case "ownership_cost" -> idx == 3;
-                case "rankings"       -> idx == 4;
-                case "safety"         -> idx == 5;
+                case "rankings" -> idx == 4;
+                case "safety" -> idx == 5;
                 case "features_trims" -> idx == 6;
-                case "reviews"        -> idx == 7;
-                case "maintenance"    -> idx >= 10 && idx <= 19;
-                case "recall"         -> idx >= 20;
-                case "identity"       -> idx == 1;
-                default               -> true;
+                case "reviews" -> idx == 7;
+                case "maintenance" -> idx >= 10 && idx <= 19;
+                case "recall" -> idx >= 20;
+                case "identity" -> idx == 1;
+                default -> true;
             };
         } catch (NumberFormatException e) {
             return false;
@@ -253,21 +253,23 @@ public class VehicleEvaluationService {
                     try {
                         int i = Integer.parseInt(idx);
                         return i + "(" + indexToTypeName(i) + ")";
-                    } catch (NumberFormatException e) { return idx; }
+                    } catch (NumberFormatException e) {
+                        return idx;
+                    }
                 })
                 .collect(Collectors.joining(", "));
     }
 
     private String indexToTypeName(int idx) {
-        if (idx == 1)           return "identity";
-        if (idx == 2)           return "performance";
-        if (idx == 3)           return "ownership_cost";
-        if (idx == 4)           return "rankings";
-        if (idx == 5)           return "safety";
-        if (idx == 6)           return "features";
-        if (idx == 7)           return "reviews";
+        if (idx == 1) return "identity";
+        if (idx == 2) return "performance";
+        if (idx == 3) return "ownership_cost";
+        if (idx == 4) return "rankings";
+        if (idx == 5) return "safety";
+        if (idx == 6) return "features";
+        if (idx == 7) return "reviews";
         if (idx >= 10 && idx <= 19) return "maintenance";
-        if (idx >= 20)          return "recall";
+        if (idx >= 20) return "recall";
         return "unknown";
     }
 
@@ -283,15 +285,15 @@ public class VehicleEvaluationService {
 
     private String categoryToChunkType(String category) {
         return switch (category) {
-            case "PERFORMANCE"    -> "performance";
+            case "PERFORMANCE" -> "performance";
             case "OWNERSHIP_COST" -> "ownership_cost";
-            case "MAINTENANCE"    -> "maintenance";
-            case "SAFETY"         -> "safety";
-            case "RANKINGS"       -> "rankings";
-            case "FEATURES"       -> "features_trims";
-            case "CROSS_CHUNK"    -> null;  // spans multiple — don't check one type
-            case "FLEET_FILTER"   -> null;
-            default               -> null;
+            case "MAINTENANCE" -> "maintenance";
+            case "SAFETY" -> "safety";
+            case "RANKINGS" -> "rankings";
+            case "FEATURES" -> "features_trims";
+            case "CROSS_CHUNK" -> null;  // spans multiple — don't check one type
+            case "FLEET_FILTER" -> null;
+            default -> null;
         };
     }
 
@@ -306,26 +308,26 @@ public class VehicleEvaluationService {
     private String classifyPrimaryReason(List<String> reasons) {
         if (reasons.isEmpty()) return "UNKNOWN";
         String combined = String.join(" ", reasons).toUpperCase();
-        if (combined.contains("NOT INGESTED"))        return "MISSING_CHUNKS";
-        if (combined.contains("MISSING CHUNK TYPE"))  return "MISSING_CHUNK_TYPE";
+        if (combined.contains("NOT INGESTED")) return "MISSING_CHUNKS";
+        if (combined.contains("MISSING CHUNK TYPE")) return "MISSING_CHUNK_TYPE";
         if (combined.contains("VOCABULARY MISMATCH")) return "VOCABULARY_MISMATCH";
-        if (combined.contains("OUTRANKED"))           return "OUTRANKED";
-        if (combined.contains("LOW SCORE"))           return "LOW_SCORE";
-        if (combined.contains("EDGE_CASE_LEAK"))      return "EDGE_CASE_LEAK";
+        if (combined.contains("OUTRANKED")) return "OUTRANKED";
+        if (combined.contains("LOW SCORE")) return "LOW_SCORE";
+        if (combined.contains("EDGE_CASE_LEAK")) return "EDGE_CASE_LEAK";
         return "UNKNOWN";
     }
 
     // ─── Report builder ───────────────────────────────────────────────────────
 
     private EvalReport buildReport(List<EntryResult> results) {
-        double overallRecall    = avg(results, EntryResult::recall);
+        double overallRecall = avg(results, EntryResult::recall);
         double overallPrecision = avg(results, EntryResult::precision);
-        long   totalPassed      = results.stream().filter(EntryResult::passed).count();
-        boolean meetsTarget     = overallRecall >= RECALL_TARGET;
+        long totalPassed = results.stream().filter(EntryResult::passed).count();
+        boolean meetsTarget = overallRecall >= RECALL_TARGET;
 
-        Map<String, CategoryStats> byCategory   = groupStats(results, r -> r.entry().category());
+        Map<String, CategoryStats> byCategory = groupStats(results, r -> r.entry().category());
         Map<String, CategoryStats> byDifficulty = groupStats(results, r -> r.entry().difficulty());
-        Map<String, CategoryStats> bySource     = groupStats(results, r -> r.entry().source());
+        Map<String, CategoryStats> bySource = groupStats(results, r -> r.entry().source());
 
         List<FailedEntry> failed = results.stream()
                 .filter(r -> !r.passed())
@@ -341,9 +343,9 @@ public class VehicleEvaluationService {
 
         log.info("══════════════════════════════════════════════");
         log.info("Vehicle RAG Evaluation Report");
-        log.info("  Overall recall:    {:.1f}%  (target {:.0f}%)",
-                overallRecall * 100, RECALL_TARGET * 100);
-        log.info("  Overall precision: {:.1f}%", overallPrecision * 100);
+        log.info(String.format("  Overall recall:    %.1f%%  (target %.0f%%)",
+                overallRecall * 100, RECALL_TARGET * 100));
+        log.info(String.format("  Overall precision: %.1f%%", overallPrecision * 100));
         log.info("  Passed: {}/{}", totalPassed, results.size());
         log.info("  Meets target: {}", meetsTarget ? "YES" : "NO");
         failed.forEach(f -> {
@@ -396,7 +398,7 @@ public class VehicleEvaluationService {
     @SuppressWarnings("unchecked")
     private GoldenEntry toEntry(Map<String, Object> m) {
         return new GoldenEntry(
-                str(m, "entryId"), str(m, "query"),
+                str(m, "entryId"), str(m, "query"), str(m, "docType"),
                 listOf(m, "expectedVehicleIds"), listOf(m, "acceptableVehicleIds"),
                 str(m, "category"), str(m, "difficulty"), str(m, "source"),
                 ((Number) m.getOrDefault("minimumRecallCount", 1)).intValue(),
@@ -422,18 +424,20 @@ public class VehicleEvaluationService {
     // ─── Records ──────────────────────────────────────────────────────────────
 
     public record GoldenEntry(
-            String entryId, String query,
+            String entryId, String query, String docType,
             List<String> expectedVehicleIds, List<String> acceptableVehicleIds,
             String category, String difficulty, String source,
             int minimumRecallCount, List<String> expectedChunkIds, String notes
-    ) {}
+    ) {
+    }
 
     public record EntryResult(
             GoldenEntry entry, List<String> returnedVehicleIds,
             List<String> returnedChunkIds, double recall, double precision,
             long correctCount, long acceptableCount,
             boolean passed, FailureAnalysis analysis
-    ) {}
+    ) {
+    }
 
     public record FailureAnalysis(
             String primaryReason,
@@ -441,17 +445,20 @@ public class VehicleEvaluationService {
             List<String> chunkGaps,
             List<String> returnedChunkIds,
             List<String> suggestions
-    ) {}
+    ) {
+    }
 
     public record CategoryStats(
             double recall, double precision, int passed, int total
-    ) {}
+    ) {
+    }
 
     public record FailedEntry(
             String entryId, String query,
             List<String> expected, List<String> returned,
             double recall, FailureAnalysis analysis
-    ) {}
+    ) {
+    }
 
     public record EvalReport(
             double overallRecall, double overallPrecision,
@@ -460,5 +467,6 @@ public class VehicleEvaluationService {
             Map<String, CategoryStats> byDifficulty,
             Map<String, CategoryStats> bySource,
             List<FailedEntry> failedEntries
-    ) {}
+    ) {
+    }
 }
