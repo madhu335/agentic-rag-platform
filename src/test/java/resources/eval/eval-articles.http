@@ -1,0 +1,17 @@
+### ── Run article eval (full report)
+GET http://localhost:8080/api/eval/articles/recall/report
+Accept: application/json
+
+###
+
+### ── Run vehicle eval for comparison
+GET http://localhost:8080/api/eval/vehicles/recall/report
+Accept: application/json
+
+###
+
+### ── Spot-check a single article query through the existing per-doc harness
+GET http://localhost:8080/api/eval/debug?docId=motortrend-bmw-m3-2025-review&question=what does the M3 review say about value&k=5
+Accept: application/json
+
+###
