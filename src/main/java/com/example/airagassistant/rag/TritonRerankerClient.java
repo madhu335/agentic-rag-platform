@@ -1,5 +1,6 @@
 package com.example.airagassistant.rag;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Component
 public class TritonRerankerClient {
 
@@ -25,18 +27,49 @@ public class TritonRerankerClient {
         this.modelName = modelName;
     }
 
-    @SuppressWarnings("unchecked")
+    /**
+     * Scores documents against the query. Chunks into sub-batches of MAX_BATCH
+     * because the Triton {@code cross_reranker} model is configured with
+     * {@code max_batch_size: 32} and rejects larger requests with HTTP 400.
+     * Order of returned scores matches the input document order.
+     */
     public List<Double> score(String query, List<String> documents) {
         if (documents == null || documents.isEmpty()) {
             return List.of();
         }
 
-        List<List<String>> queries = documents.stream()
-                .map(d -> List.of(query == null ? "" : query))
+        final int MAX_BATCH = 32;
+        if (documents.size() <= MAX_BATCH) {
+            return scoreBatch(query, documents);
+        }
+
+        int numBatches = (documents.size() + MAX_BATCH - 1) / MAX_BATCH;
+        log.debug("Reranker chunking {} documents into {} sub-batches of <= {}",
+                documents.size(), numBatches, MAX_BATCH);
+
+        List<Double> all = new ArrayList<>(documents.size());
+        for (int i = 0; i < documents.size(); i += MAX_BATCH) {
+            int end = Math.min(i + MAX_BATCH, documents.size());
+            all.addAll(scoreBatch(query, documents.subList(i, end)));
+        }
+        return all;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Double> scoreBatch(String query, List<String> documents) {
+        // KFServing v2 spec: BYTES inputs with shape [N,1] are passed as a
+        // FLAT list of N strings. Triton reshapes internally based on the
+        // shape header. Sending a nested List<List<String>> trips strict
+        // parsers — the article path hit 400 Bad Request because article
+        // body windows contain newlines and unicode that some Triton builds
+        // refuse to parse out of the nested form.
+        String safeQuery = query == null ? "" : query;
+        List<String> queries = documents.stream()
+                .map(d -> safeQuery)
                 .toList();
 
-        List<List<String>> docs = documents.stream()
-                .map(d -> List.of(d == null ? "" : d))
+        List<String> docs = documents.stream()
+                .map(d -> d == null ? "" : d)
                 .toList();
 
         Map<String, Object> body = Map.of(
@@ -61,6 +94,14 @@ public class TritonRerankerClient {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(body)
                 .retrieve()
+                .onStatus(
+                        status -> status.is4xxClientError() || status.is5xxServerError(),
+                        resp -> resp.bodyToMono(String.class)
+                                .defaultIfEmpty("")
+                                .map(errBody -> new IllegalStateException(
+                                        "Triton reranker " + resp.statusCode().value()
+                                                + " — " + errBody))
+                )
                 .bodyToMono(Map.class)
                 .timeout(Duration.ofSeconds(60))
                 .block();
