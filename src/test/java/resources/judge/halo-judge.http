@@ -1,0 +1,53 @@
+### 0. Halo server reachable? (direct, bypasses the app)
+GET http://localhost:18002/api/v1/models
+
+### 1. Raw gpt-oss call (direct, bypasses the app) - check "content" is plain JSON
+POST http://localhost:18002/api/v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "gpt-oss-120b-Q4_K_M",
+  "temperature": 0.1,
+  "max_tokens": 1024,
+  "messages": [
+    {"role": "system", "content": "Reasoning: low\nRespond with a single JSON object and nothing else."},
+    {"role": "user", "content": "Return {\"ok\": true, \"model\": \"<your name>\"}"}
+  ]
+}
+
+### 2. App judge - grounded, correct answer (expect grounded=true, score >= 0.8)
+POST http://localhost:8080/api/judge/test
+Content-Type: application/json
+
+{
+  "question": "What is the horsepower of the 2025 BMW M3 Competition?",
+  "answer": "The 2025 BMW M3 Competition produces 503 horsepower.",
+  "context": [
+    "[bmw-m3-2025-competition:1] The 2025 BMW M3 Competition uses a twin-turbo 3.0L inline-six producing 503 hp and 479 lb-ft of torque."
+  ]
+}
+
+### 3. App judge - hallucinated number (expect grounded=false, low score)
+POST http://localhost:8080/api/judge/test
+Content-Type: application/json
+
+{
+  "question": "What is the horsepower of the 2025 BMW M3 Competition?",
+  "answer": "The 2025 BMW M3 Competition produces 620 horsepower and has a top speed of 210 mph.",
+  "context": [
+    "[bmw-m3-2025-competition:1] The 2025 BMW M3 Competition uses a twin-turbo 3.0L inline-six producing 503 hp and 479 lb-ft of torque."
+  ]
+}
+
+### 4. App judge - answer not supported by context (expect grounded=false or complete=false)
+POST http://localhost:8080/api/judge/test
+Content-Type: application/json
+
+{
+  "question": "Which vehicles have all-wheel drive?",
+  "answer": "The Tesla Model 3 Long Range, Rivian R1T and Honda CR-V Sport Hybrid all offer AWD.",
+  "context": [
+    "[tesla-model3-2025-long-range:1] Dual-motor all-wheel drive, 0-60 mph in 4.2 seconds.",
+    "[rivian-r1t-2025-adventure:1] Quad-motor AWD with adjustable air suspension."
+  ]
+}

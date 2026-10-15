@@ -79,10 +79,21 @@ ollama:
     model: nomic-embed-text
 
 # =========================
-# Judge: vllm, openai, claude
+# Judge: vllm, openai, claude, halo
 # =========================
 judge:
-  provider: vllm
+  provider: halo
+  debug:
+    enabled: true          # exposes POST /api/judge/test (dev only)
+  halo:
+    base-url: ${HALO_BASE_URL:http://localhost:18002/api/v1}
+    model: ${HALO_JUDGE_MODEL:gpt-oss-120b-Q4_K_M}
+    api-key: ${HALO_API_KEY:}
+    reasoning-effort: low  # low | medium | high (gpt-oss "Reasoning:" system line)
+    temperature: 0.1
+    max-tokens: 1024       # reasoning tokens count against this
+    connect-timeout-seconds: 5
+    read-timeout-seconds: 90
 
 # =========================
 # Triton embedding + reranker
@@ -125,7 +136,7 @@ logging:
     com.example.airagassistant.agent: DEBUG
     com.example.airagassistant.agentic: DEBUG
     com.example.airagassistant.eval: DEBUG
-    com.example.airagassassistant.judge: DEBUG
+    com.example.airagassistant.judge: DEBUG
 
     # ❌ Disable SQL noise
     org.hibernate.SQL: OFF

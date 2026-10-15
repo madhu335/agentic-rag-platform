@@ -14,18 +14,21 @@ public class JudgeRouter implements JudgeClient {
     private final String provider;
     private final JudgeClient defaultJudge;
     private final JudgeClient claudeJudge;
-    private final OpenAiJudgeClient openAiJudge;
+    private final JudgeClient openAiJudge;
+    private final JudgeClient haloJudge;
 
     public JudgeRouter(
             @Value("${judge.provider:default}") String provider,
             ObjectProvider<DefaultJudgeClient> defaultProvider,
             ObjectProvider<ClaudeJudgeClient> claudeProvider,
-            ObjectProvider<OpenAiJudgeClient> openAiProvider
+            ObjectProvider<OpenAiJudgeClient> openAiProvider,
+            ObjectProvider<HaloJudgeClient> haloProvider
     ) {
         this.provider = provider;
         this.defaultJudge = defaultProvider.getIfAvailable();
         this.claudeJudge = claudeProvider.getIfAvailable();
         this.openAiJudge = openAiProvider.getIfAvailable();
+        this.haloJudge = haloProvider.getIfAvailable();
     }
 
     @Override
@@ -33,7 +36,8 @@ public class JudgeRouter implements JudgeClient {
 
         JudgeClient client = switch (provider) {
             case "claude" -> require(claudeJudge, "claude");
-            case "openai" -> require(openAiJudge, "openai");  // 👈 ADD THIS
+            case "openai" -> require(openAiJudge, "openai");
+            case "halo" -> require(haloJudge, "halo");
             case "default", "vllm", "ollama" -> require(defaultJudge, "default");
             default -> throw new IllegalStateException("Unsupported judge.provider: " + provider);
         };
