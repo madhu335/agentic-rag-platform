@@ -26,15 +26,18 @@ public class VllmClient implements LlmClient {
     private final WebClient webClient;
     private final String baseUrl;
     private final String model;
+    private final double temperature;
 
     public VllmClient(
             WebClient.Builder builder,
             @Value("${llm.vllm.base-url}") String baseUrl,
-            @Value("${llm.vllm.model}") String model
+            @Value("${llm.vllm.model}") String model,
+            @Value("${llm.vllm.temperature:0.1}") double temperature
     ) {
         this.webClient = builder.baseUrl(baseUrl).build();
         this.baseUrl = baseUrl;
         this.model = model;
+        this.temperature = temperature;
     }
 
     @Override
@@ -52,6 +55,7 @@ public class VllmClient implements LlmClient {
 
             Map<String, Object> request = Map.of(
                     "model", model,
+                    "temperature", temperature,
                     "messages", List.of(
                             Map.of(
                                     "role", "user",
@@ -110,6 +114,7 @@ public class VllmClient implements LlmClient {
 
         Map<String, Object> request = Map.of(
                 "model", model,
+                "temperature", temperature,
                 "stream", true,
                 "messages", List.of(
                         Map.of(

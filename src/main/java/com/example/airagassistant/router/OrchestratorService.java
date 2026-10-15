@@ -75,7 +75,7 @@ public class OrchestratorService {
                 judge = judgeService.evaluate(
                         question,
                         answer,
-                        chunks.stream().map(OrchestratorResult.Chunk::text).toList()
+                        judgeContext(chunks)
                 );
             }
 
@@ -286,7 +286,7 @@ public class OrchestratorService {
             judge = judgeService.evaluate(
                     question,
                     result.answer(),
-                    chunks.stream().map(OrchestratorResult.Chunk::text).toList()
+                    judgeContext(chunks)
             );
         }
 
@@ -303,6 +303,16 @@ public class OrchestratorService {
                 outcome,
                 judge
         );
+    }
+
+    /**
+     * Context for the judge keeps each chunk's id next to its text, so the judge can
+     * verify [chunk-id] citations in the answer instead of flagging them as missing.
+     */
+    private List<String> judgeContext(List<OrchestratorResult.Chunk> chunks) {
+        return chunks.stream()
+                .map(c -> "[" + c.id() + "] " + c.text())
+                .toList();
     }
 
     private String buildGroundedPrompt(String question, List<String> contextChunks) {

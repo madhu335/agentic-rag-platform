@@ -3,6 +3,7 @@ package com.example.airagassistant.agent;
 import com.example.airagassistant.LlmClient;
 import com.example.airagassistant.agentic.dto.ChunkDto;
 import com.example.airagassistant.agentic.mapper.VehicleSummaryMapper;
+import com.example.airagassistant.domain.vehicle.service.VehicleRagService;
 import com.example.airagassistant.rag.RagAnswerService;
 import com.example.airagassistant.rag.RagRetriever;
 import com.example.airagassistant.rag.SearchHit;
@@ -12,9 +13,12 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -24,22 +28,30 @@ import java.util.stream.Collectors;
 @Service
 public class AgentService {
 
+    private static final Logger log = LoggerFactory.getLogger(AgentService.class);
+
     private static final String FALLBACK = "I don't know based on the ingested documents.";
+
+    /** Chunks passed to the LLM for single-document questions. */
+    private static final int SINGLE_DOC_CONTEXT_CHUNKS = 3;
 
     private final RagRetriever ragRetriever;
     private final LlmClient llm;
     private final VehicleSummaryService vehicleSummaryService;
     private final VehicleSummaryMapper summaryMapper;
+    private final VehicleRagService vehicleRagService;
     private final Tracer tracer = GlobalOpenTelemetry.getTracer("ai-rag");
 
     public AgentService(RagRetriever ragRetriever,
                         LlmClient llm,
                         VehicleSummaryService vehicleSummaryService,
-                        VehicleSummaryMapper summaryMapper) {
+                        VehicleSummaryMapper summaryMapper,
+                        VehicleRagService vehicleRagService) {
         this.ragRetriever = ragRetriever;
         this.llm = llm;
         this.vehicleSummaryService = vehicleSummaryService;
         this.summaryMapper = summaryMapper;
+        this.vehicleRagService = vehicleRagService;
     }
 
     public RagAnswerService.RagResult answer(String docType, String docId, String question, int topK) {
@@ -53,9 +65,17 @@ public class AgentService {
             agentSpan.setAttribute("langsmith.metadata.doc_id", docId);
             agentSpan.setAttribute("langsmith.metadata.top_k", topK);
 
+            boolean fleetQuery = isFleetVehicleQuery(docType, docId);
+            agentSpan.setAttribute("langsmith.metadata.fleet_query", fleetQuery);
+
             List<VehicleCardDto> cards = buildVehicleCards(docType, docId, question, topK);
 
-            List<SearchHit> hits = ragRetriever.retrieve(docId, question, Math.max(topK, 3));
+            // Fleet aliases ("vehicles", "fleet", ...) are not real doc ids: chunks are stored
+            // per vehicle id, so a docId-scoped lookup matches nothing. Fleet questions use the
+            // cross-vehicle hybrid pipeline instead (the same one the golden-set eval measures).
+            List<SearchHit> hits = fleetQuery
+                    ? vehicleRagService.searchAllVehicles(question, Math.max(topK, 3), docType)
+                    : ragRetriever.retrieve(docId, question, Math.max(topK, 3));
             agentSpan.setAttribute("langsmith.metadata.hit_count", hits.size());
 
             Double retrievalScore = hits.isEmpty() ? null : hits.get(0).score();
@@ -81,8 +101,12 @@ public class AgentService {
                 );
             }
 
+            // Fleet questions span several vehicles, so give the LLM the full topK;
+            // single-document questions keep the tighter 3-chunk context.
+            int contextLimit = fleetQuery ? Math.max(topK, SINGLE_DOC_CONTEXT_CHUNKS) : SINGLE_DOC_CONTEXT_CHUNKS;
+
             List<SearchHit> usableHits = hits.stream()
-                    .limit(3)
+                    .limit(contextLimit)
                     .toList();
 
             boolean hasUsableContext = !usableHits.isEmpty()
@@ -158,6 +182,26 @@ public class AgentService {
 
             answer = removeInvalidCitations(answer, retrievedChunkIds);
 
+            // Deterministic attribution check: every number in a cited claim must appear
+            // in the cited chunk; otherwise re-point the citation (or drop it).
+            CitationAttributionChecker.Result attribution = CitationAttributionChecker.check(
+                    answer,
+                    usableHits.stream().collect(Collectors.toMap(
+                            h -> h.record().id(),
+                            h -> h.record().text(),
+                            (first, second) -> first,
+                            LinkedHashMap::new
+                    ))
+            );
+            answer = attribution.answer();
+            agentSpan.setAttribute("langsmith.metadata.citations_corrected", attribution.correctedCount());
+            agentSpan.setAttribute("langsmith.metadata.citations_dropped", attribution.droppedCount());
+            attribution.corrections().forEach(c -> log.info(
+                    "Citation attribution: [{}] -> {} for numbers {}",
+                    c.fromId(),
+                    c.toId() != null ? "[" + c.toId() + "]" : "dropped",
+                    c.claimNumbers()));
+
             List<String> citedChunkIds = filterValidCitations(answer, retrievedChunkIds);
 
             if (citedChunkIds.isEmpty()) {
@@ -213,7 +257,7 @@ public class AgentService {
     }
 
     private List<VehicleCardDto> buildVehicleCards(String docType, String docId, String question, int topK) {
-        if (!shouldBuildVehicleCards(docType, docId)) {
+        if (!isFleetVehicleQuery(docType, docId)) {
             return List.of();
         }
 
@@ -226,7 +270,7 @@ public class AgentService {
         }
     }
 
-    private boolean shouldBuildVehicleCards(String docType, String docId) {
+    private boolean isFleetVehicleQuery(String docType, String docId) {
         if (docType == null || docId == null || docId.isBlank()) {
             return false;
         }
@@ -286,7 +330,7 @@ public class AgentService {
                 You are a strict retrieval-based assistant.
 
                 You are given context chunks. Each chunk has an ID like:
-                [spring-boot-qa:6]
+                [example-roadster-2030:3]
 
                 RULES:
                 - You MUST use these chunk IDs in your answer
@@ -299,7 +343,11 @@ public class AgentService {
                 "I don't know based on the ingested documents."
 
                 Example:
-                Lazy loading delays fetching until accessed [spring-boot-qa:6].
+                The Example Roadster seats two adults [example-roadster-2030:3].
+
+                (The example above is fictional and shows format only. Never copy it;
+                answer only from the context chunks below, citing the chunk that
+                actually contains each fact.)
 
                 Answer concisely.
 
