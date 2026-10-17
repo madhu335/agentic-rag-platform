@@ -40,12 +40,21 @@ services:
     environment:
       HF_TOKEN: ${HF_TOKEN}
     runtime: nvidia
+    # Qwen3-30B-A3B Instruct 2507, 4-bit AWQ (MoE: ~30B total / ~3B active per token).
+    # ~17 GiB weights; 0.80 leaves ~5.5 GiB for Triton + Windows on the 32 GiB 5090.
+    # AWQ format is auto-detected, so no --quantization flag.
+    # Rollback: model "meta-llama/Meta-Llama-3.1-8B-Instruct", 0.75, 8192,
+    #           "--quantization" "fp8", tool parser "llama3_json".
     command:
-      - "meta-llama/Meta-Llama-3.1-8B-Instruct"
+      - "cyankiwi/Qwen3-30B-A3B-Instruct-2507-AWQ-4bit"
       - "--gpu-memory-utilization"
-      - "0.75"
+      - "0.80"
       - "--max-model-len"
-      - "8192"
+      - "32768"
+      - "--enable-prefix-caching"
+      - "--enable-auto-tool-choice"
+      - "--tool-call-parser"
+      - "hermes"
 
 volumes:
   postgres_data:

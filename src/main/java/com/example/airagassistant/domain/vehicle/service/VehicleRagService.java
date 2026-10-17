@@ -46,6 +46,17 @@ public class VehicleRagService {
 
         return ragAnswerService.answerWithMode("vehicle", vehicleId, question, topK, mode);
     }
+
+    /**
+     * Relevance gate. Its only job is to keep nonsense out (gibberish or off-topic queries such
+     * as the "xyzabc vehicle" edge case). Ranking quality is handled downstream by RRF, the
+     * numeric boost and the judge, so this gate errs towards true to protect recall.
+     *
+     * The previous prompt mixed "true only if it clearly matches" with "true if it could
+     * plausibly help, even partially". A weak model ignored the strict rule; a stronger,
+     * more literal model (Qwen3-30B-A3B) applied it and rejected valid fleet questions such as
+     * "which vehicle has the best resale value".
+     */
     private boolean isRelevantAfterRetrieval(String question, List<SearchHit> hits) {
         if (hits == null || hits.isEmpty()) {
             return false;
@@ -57,22 +68,17 @@ public class VehicleRagService {
                 .reduce("", (a, b) -> a + "\n\n---\n\n" + b);
 
         String prompt = """
-            You are a strict retrieval relevance judge for a vehicle search system.
+            You are a gate for a vehicle search system. Decide only whether the user query is a
+            real question that this vehicle context could help with.
 
-            Decide whether the retrieved context actually answers the user's query.
+            Return {"relevant": false} ONLY if:
+            - the query is gibberish or random characters, or
+            - the query is about something unrelated to vehicles (for example recipes or weather).
 
-            Rules:
-            - Return false if the query is gibberish or unknown.
-            - Return false if the context only matches generic words like "vehicle", "car", or "specs".
-            - Return true only if the retrieved context clearly matches the specific user request.
-            - Return false ONLY if the context is clearly unrelated (e.g., gibberish queries, no overlap in topic).
-            - Return true if the context contains information that could plausibly help answer the query, even partially.
-            - Do not explain.
+            Otherwise return {"relevant": true}, even if the context only partly answers the query
+            or covers only some of the vehicles it asks about.
 
-            Return ONLY valid JSON:
-            {"relevant": true}
-            or
-            {"relevant": false}
+            Return ONLY the JSON, with no explanation.
 
             User query:
             %s
@@ -98,7 +104,9 @@ public class VehicleRagService {
             return true; // fail-open to protect recall
         }
     }
+
     // ─── Cross-vehicle (fleet) query ───────────────────────────────────────
+
     public List<SearchHit> searchAllVehicles(String question, int topK, String docType) {
         if (question == null || question.isBlank()) {
             throw new IllegalArgumentException("question cannot be blank");
@@ -107,7 +115,7 @@ public class VehicleRagService {
         // Fetch a wider pool so numeric post-filter has enough candidates
         int candidateK = Math.max(topK * 3, 12);
         List<Double> queryVector = embeddingClient.embed(question);
-        List<SearchHit> vectorHits  = vectorStore.searchAllWithScores(queryVector, candidateK, docType);
+        List<SearchHit> vectorHits = vectorStore.searchAllWithScores(queryVector, candidateK, docType);
         List<SearchHit> keywordHits = vectorStore.keywordSearchAll(question, candidateK, docType);
         double bestVector = vectorHits.isEmpty() ? 0 : vectorHits.get(0).score();
         double bestKeyword = keywordHits.isEmpty() ? 0 : keywordHits.get(0).score();
@@ -120,7 +128,7 @@ public class VehicleRagService {
                     bestVector, bestKeyword, question);
             return List.of();
         }
-        List<SearchHit> fused       = fuseRRF(vectorHits, keywordHits, candidateK);
+        List<SearchHit> fused = fuseRRF(vectorHits, keywordHits, candidateK);
 
         // Apply numeric boost/penalty if the question has a threshold expression
         NumericFilter filter = NumericFilter.parse(question);
@@ -136,6 +144,7 @@ public class VehicleRagService {
 
         return fused.stream().limit(topK).toList();
     }
+
     /**
      * Searches across ALL ingested vehicles.
      *
@@ -154,7 +163,7 @@ public class VehicleRagService {
         // Fetch a wider pool so numeric post-filter has enough candidates
         int candidateK = Math.max(topK * 3, 12);
         List<Double> queryVector = embeddingClient.embed(question);
-        List<SearchHit> vectorHits  = vectorStore.searchAllWithScores(queryVector, candidateK);
+        List<SearchHit> vectorHits = vectorStore.searchAllWithScores(queryVector, candidateK);
         List<SearchHit> keywordHits = vectorStore.keywordSearchAll(question, candidateK);
         double bestVector = vectorHits.isEmpty() ? 0 : vectorHits.get(0).score();
         double bestKeyword = keywordHits.isEmpty() ? 0 : keywordHits.get(0).score();
@@ -167,7 +176,7 @@ public class VehicleRagService {
                     bestVector, bestKeyword, question);
             return List.of();
         }
-        List<SearchHit> fused       = fuseRRF(vectorHits, keywordHits, candidateK);
+        List<SearchHit> fused = fuseRRF(vectorHits, keywordHits, candidateK);
 
         // Apply numeric boost/penalty if the question has a threshold expression
         NumericFilter filter = NumericFilter.parse(question);
@@ -183,7 +192,6 @@ public class VehicleRagService {
 
         return fused.stream().limit(topK).toList();
     }
-
 
     // ─── Numeric post-filter ───────────────────────────────────────────────
 
@@ -215,8 +223,8 @@ public class VehicleRagService {
     private List<SearchHit> fuseRRF(List<SearchHit> vectorHits,
                                     List<SearchHit> keywordHits,
                                     int topK) {
-        java.util.Map<String, Double>   rrfScores = new java.util.LinkedHashMap<>();
-        java.util.Map<String, SearchHit> source   = new java.util.LinkedHashMap<>();
+        java.util.Map<String, Double> rrfScores = new java.util.LinkedHashMap<>();
+        java.util.Map<String, SearchHit> source = new java.util.LinkedHashMap<>();
         int K = 10;
 
         for (int i = 0; i < vectorHits.size(); i++) {
@@ -258,11 +266,11 @@ public class VehicleRagService {
                 if (!m.find()) continue;
                 double lineVal = Double.parseDouble(m.group(1));
                 return switch (operator) {
-                    case "GT"  -> lineVal >  value;
+                    case "GT" -> lineVal > value;
                     case "GTE" -> lineVal >= value;
-                    case "LT"  -> lineVal <  value;
+                    case "LT" -> lineVal < value;
                     case "LTE" -> lineVal <= value;
-                    default    -> false;
+                    default -> false;
                 };
             }
             return false;
@@ -283,10 +291,10 @@ public class VehicleRagService {
             String q = question.toLowerCase();
 
             String op;
-            if (q.matches(".*(\\bover\\b|more than|above|greater than).*"))       op = "GT";
-            else if (q.matches(".*(at least|minimum|or more).*"))                  op = "GTE";
+            if (q.matches(".*(\\bover\\b|more than|above|greater than).*")) op = "GT";
+            else if (q.matches(".*(at least|minimum|or more).*")) op = "GTE";
             else if (q.matches(".*(\\bunder\\b|less than|below|cheaper than).*")) op = "LT";
-            else if (q.matches(".*(at most|maximum|or less).*"))                   op = "LTE";
+            else if (q.matches(".*(at most|maximum|or less).*")) op = "LTE";
             else return null;
 
             Matcher numMatcher = Pattern.compile("(\\d{1,3}(?:,\\d{3})*)").matcher(q);
@@ -294,10 +302,10 @@ public class VehicleRagService {
             double value = Double.parseDouble(numMatcher.group(1).replace(",", ""));
 
             String field;
-            if (q.matches(".*(horsepower|\\bhp\\b|\\bpower\\b).*"))           field = "Horsepower";
-            else if (q.matches(".*(torque|lb-ft).*"))                          field = "Torque";
-            else if (q.matches(".*(mpg|fuel economy|mileage|efficient).*"))    field = "Fuel Economy";
-            else if (q.matches(".*(price|msrp|cost|\\$|dollar|budget).*"))     field = "MSRP";
+            if (q.matches(".*(horsepower|\\bhp\\b|\\bpower\\b).*")) field = "Horsepower";
+            else if (q.matches(".*(torque|lb-ft).*")) field = "Torque";
+            else if (q.matches(".*(mpg|fuel economy|mileage|efficient).*")) field = "Fuel Economy";
+            else if (q.matches(".*(price|msrp|cost|\\$|dollar|budget).*")) field = "MSRP";
             else return null;
 
             return new NumericFilter(field, op, value);

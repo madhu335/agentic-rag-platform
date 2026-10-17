@@ -36,7 +36,7 @@ llm:
 
   vllm:
     base-url: http://localhost:8001
-    model: meta-llama/Meta-Llama-3.1-8B-Instruct
+    model: cyankiwi/Qwen3-30B-A3B-Instruct-2507-AWQ-4bit   # was meta-llama/Meta-Llama-3.1-8B-Instruct
     temperature: 0.1   # low = repeatable RAG answers (vLLM default is 1.0)
 
   triton:
@@ -50,7 +50,7 @@ openai:
   base-url: http://localhost:8001
   api:
     key: ${OPENAI_API_KEY:}
-  model: meta-llama/Meta-Llama-3.1-8B-Instruct
+  model: cyankiwi/Qwen3-30B-A3B-Instruct-2507-AWQ-4bit
 
 # =========================
 # OpenAI-Real
