@@ -8,9 +8,13 @@ import com.example.airagassistant.rag.RetrievalMode;
 import com.example.airagassistant.rag.SearchHit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,6 +30,10 @@ public class VehicleRagService {
     private final EmbeddingClient embeddingClient;
     private final PgVectorStore vectorStore;
     private final LlmClient llmClient;
+
+    /** Max chunks one vehicle may occupy in a fleet result before others get a slot. */
+    @Value("${vehicle.search.max-chunks-per-vehicle:3}")
+    private int maxChunksPerVehicle = 3;
 
     // ─── Single-vehicle query ──────────────────────────────────────────────
 
@@ -137,6 +145,9 @@ public class VehicleRagService {
                     filter.field(), filter.operator(), filter.value());
             fused = applyNumericBoost(fused, filter);
         }
+        // One vehicle with many matching chunks must not crowd others out of top-K
+        fused = diversifyByVehicle(fused, maxChunksPerVehicle, topK);
+
         if (!isRelevantAfterRetrieval(question, fused)) {
             log.warn("Vehicle chunks rejected by relevance judge — query='{}'", question);
             return List.of();
@@ -185,6 +196,9 @@ public class VehicleRagService {
                     filter.field(), filter.operator(), filter.value());
             fused = applyNumericBoost(fused, filter);
         }
+        // One vehicle with many matching chunks must not crowd others out of top-K
+        fused = diversifyByVehicle(fused, maxChunksPerVehicle, topK);
+
         if (!isRelevantAfterRetrieval(question, fused)) {
             log.warn("Vehicle chunks rejected by relevance judge — query='{}'", question);
             return List.of();
@@ -216,6 +230,59 @@ public class VehicleRagService {
                     return aMatch ? -1 : 1; // matching tier always above non-matching
                 })
                 .toList();
+    }
+
+    // ─── Per-vehicle diversification ──────────────────────────────────────
+
+    /**
+     * Cap-then-backfill diversification (a GROUP BY vehicle with a per-group limit before LIMIT).
+     *
+     * 1. Walk hits in their current order (RRF + numeric boost), keeping at most
+     *    {@code maxPerVehicle} chunks per vehicle.
+     * 2. If that yields fewer than {@code topK}, refill from the skipped chunks in order,
+     *    so the result is never smaller than before.
+     *
+     * Without this, a vehicle with many similar chunks (e.g. 8 of 13 slots for the BMW M3)
+     * pushes relevant vehicles out of top-K: golden-set entry S4-005 ("AWD vehicles").
+     * A cap above 1 keeps single-vehicle questions asked fleet-wide answerable.
+     */
+    static List<SearchHit> diversifyByVehicle(List<SearchHit> hits, int maxPerVehicle, int topK) {
+        if (hits == null || hits.isEmpty() || maxPerVehicle <= 0) {
+            return hits;
+        }
+
+        Map<String, Integer> perVehicle = new HashMap<>();
+        List<SearchHit> kept = new ArrayList<>();
+        List<SearchHit> skipped = new ArrayList<>();
+
+        for (SearchHit hit : hits) {
+            String vehicle = vehicleIdOf(hit.record().id());
+            int count = perVehicle.getOrDefault(vehicle, 0);
+            if (count < maxPerVehicle) {
+                kept.add(hit);
+                perVehicle.put(vehicle, count + 1);
+            } else {
+                skipped.add(hit);
+            }
+        }
+
+        for (SearchHit hit : skipped) {
+            if (kept.size() >= topK) {
+                break;
+            }
+            kept.add(hit);
+        }
+
+        return kept;
+    }
+
+    /** "bmw-m3-2025-competition:21" -> "bmw-m3-2025-competition" */
+    static String vehicleIdOf(String chunkId) {
+        if (chunkId == null) {
+            return "";
+        }
+        int idx = chunkId.lastIndexOf(':');
+        return idx >= 0 ? chunkId.substring(0, idx) : chunkId;
     }
 
     // ─── RRF fusion ───────────────────────────────────────────────────────

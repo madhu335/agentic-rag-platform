@@ -118,6 +118,7 @@ vehicle:
     summary-top-k: 10
     detail-top-k: 5
     hybrid-vector-weight: 0.7
+    max-chunks-per-vehicle: 0   # 0 = disabled; cap=3 hurt precision (0.53 -> 0.22), pending spread-triggered version
 
   bulk:
     page-size: 50
