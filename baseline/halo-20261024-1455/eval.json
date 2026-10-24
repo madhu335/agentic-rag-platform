@@ -1,0 +1,152 @@
+{
+    "overallRecall":  0.9885057471264368,
+    "overallPrecision":  0.5294745484400657,
+    "totalPassed":  28,
+    "totalEntries":  29,
+    "meetsTarget":  true,
+    "byCategory":  {
+                       "MAINTENANCE":  {
+                                           "recall":  1.0,
+                                           "precision":  0.7777777777777777,
+                                           "passed":  3,
+                                           "total":  3
+                                       },
+                       "OWNERSHIP_COST":  {
+                                              "recall":  1.0,
+                                              "precision":  0.2086309523809524,
+                                              "passed":  4,
+                                              "total":  4
+                                          },
+                       "SAFETY":  {
+                                      "recall":  1.0,
+                                      "precision":  0.7222222222222222,
+                                      "passed":  3,
+                                      "total":  3
+                                  },
+                       "PERFORMANCE":  {
+                                           "recall":  1.0,
+                                           "precision":  0.7083333333333334,
+                                           "passed":  3,
+                                           "total":  3
+                                       },
+                       "CROSS_CHUNK":  {
+                                           "recall":  1.0,
+                                           "precision":  0.3404761904761905,
+                                           "passed":  4,
+                                           "total":  4
+                                       },
+                       "FLEET_FILTER":  {
+                                            "recall":  0.9444444444444445,
+                                            "precision":  0.45138888888888884,
+                                            "passed":  5,
+                                            "total":  6
+                                        },
+                       "FEATURES":  {
+                                        "recall":  1.0,
+                                        "precision":  0.6,
+                                        "passed":  2,
+                                        "total":  2
+                                    },
+                       "RANKINGS":  {
+                                        "recall":  1.0,
+                                        "precision":  0.65625,
+                                        "passed":  4,
+                                        "total":  4
+                                    }
+                   },
+    "byDifficulty":  {
+                         "EASY":  {
+                                      "recall":  0.9696969696969696,
+                                      "precision":  0.5757575757575757,
+                                      "passed":  10,
+                                      "total":  11
+                                  },
+                         "MEDIUM":  {
+                                        "recall":  1.0,
+                                        "precision":  0.4935714285714286,
+                                        "passed":  5,
+                                        "total":  5
+                                    },
+                         "EDGE_CASE":  {
+                                           "recall":  1.0,
+                                           "precision":  0.8333333333333334,
+                                           "passed":  5,
+                                           "total":  5
+                                       },
+                         "HARD":  {
+                                      "recall":  1.0,
+                                      "precision":  0.29836309523809523,
+                                      "passed":  8,
+                                      "total":  8
+                                  }
+                     },
+    "bySource":  {
+                     "LLM_ASSISTED":  {
+                                          "recall":  1.0,
+                                          "precision":  0.3428571428571428,
+                                          "passed":  3,
+                                          "total":  3
+                                      },
+                     "USER_LOG":  {
+                                      "recall":  1.0,
+                                      "precision":  0.5166666666666667,
+                                      "passed":  6,
+                                      "total":  6
+                                  },
+                     "DB_GENERATED":  {
+                                          "recall":  0.9333333333333333,
+                                          "precision":  0.3416666666666667,
+                                          "passed":  4,
+                                          "total":  5
+                                      },
+                     "MANUAL":  {
+                                    "recall":  1.0,
+                                    "precision":  0.6345238095238095,
+                                    "passed":  15,
+                                    "total":  15
+                                }
+                 },
+    "failedEntries":  [
+                          {
+                              "entryId":  "S4-005",
+                              "query":  "AWD vehicles",
+                              "expected":  [
+                                               "tesla-model3-2025-long-range",
+                                               "rivian-r1t-2025-adventure",
+                                               "honda-crv-2025-sport-hybrid"
+                                           ],
+                              "returned":  [
+                                               "tesla-model3-2025-long-range",
+                                               "bmw-m3-2025-competition",
+                                               "toyota-camry-2025-xse-hybrid",
+                                               "rivian-r1t-2025-adventure"
+                                           ],
+                              "recall":  0.6666666666666666,
+                              "analysis":  {
+                                               "primaryReason":  "OUTRANKED",
+                                               "detail":  "honda-crv-2025-sport-hybrid: OUTRANKED â?? chunk scored 0.5763 but other vehicles scored higher and pushed it out of top-13",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+                                                                        "tesla-model3-2025-long-range:1",
+                                                                        "bmw-m3-2025-competition:2",
+                                                                        "bmw-m3-2025-competition:21",
+                                                                        "bmw-m3-2025-competition:5",
+                                                                        "bmw-m3-2025-competition:13",
+                                                                        "bmw-m3-2025-competition:20",
+                                                                        "bmw-m3-2025-competition:6",
+                                                                        "toyota-camry-2025-xse-hybrid:1",
+                                                                        "bmw-m3-2025-competition:1",
+                                                                        "bmw-m3-2025-competition:7",
+                                                                        "rivian-r1t-2025-adventure:6",
+                                                                        "rivian-r1t-2025-adventure:2",
+                                                                        "bmw-m3-2025-competition:4"
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027FLEET_FILTER\u0027 category queries"
+                                                               ]
+                                           }
+                          }
+                      ]
+}

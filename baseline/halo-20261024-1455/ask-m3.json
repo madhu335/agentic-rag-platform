@@ -1,0 +1,111 @@
+{
+    "answer":  "The 2025 BMW M3 Competition has 503 horsepower [bmw-m3-2025-competition:2].\n\nSources: [bmw-m3-2025-competition:2]",
+    "citedChunkIds":  [
+                          "bmw-m3-2025-competition:2"
+                      ],
+    "retrievedChunkIds":  [
+                              "bmw-m3-2025-competition:2",
+                              "bmw-m3-2025-competition:4",
+                              "bmw-m3-2025-competition:7",
+                              "bmw-m3-2025-competition:6",
+                              "bmw-m3-2025-competition:1"
+                          ],
+    "usedChunks":  5,
+    "retrievalScore":  0.09090909090909091,
+    "judge":  {
+                  "grounded":  true,
+                  "correct":  true,
+                  "complete":  true,
+                  "score":  1.0,
+                  "reason":  "All claims supported"
+              },
+    "cards":  [
+                  {
+                      "vehicleId":  "bmw-m3-2025-competition",
+                      "title":  "2025 BMW M3 Competition",
+                      "imageUrl":  null,
+                      "score":  0.7737702567819421,
+                      "attributes":  {
+                                         "trim":  "Competition",
+                                         "year":  2025,
+                                         "chunkCount":  14,
+                                         "model":  "M3",
+                                         "make":  "BMW"
+                                     }
+                  },
+                  {
+                      "vehicleId":  "porsche-911-2025-carrera-s",
+                      "title":  "2025 Porsche 911 Carrera S",
+                      "imageUrl":  null,
+                      "score":  0.5611777011716461,
+                      "attributes":  {
+                                         "trim":  "Carrera S",
+                                         "year":  2025,
+                                         "chunkCount":  5,
+                                         "model":  "911",
+                                         "make":  "Porsche"
+                                     }
+                  },
+                  {
+                      "vehicleId":  "rivian-r1t-2025-adventure",
+                      "title":  "2025 Rivian R1T Adventure",
+                      "imageUrl":  null,
+                      "score":  0.5431714475206886,
+                      "attributes":  {
+                                         "trim":  "Adventure",
+                                         "year":  2025,
+                                         "chunkCount":  4,
+                                         "model":  "R1T",
+                                         "make":  "Rivian"
+                                     }
+                  },
+                  {
+                      "vehicleId":  "honda-crv-2025-sport-hybrid",
+                      "title":  "2025 Honda CR-V Sport Hybrid",
+                      "imageUrl":  null,
+                      "score":  0.49525473652107044,
+                      "attributes":  {
+                                         "trim":  "Sport Hybrid",
+                                         "year":  2025,
+                                         "chunkCount":  5,
+                                         "model":  "CR-V",
+                                         "make":  "Honda"
+                                     }
+                  },
+                  {
+                      "vehicleId":  "ford-f150-2025-lariat",
+                      "title":  "2025 Ford F-150 Lariat",
+                      "imageUrl":  null,
+                      "score":  0.47888577066948224,
+                      "attributes":  {
+                                         "trim":  "Lariat",
+                                         "year":  2025,
+                                         "chunkCount":  5,
+                                         "model":  "F-150",
+                                         "make":  "Ford"
+                                     }
+                  }
+              ],
+    "chunks":  [
+                   {
+                       "id":  "bmw-m3-2025-competition:2",
+                       "text":  "2025 BMW M3 Competition sports sedan. Performance specs: Engine: 3.0L twin-turbo inline-6 (S58). Horsepower: 503 hp. Torque: 479 lb-ft. 0-60 mph: 3.4 seconds. Top speed: 180 mph. Drivetrain: RWD. Transmission: 8-speed M Steptronic automatic. Fuel economy: 16 city / 23 highway MPG."
+                   },
+                   {
+                       "id":  "bmw-m3-2025-competition:4",
+                       "text":  "2025 BMW M3 Competition sports sedan. Industry rankings and awards: Ranked 2nd of 18 in sports sedans by US News (2025), score 91/100. Praised for driving dynamics and engine character. Docked for infotainment learning curve. Ranked 1st of 12 in luxury sports cars by Car and Driver (2025), score 88/100. Editors choice award winner for the third consecutive year. Ranked 8th of 20 in reliability by Consumer Reports (2025), score 74/100. Above average reliability for the segment. Electrical system historically the weak point. Ranked 4th of 15 in resale value by Kelley Blue Book (2025), score 82/100. M3 retains value well, especially Competition trim. Limited supply supports residuals."
+                   },
+                   {
+                       "id":  "bmw-m3-2025-competition:7",
+                       "text":  "2025 BMW M3 Competition sports sedan. Expert reviews: Car and Driver (2025) rated it 9/10. The M3 Competition remains the benchmark sports sedan. The S58 engine is a masterpiece of forced-induction engineering. Pros: Extraordinary engine, razor-sharp chassis, usable daily driver. Cons: Divisive styling, complex iDrive menus, firm ride on rough roads. Motor Trend (2025) rated it 9/10. No sports sedan does more things better. The Competition is worth the premium over the base M3. Pros: Best-in-class lap times, excellent build quality, strong resale. Cons: Premium fuel required, insurance costs are high, rear tires wear quickly. Consumer Reports (2025) rated it 7/10. Performance is exceptional but reliability scores keep it from the top spot. Ownership costs are significant. Pros: Driving experience, brand prestige, strong residuals. Cons: Above-average repair costs, some owners report electrical gremlins."
+                   },
+                   {
+                       "id":  "bmw-m3-2025-competition:6",
+                       "text":  "2025 BMW M3 Competition sports sedan. Features and trim levels: Standard features include: M sport seats with memory, adaptive M suspension, carbon fiber interior trim, head-up display, launch control, M Drive modes, Harman Kardon surround sound, wireless Apple CarPlay, parking assistant. The Base M3 trim is priced at $72,800 . Added features: M sport seats, adaptive suspension, launch control. The Competition trim is priced at $76,900 and adds 30hp over base. Added features: high-rev engine tune, M carbon bucket seats, enhanced cooling. The Competition xDrive trim is priced at $80,900 and adds 30hp over base. Added features: all-wheel drive, winter performance package. The CS trim is priced at $119,900 and adds 40hp over base. Added features: carbon roof, ceramic brakes, track-tuned suspension, lightweight wheels."
+                   },
+                   {
+                       "id":  "bmw-m3-2025-competition:1",
+                       "text":  "2025 BMW M3 Competition sports sedan. Body style: Sedan. Class: sports sedan. Fuel type: gasoline. Exterior: Isle of Man Green. MSRP: $76,900. Invoice: $72,840."
+                   }
+               ]
+}

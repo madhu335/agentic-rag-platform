@@ -1,0 +1,11 @@
+{
+    "provider":  "halo",
+    "latencyMs":  5318,
+    "result":  {
+                   "grounded":  false,
+                   "correct":  false,
+                   "complete":  false,
+                   "score":  0.4,
+                   "reason":  "Honda CR-V not mentioned in context"
+               }
+}

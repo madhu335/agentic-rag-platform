@@ -1,0 +1,5 @@
+label:   halo
+time:    2026-10-24T14:55:51.1033334-07:00
+commit:  7173465
+dirty:   no
+baseUrl: http://localhost:8080
