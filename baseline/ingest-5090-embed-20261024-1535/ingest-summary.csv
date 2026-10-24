@@ -1,0 +1,4 @@
+"run","wallMs","chunks","chunkDocTypes","summaryRows","embedRequests","embedItems","embedExecs","embedMs","embedComputeMs","embedSharePct"
+"1","142","14","vehicle:14","1","2","15","2","103","97.2","72.5"
+"2","143","14","vehicle:14","1","2","15","2","109.8","104","76.8"
+"3","69","14","vehicle:14","1","2","15","2","39.9","34.3","57.9"

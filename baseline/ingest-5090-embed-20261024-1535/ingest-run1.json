@@ -1,0 +1,22 @@
+{
+    "vehicleId":  "baseline-test-2025-vehicle",
+    "storedChunkIds":  [
+                           "baseline-test-2025-vehicle:1",
+                           "baseline-test-2025-vehicle:2",
+                           "baseline-test-2025-vehicle:3",
+                           "baseline-test-2025-vehicle:4",
+                           "baseline-test-2025-vehicle:5",
+                           "baseline-test-2025-vehicle:6",
+                           "baseline-test-2025-vehicle:7",
+                           "baseline-test-2025-vehicle:10",
+                           "baseline-test-2025-vehicle:11",
+                           "baseline-test-2025-vehicle:12",
+                           "baseline-test-2025-vehicle:13",
+                           "baseline-test-2025-vehicle:14",
+                           "baseline-test-2025-vehicle:20",
+                           "baseline-test-2025-vehicle:21"
+                       ],
+    "errors":  [
+
+               ]
+}

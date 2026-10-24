@@ -1,0 +1,7 @@
+=== Ingest: baseline-test-2025-vehicle x 3 runs ===
+wallMs  min=69  avg=118  max=143
+chunks after each run: 14,14,14   (same number every run = upsert, no duplicates)
+chunk doc_type: vehicle:14   (must be vehicle:N, otherwise fleet search cannot see them)
+summary rows: 1,1,1
+embedding: requests/run=2,2,2  items/run=15,15,15  ms/run=103,109.8,39.9  share of ingest=72.5,76.8,57.9%
+Note: run 1 can include warm-up; compare runs 2-3.

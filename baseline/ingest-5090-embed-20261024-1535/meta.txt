@@ -1,0 +1,7 @@
+label:     5090-embed
+time:      2026-10-24T15:35:30.7886516-07:00
+commit:    0fb0a2d
+payload:   C:\dev\ai-rag-assistant\baseline\payloads\rich-vehicle-large.json (7282 bytes)
+vehicleId: baseline-test-2025-vehicle
+embedding: Triton model 'text_embedding' via http://localhost:8002/metrics
+cleanup: deleted test vehicle rows (left=0)
