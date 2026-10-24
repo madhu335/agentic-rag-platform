@@ -15,6 +15,8 @@ Content-Type: application/json
   "topK": 5
 }
 
+
+
 ### ── 6. Recall chunk (:20 or :21)
 ### Expected: adaptive cruise recall, fuel injector recall
 POST http://localhost:8080/vehicles/bmw-m3-2025-competition/ask
@@ -46,4 +48,15 @@ Content-Type: application/json
   "question": "Are there any open recalls on the M3?",
   "topK": 3,
   "mode": "HYBRID"
+}
+
+###
+POST http://localhost:8080/ask
+Content-Type: application/json
+
+{
+  "docType": "vehicle",
+  "docId": "vehicles",
+  "question": "How much horsepower does the BMW M3 Competition have?",
+  "topK": 5
 }

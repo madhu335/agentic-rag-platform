@@ -176,7 +176,7 @@ Content-Type: application/json
 
 {
   "docId": "bmw-m3-2025-competition",
-  "prompt": "Compare BMW M3 vs Tesla Model 3 on performance and email the comparison to manager@company.com",
+  "prompt": "Compare Corvette Z06 and Porsche 911 GT3 on the track and include their 0-60 times and horsepower",
   "topK": 3
 }
 
