@@ -1,0 +1,21 @@
+Halo judge token counts (gpt-oss-120b-Q4_K_M via Lemonade, reasoning=low)
+Source: app log 'Halo judge:' lines, 2026-10-24 14:55-14:56
+effTokPerSec = completionTokens / latency (includes prompt prefill + overhead)
+
+case                   run  latencyMs  promptTok  complTok  effTok/s
+2-correct                1       3447        347       180      52.2
+2-correct                2       3348        347       182      54.4
+2-correct                3       3708        347       200      53.9
+3-hallucinated           1       5384        356       279      51.8
+3-hallucinated           2       6711        356       352      52.5
+3-hallucinated           3       3748        356       194      51.8
+4-partial                1       5316        362       275      51.7
+4-partial                2       7980        362       416      52.1
+4-partial                3       7598        362       396      52.1
+ask-m3 (judge step)      1       7838       1088       274      35.0
+
+Notes:
+- Judge-only calls: ~52 tok/s effective; latency ~= 19 ms per completion token (decode-bound).
+- ask-m3 judge step: 1088-token prompt -> effective 35 tok/s. Decode of 274 tok at ~55 tok/s ~= 5.0 s,
+  so ~2.8 s is prompt prefill (~390 tok/s). GB10 (GN100) should cut this prefill part the most.
+- Completion tokens vary run to run on the same input (4-partial: 275-416), so compare averages.
