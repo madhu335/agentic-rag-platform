@@ -118,17 +118,21 @@ public class JudgeService {
                 Answer:
                 %s
 
+                Decide quickly: check each claim in the answer against the context once,
+                then give your verdict. Do not deliberate at length.
+
                 Return JSON only in this exact format:
                 {
                   "grounded": true,
                   "correct": true,
                   "complete": true,
                   "score": 0.7,
-                  "reason": "short explanation"
+                  "reason": "max 12 words, name the unsupported claim if any"
                 }
 
                 Rules:
                 - score must be a decimal between 0.0 and 1.0
+                - reason must be at most 12 words
                 - do NOT use a 1-10 scale
                 - do NOT use percentages
                 - do NOT return markdown
