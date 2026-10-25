@@ -1,6 +1,9 @@
 package com.example.airagassistant.rag.ingestion.vehicle;
 
 import com.example.airagassistant.domain.vehicle.RichVehicleRecord;
+import com.example.airagassistant.domain.vehicle.service.VehicleAttributeExtractor;
+import com.example.airagassistant.domain.vehicle.service.VehicleAttributeRepository;
+import com.example.airagassistant.domain.vehicle.service.VehicleAttributes;
 import com.example.airagassistant.rag.EmbeddingClient;
 import com.example.airagassistant.rag.PgVectorStore;
 import com.example.airagassistant.rag.VectorRecord;
@@ -10,7 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Bulk vehicle ingestion pipeline for large-scale data loads.
@@ -47,6 +52,7 @@ public class BulkVehicleIngestionService {
     private final PgVectorStore vectorStore;
     private final VehicleChunkBuilder chunkBuilder;
     private final VehicleSummaryService summaryService;
+    private final VehicleAttributeRepository attributeRepository;
 
     /**
      * Ingest a batch of vehicles in pages.
@@ -163,6 +169,21 @@ public class BulkVehicleIngestionService {
         }
 
         vectorStore.upsert(records);
+
+        // Step 3b: Structured attributes for threshold/superlative fleet queries.
+        // Extracted from the same chunk text that was just indexed, so they always agree.
+        try {
+            Map<String, Map<Integer, String>> chunksByVehicle = new LinkedHashMap<>();
+            for (ChunkMeta m : allMetas) {
+                chunksByVehicle.computeIfAbsent(m.vehicleId, k -> new LinkedHashMap<>())
+                        .put(m.chunkIndex, m.text);
+            }
+            List<VehicleAttributes> attrs = new ArrayList<>();
+            chunksByVehicle.forEach((id, chunks) -> attrs.add(VehicleAttributeExtractor.extract(id, chunks)));
+            attributeRepository.upsertAll(attrs);
+        } catch (Exception e) {
+            errors.add("Attribute upsert failed for page: " + e.getMessage());
+        }
 
         // Step 4: Populate vehicle_summaries for two-tier retrieval
         int summaryCount = 0;

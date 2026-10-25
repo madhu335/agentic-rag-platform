@@ -2,6 +2,8 @@ package com.example.airagassistant.rag.ingestion.vehicle;
 
 import com.example.airagassistant.domain.vehicle.RichVehicleRecord;
 import com.example.airagassistant.domain.vehicle.VehicleRecord;
+import com.example.airagassistant.domain.vehicle.service.VehicleAttributeExtractor;
+import com.example.airagassistant.domain.vehicle.service.VehicleAttributeRepository;
 import com.example.airagassistant.rag.EmbeddingClient;
 import com.example.airagassistant.rag.PgVectorStore;
 import com.example.airagassistant.rag.VectorRecord;
@@ -11,7 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Ingests vehicles into pgvector — batch optimized + two-tier summary.
@@ -31,6 +35,7 @@ public class VehicleIngestionService {
     private final VehicleDocumentBuilder documentBuilder;
     private final VehicleChunkBuilder chunkBuilder;
     private final VehicleSummaryService summaryService;
+    private final VehicleAttributeRepository attributeRepository;
 
     // ─── Simple ingestion (backward-compatible) ───────────────────────────
 
@@ -109,6 +114,19 @@ public class VehicleIngestionService {
 
         // Batch upsert chunks
         vectorStore.upsert(records);
+
+        // Structured attributes for threshold/superlative fleet queries (non-fatal)
+        try {
+            Map<Integer, String> chunkTexts = new LinkedHashMap<>();
+            for (VehicleChunkBuilder.VehicleChunk c : chunks) {
+                chunkTexts.put(c.chunkIndex(), c.text());
+            }
+            attributeRepository.upsertAll(List.of(
+                    VehicleAttributeExtractor.extract(vehicle.vehicleId(), chunkTexts)));
+        } catch (Exception e) {
+            log.warn("Failed to upsert attributes for '{}': {}", vehicle.vehicleId(), e.getMessage());
+            errors.add("Attribute upsert failed: " + e.getMessage());
+        }
 
         // Populate vehicle_summaries for two-tier retrieval
         try {

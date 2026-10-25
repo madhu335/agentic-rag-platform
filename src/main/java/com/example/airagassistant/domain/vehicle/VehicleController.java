@@ -32,6 +32,7 @@ public class VehicleController {
     private final AgentSessionRunner sessionRunner;
     private final VehicleSummaryService summaryService;
     private final BulkVehicleIngestionService bulkIngestionService;
+    private final com.example.airagassistant.domain.vehicle.service.VehicleAttributeRepository attributeRepository;
 
     // ─── Request / Response DTOs ───────────────────────────────────────────
 
@@ -339,8 +340,20 @@ public class VehicleController {
      * View all vehicle summaries (two-tier Tier 1 data).
      * Useful for verifying summary population after ingestion.
      */
+    /**
+     * POST /vehicles/admin/attributes/backfill
+     * Rebuilds vehicle_attributes for every vehicle already ingested, by parsing its chunks.
+     * Run once after deploying structured search; safe to re-run (upserts by vehicle_id).
+     */
+    @PostMapping("/admin/attributes/backfill")
+    public java.util.Map<String, Object> backfillAttributes() {
+        long start = System.currentTimeMillis();
+        int vehicles = attributeRepository.backfillFromChunks();
+        return java.util.Map.of("vehicles", vehicles, "elapsedMs", System.currentTimeMillis() - start);
+    }
+
     @GetMapping("/admin/summaries")
     public List<VehicleSummaryService.VehicleSummaryInfo> getVehicleSummaries() {
         return summaryService.getAllSummaries();
     }
-}
+}

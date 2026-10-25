@@ -15,8 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -30,6 +29,7 @@ public class VehicleRagService {
     private final EmbeddingClient embeddingClient;
     private final PgVectorStore vectorStore;
     private final LlmClient llmClient;
+    private final VehicleAttributeRepository attributeRepository;
 
     /** Max chunks one vehicle may occupy in a fleet result before others get a slot. */
     @Value("${vehicle.search.max-chunks-per-vehicle:3}")
@@ -119,6 +119,12 @@ public class VehicleRagService {
         if (question == null || question.isBlank()) {
             throw new IllegalArgumentException("question cannot be blank");
         }
+        if (docType == null || docType.isBlank() || "vehicle".equals(docType)) {
+            Optional<List<SearchHit>> structured = structuredSearch(question, topK);
+            if (structured.isPresent()) {
+                return structured.get();
+            }
+        }
 
         // Fetch a wider pool so numeric post-filter has enough candidates
         int candidateK = Math.max(topK * 3, 12);
@@ -137,14 +143,6 @@ public class VehicleRagService {
             return List.of();
         }
         List<SearchHit> fused = fuseRRF(vectorHits, keywordHits, candidateK);
-
-        // Apply numeric boost/penalty if the question has a threshold expression
-        NumericFilter filter = NumericFilter.parse(question);
-        if (filter != null) {
-            log.debug("Fleet search numeric filter — field={} op={} value={}",
-                    filter.field(), filter.operator(), filter.value());
-            fused = applyNumericBoost(fused, filter);
-        }
         // One vehicle with many matching chunks must not crowd others out of top-K
         fused = diversifyByVehicle(fused, maxChunksPerVehicle, topK);
 
@@ -160,15 +158,19 @@ public class VehicleRagService {
      * Searches across ALL ingested vehicles.
      *
      * Strategy:
-     *  1. Run vector + keyword search, RRF-fuse results.
-     *  2. If the question contains a numeric threshold ("over 500 horsepower",
-     *     "less than $40,000"), apply a post-filter that re-sorts: chunks
-     *     satisfying the condition come first, others fall to the end.
-     *     This corrects the embedding model's weakness with numeric comparisons.
+     *  1. If the question is a threshold or superlative over a known attribute
+     *     ("over 500 horsepower", "most torque"), answer it with SQL over
+     *     vehicle_attributes. See {@link #structuredSearch}.
+     *  2. Otherwise run vector + keyword search, RRF-fuse, diversify by vehicle,
+     *     and pass the result through the relevance gate.
      */
     public List<SearchHit> searchAllVehicles(String question, int topK) {
         if (question == null || question.isBlank()) {
             throw new IllegalArgumentException("question cannot be blank");
+        }
+        Optional<List<SearchHit>> structured = structuredSearch(question, topK);
+        if (structured.isPresent()) {
+            return structured.get();
         }
 
         // Fetch a wider pool so numeric post-filter has enough candidates
@@ -188,14 +190,6 @@ public class VehicleRagService {
             return List.of();
         }
         List<SearchHit> fused = fuseRRF(vectorHits, keywordHits, candidateK);
-
-        // Apply numeric boost/penalty if the question has a threshold expression
-        NumericFilter filter = NumericFilter.parse(question);
-        if (filter != null) {
-            log.debug("Fleet search numeric filter — field={} op={} value={}",
-                    filter.field(), filter.operator(), filter.value());
-            fused = applyNumericBoost(fused, filter);
-        }
         // One vehicle with many matching chunks must not crowd others out of top-K
         fused = diversifyByVehicle(fused, maxChunksPerVehicle, topK);
 
@@ -207,29 +201,37 @@ public class VehicleRagService {
         return fused.stream().limit(topK).toList();
     }
 
-    // ─── Numeric post-filter ───────────────────────────────────────────────
+    // ─── Structured (attribute) search ─────────────────────────────────────
 
-    private List<SearchHit> applyNumericBoost(List<SearchHit> hits, NumericFilter filter) {
-        return hits.stream()
-                .sorted((a, b) -> {
-                    boolean aMatch = filter.matches(a.record().text());
-                    boolean bMatch = filter.matches(b.record().text());
-
-                    if (aMatch && bMatch) {
-                        // Both satisfy the condition — sort by actual field value so
-                        // e.g. 835hp ranks above 670hp above 503hp for "over 500hp"
-                        double aVal = filter.extractValue(a.record().text());
-                        double bVal = filter.extractValue(b.record().text());
-                        boolean ascending = filter.operator().equals("LT") || filter.operator().equals("LTE");
-                        return ascending
-                                ? Double.compare(aVal, bVal)   // cheapest first for "under $X"
-                                : Double.compare(bVal, aVal);  // highest first for "over X hp"
-                    }
-
-                    if (!aMatch && !bMatch) return Double.compare(b.score(), a.score()); // keep RRF order
-                    return aMatch ? -1 : 1; // matching tier always above non-matching
-                })
-                .toList();
+    /**
+     * Answers threshold and superlative questions with SQL instead of text similarity.
+     *
+     * Text retrieval matches tokens, not values: at fleet scale "over 500 horsepower"
+     * returned the Mercedes S500 and Lexus LS 500 because "500" appears in the trim.
+     * When {@link StructuredVehicleQuery} recognises the question, vehicles are filtered
+     * and ranked on vehicle_attributes and one relevant chunk per vehicle is returned.
+     *
+     * Returns empty (caller falls back to hybrid search) when the question is not
+     * structured, or when no vehicle has the attribute at all. That keeps a parser false
+     * positive or a data gap from ever turning a good text answer into nothing.
+     * The relevance gate is skipped here: a matched attribute query is a valid fleet question.
+     */
+    Optional<List<SearchHit>> structuredSearch(String question, int topK) {
+        Optional<StructuredVehicleQuery> parsed = StructuredVehicleQuery.parse(question);
+        if (parsed.isEmpty()) {
+            return Optional.empty();
+        }
+        try {
+            List<SearchHit> hits = attributeRepository.search(parsed.get(), topK);
+            if (hits.isEmpty()) {
+                log.info("Structured query matched no vehicles, falling back to hybrid — q='{}'", question);
+                return Optional.empty();
+            }
+            return Optional.of(hits);
+        } catch (Exception e) {
+            log.warn("Structured query failed, falling back to hybrid — q='{}'", question, e);
+            return Optional.empty();
+        }
     }
 
     // ─── Per-vehicle diversification ──────────────────────────────────────
@@ -310,72 +312,5 @@ public class VehicleRagService {
                 .limit(topK)
                 .map(e -> new SearchHit(source.get(e.getKey()).record(), e.getValue()))
                 .toList();
-    }
-
-    // ─── NumericFilter ────────────────────────────────────────────────────
-
-    /**
-     * Parses threshold expressions from natural language:
-     *   "over 500 horsepower"  → Horsepower > 500
-     *   "at least 300 hp"      → Horsepower >= 300
-     *   "under $40,000"        → MSRP < 40000
-     *   "less than 30 mpg"     → Fuel Economy < 30
-     *
-     * Returns null if no recognisable threshold is found.
-     */
-    record NumericFilter(String field, String operator, double value) {
-
-        boolean matches(String chunkText) {
-            if (chunkText == null) return false;
-            for (String line : chunkText.split("\n")) {
-                if (!line.toLowerCase().contains(field.toLowerCase())) continue;
-                Matcher m = Pattern.compile("(\\d+(?:\\.\\d+)?)").matcher(line);
-                if (!m.find()) continue;
-                double lineVal = Double.parseDouble(m.group(1));
-                return switch (operator) {
-                    case "GT" -> lineVal > value;
-                    case "GTE" -> lineVal >= value;
-                    case "LT" -> lineVal < value;
-                    case "LTE" -> lineVal <= value;
-                    default -> false;
-                };
-            }
-            return false;
-        }
-
-        /** Returns the numeric value of this field from the chunk text, or -1 if not found. */
-        double extractValue(String chunkText) {
-            if (chunkText == null) return -1;
-            for (String line : chunkText.split("\n")) {
-                if (!line.toLowerCase().contains(field.toLowerCase())) continue;
-                Matcher m = Pattern.compile("(\\d+(?:\\.\\d+)?)").matcher(line);
-                if (m.find()) return Double.parseDouble(m.group(1));
-            }
-            return -1;
-        }
-
-        static NumericFilter parse(String question) {
-            String q = question.toLowerCase();
-
-            String op;
-            if (q.matches(".*(\\bover\\b|more than|above|greater than).*")) op = "GT";
-            else if (q.matches(".*(at least|minimum|or more).*")) op = "GTE";
-            else if (q.matches(".*(\\bunder\\b|less than|below|cheaper than).*")) op = "LT";
-            else if (q.matches(".*(at most|maximum|or less).*")) op = "LTE";
-            else return null;
-
-            Matcher numMatcher = Pattern.compile("(\\d{1,3}(?:,\\d{3})*)").matcher(q);
-            if (!numMatcher.find()) return null;
-            double value = Double.parseDouble(numMatcher.group(1).replace(",", ""));
-
-            String field;
-            if (q.matches(".*(horsepower|\\bhp\\b|\\bpower\\b).*")) field = "Horsepower";
-            else if (q.matches(".*(torque|lb-ft).*")) field = "Torque";
-            else if (q.matches(".*(mpg|fuel economy|mileage|efficient).*")) field = "Fuel Economy";
-            else if (q.matches(".*(price|msrp|cost|\\$|dollar|budget).*")) field = "MSRP";
-            else return null;
-
-            return new NumericFilter(field, op, value);
-        }
     }
 }
