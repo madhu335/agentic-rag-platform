@@ -64,9 +64,30 @@ public class VehicleEvaluationService {
             long acceptableCount = returned.stream()
                     .filter(v -> acceptable.contains(v) && !expected.contains(v)).count();
 
-            double recall = expected.isEmpty() ? 1.0 : (double) correctCount / expected.size();
-            double precision = returned.isEmpty() ? 1.0 : (double) correctCount / returned.size();
-            boolean passed = correctCount >= entry.minimumRecallCount();
+            double recall;
+            double precision;
+            boolean passed;
+
+            if (entry.openWorld()) {
+                // Open-world entry: many fleet vehicles legitimately satisfy the query
+                // (e.g. "electric vehicles" -> ~590 EVs), so expected ∪ acceptable is the
+                // relevant set. With top-K retrieval you can surface at most
+                // min(|relevant|, |returned|) of them, so recall is normalised by that
+                // ceiling: 1.0 means every returned slot that could hold a relevant
+                // vehicle did. Precision counts any relevant vehicle as correct.
+                long relevantHits = correctCount + acceptableCount;
+                long relevantTotal = expected.size() + acceptable.stream()
+                        .filter(v -> !expected.contains(v)).count();
+                long ceiling = Math.min(relevantTotal, returned.size());
+                recall = ceiling == 0 ? 0.0 : (double) relevantHits / ceiling;
+                precision = returned.isEmpty() ? 0.0 : (double) relevantHits / returned.size();
+                passed = relevantHits >= entry.minimumRecallCount();
+            } else {
+                // Closed-world entry: only expectedVehicleIds count (original behaviour).
+                recall = expected.isEmpty() ? 1.0 : (double) correctCount / expected.size();
+                precision = returned.isEmpty() ? 1.0 : (double) correctCount / returned.size();
+                passed = correctCount >= entry.minimumRecallCount();
+            }
 
             // Edge case: nonsense query must return nothing meaningful
             if (entry.expectedVehicleIds().isEmpty() && entry.minimumRecallCount() == 0) {
@@ -79,7 +100,25 @@ public class VehicleEvaluationService {
             if (!passed) {
                 Set<String> missedVehicleIds = new HashSet<>(expected);
                 missedVehicleIds.removeAll(returned);
-                analysis = diagnose(entry, missedVehicleIds, returnedChunkIds, hits);
+                // For open-world entries the curated vehicles may legitimately be outranked by
+                // other relevant fleet vehicles, so a failure means too few RELEVANT vehicles
+                // came back, not that a specific vehicle was missed.
+                if (entry.openWorld() && correctCount + acceptableCount > 0) {
+                    List<String> irrelevant = returnedVehicleIds.stream()
+                            .filter(v -> !expected.contains(v) && !acceptable.contains(v))
+                            .toList();
+                    analysis = new FailureAnalysis(
+                            "TOO_FEW_RELEVANT",
+                            (correctCount + acceptableCount) + " of " + returnedVehicleIds.size()
+                                    + " returned vehicles are relevant; need " + entry.minimumRecallCount()
+                                    + ". Irrelevant: " + irrelevant,
+                            List.of(),
+                            returnedChunkIds,
+                            List.of("Inspect why the irrelevant vehicles outrank relevant ones"
+                                    + " (lexical number/trim matches, missing structured filters, variant crowding)"));
+                } else {
+                    analysis = diagnose(entry, missedVehicleIds, returnedChunkIds, hits);
+                }
             }
 
             return new EntryResult(entry, returnedVehicleIds, returnedChunkIds,
@@ -402,7 +441,8 @@ public class VehicleEvaluationService {
                 listOf(m, "expectedVehicleIds"), listOf(m, "acceptableVehicleIds"),
                 str(m, "category"), str(m, "difficulty"), str(m, "source"),
                 ((Number) m.getOrDefault("minimumRecallCount", 1)).intValue(),
-                listOf(m, "expectedChunkIds"), (String) m.get("notes")
+                listOf(m, "expectedChunkIds"), (String) m.get("notes"),
+                Boolean.TRUE.equals(m.get("openWorld"))
         );
     }
 
@@ -427,7 +467,8 @@ public class VehicleEvaluationService {
             String entryId, String query, String docType,
             List<String> expectedVehicleIds, List<String> acceptableVehicleIds,
             String category, String difficulty, String source,
-            int minimumRecallCount, List<String> expectedChunkIds, String notes
+            int minimumRecallCount, List<String> expectedChunkIds, String notes,
+            boolean openWorld   // true: expected ∪ acceptable all count as relevant (see evaluate())
     ) {
     }
 

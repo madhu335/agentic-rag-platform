@@ -21,7 +21,7 @@ import java.util.StringJoiner;
  * chunk_index assignment:
  *   1 = identity
  *   2 = performance
- *   3 = ownership cost
+ *   3 = ownership cost (only when ownershipCost is present)
  *   4 = rankings
  *   5 = safety
  *   6 = features + trims
@@ -49,7 +49,11 @@ public class VehicleChunkBuilder {
 
         chunks.add(chunk(v, 1,  "identity",       buildIdentity(anchor, v)));
         chunks.add(chunk(v, 2,  "performance",     buildPerformance(anchor, v)));
-        chunks.add(chunk(v, 3,  "ownership_cost",  buildOwnershipCost(anchor, v)));
+        // Skip instead of emitting "Ownership cost data not available." — at scale,
+        // thousands of identical placeholder chunks crowd out real cost data.
+        if (v.ownershipCost() != null) {
+            chunks.add(chunk(v, 3, "ownership_cost", buildOwnershipCost(anchor, v)));
+        }
 
         if (v.rankings() != null && !v.rankings().isEmpty()) {
             chunks.add(chunk(v, 4, "rankings", buildRankings(anchor, v.rankings())));
@@ -99,16 +103,18 @@ public class VehicleChunkBuilder {
                 + "Class: " + safe(v.vehicleClass()) + ". "
                 + "Fuel type: " + safe(v.fuelType()) + ". "
                 + (v.exteriorColor() != null ? "Exterior: " + v.exteriorColor() + ". " : "")
-                + "MSRP: " + safe(v.msrp()) + ". "
-                + "Invoice: " + safe(v.invoicePrice()) + ".";
+                + (v.msrp() != null ? "MSRP: " + v.msrp() + ". " : "")
+                + (v.invoicePrice() != null ? "Invoice: " + v.invoicePrice() + "." : "");
     }
 
     private String buildPerformance(String anchor, RichVehicleRecord v) {
         StringJoiner sj = new StringJoiner(" ");
         sj.add(anchor + "Performance specs:");
         sj.add("Engine: " + safe(v.engine()) + ".");
-        sj.add("Horsepower: " + safeUnit(v.horsepower(), "hp") + ".");
-        sj.add("Torque: " + safeUnit(v.torque(), "lb-ft") + ".");
+        // Omit unknown specs: "Torque: N/A" in thousands of chunks would make every
+        // vehicle a BM25 match for torque/horsepower queries.
+        if (v.horsepower() != null) sj.add("Horsepower: " + safeUnit(v.horsepower(), "hp") + ".");
+        if (v.torque() != null)     sj.add("Torque: " + safeUnit(v.torque(), "lb-ft") + ".");
         if (v.zeroToSixty() != null) sj.add("0-60 mph: " + v.zeroToSixty() + " seconds.");
         if (v.topSpeed() != null)    sj.add("Top speed: " + v.topSpeed() + " mph.");
         sj.add("Drivetrain: " + safe(v.drivetrain()) + ".");
@@ -148,14 +154,28 @@ public class VehicleChunkBuilder {
 
     private String buildSafety(String anchor, RichVehicleRecord v) {
         var s = v.safety();
-        return anchor + "Safety ratings: "
-                + "NHTSA overall " + safe(s.nhtsaOverall()) + " "
-                + "(frontal: " + safe(s.nhtsaFrontal())
-                + ", side: " + safe(s.nhtsaSide())
-                + ", rollover: " + safe(s.nhtsaRollover()) + "). "
-                + "IIHS overall: " + safe(s.iihsOverall()) + " "
-                + "(small overlap: " + safe(s.iihsSmallOverlap())
-                + ", headlights: " + safe(s.iihsHeadlights()) + "). "
+        // Each rating block is emitted only when present. NHTSA-sourced records have
+        // no IIHS data, and "IIHS overall: N/A" repeated across hundreds of chunks
+        // would add noise to BM25 and embeddings, same as the spec fields above.
+        StringBuilder sb = new StringBuilder(anchor).append("Safety ratings: ");
+        if (s.nhtsaOverall() != null) {
+            sb.append("NHTSA overall ").append(s.nhtsaOverall());
+            List<String> parts = new ArrayList<>();
+            if (s.nhtsaFrontal() != null)  parts.add("frontal: " + s.nhtsaFrontal());
+            if (s.nhtsaSide() != null)     parts.add("side: " + s.nhtsaSide());
+            if (s.nhtsaRollover() != null) parts.add("rollover: " + s.nhtsaRollover());
+            if (!parts.isEmpty()) sb.append(" (").append(String.join(", ", parts)).append(")");
+            sb.append(". ");
+        }
+        if (s.iihsOverall() != null) {
+            sb.append("IIHS overall: ").append(s.iihsOverall());
+            List<String> parts = new ArrayList<>();
+            if (s.iihsSmallOverlap() != null) parts.add("small overlap: " + s.iihsSmallOverlap());
+            if (s.iihsHeadlights() != null)   parts.add("headlights: " + s.iihsHeadlights());
+            if (!parts.isEmpty()) sb.append(" (").append(String.join(", ", parts)).append(")");
+            sb.append(". ");
+        }
+        return sb
                 + (s.hasAutomaticEmergencyBraking() ? "Automatic emergency braking standard. " : "")
                 + (s.hasLaneDepartureWarning()      ? "Lane departure warning standard. "       : "")
                 + (s.hasBlindSpotMonitoring()        ? "Blind spot monitoring standard."         : "");
