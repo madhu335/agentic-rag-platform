@@ -35,6 +35,19 @@ public class VehicleRagService {
     @Value("${vehicle.search.max-chunks-per-vehicle:3}")
     private int maxChunksPerVehicle = 3;
 
+    /**
+     * Collapse near-duplicate variants (same make + model, different trim/wheels/year)
+     * so one model can't fill a fleet result. See {@link VariantCollapser}.
+     * Set false to A/B against the uncollapsed ranking.
+     */
+    @Value("${vehicle.search.collapse-variants:true}")
+    private boolean collapseVariants = true;
+
+    /** Variants are dropped after retrieval, so fetch a wider pool when collapsing. */
+    private int candidatePool(int topK) {
+        return collapseVariants ? Math.max(topK * 6, 40) : Math.max(topK * 3, 12);
+    }
+
     // ─── Single-vehicle query ──────────────────────────────────────────────
 
     public RagAnswerService.RagResult askVehicle(String vehicleId, String question) {
@@ -126,8 +139,7 @@ public class VehicleRagService {
             }
         }
 
-        // Fetch a wider pool so numeric post-filter has enough candidates
-        int candidateK = Math.max(topK * 3, 12);
+        int candidateK = candidatePool(topK);
         List<Double> queryVector = embeddingClient.embed(question);
         List<SearchHit> vectorHits = vectorStore.searchAllWithScores(queryVector, candidateK, docType);
         List<SearchHit> keywordHits = vectorStore.keywordSearchAll(question, candidateK, docType);
@@ -143,6 +155,10 @@ public class VehicleRagService {
             return List.of();
         }
         List<SearchHit> fused = fuseRRF(vectorHits, keywordHits, candidateK);
+        // One model family (46 Rivian R1T variants) must not crowd others out of top-K
+        if (collapseVariants) {
+            fused = VariantCollapser.collapse(fused, topK);
+        }
         // One vehicle with many matching chunks must not crowd others out of top-K
         fused = diversifyByVehicle(fused, maxChunksPerVehicle, topK);
 
@@ -173,8 +189,7 @@ public class VehicleRagService {
             return structured.get();
         }
 
-        // Fetch a wider pool so numeric post-filter has enough candidates
-        int candidateK = Math.max(topK * 3, 12);
+        int candidateK = candidatePool(topK);
         List<Double> queryVector = embeddingClient.embed(question);
         List<SearchHit> vectorHits = vectorStore.searchAllWithScores(queryVector, candidateK);
         List<SearchHit> keywordHits = vectorStore.keywordSearchAll(question, candidateK);
@@ -190,6 +205,10 @@ public class VehicleRagService {
             return List.of();
         }
         List<SearchHit> fused = fuseRRF(vectorHits, keywordHits, candidateK);
+        // One model family (46 Rivian R1T variants) must not crowd others out of top-K
+        if (collapseVariants) {
+            fused = VariantCollapser.collapse(fused, topK);
+        }
         // One vehicle with many matching chunks must not crowd others out of top-K
         fused = diversifyByVehicle(fused, maxChunksPerVehicle, topK);
 
@@ -222,7 +241,13 @@ public class VehicleRagService {
             return Optional.empty();
         }
         try {
-            List<SearchHit> hits = attributeRepository.search(parsed.get(), topK);
+            // Over-fetch so collapsing variants still leaves topK distinct models
+            int fetch = collapseVariants ? topK * 5 : topK;
+            List<SearchHit> hits = attributeRepository.search(parsed.get(), fetch);
+            if (collapseVariants) {
+                hits = VariantCollapser.collapse(hits, topK);
+            }
+            hits = hits.stream().limit(topK).toList();
             if (hits.isEmpty()) {
                 log.info("Structured query matched no vehicles, falling back to hybrid — q='{}'", question);
                 return Optional.empty();
