@@ -1,0 +1,11 @@
+{
+    "provider":  "halo",
+    "latencyMs":  4616,
+    "result":  {
+                   "grounded":  false,
+                   "correct":  false,
+                   "complete":  false,
+                   "score":  0.0,
+                   "reason":  "620 hp unsupported"
+               }
+}

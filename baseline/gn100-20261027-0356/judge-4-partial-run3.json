@@ -1,0 +1,11 @@
+{
+    "provider":  "halo",
+    "latencyMs":  7863,
+    "result":  {
+                   "grounded":  false,
+                   "correct":  false,
+                   "complete":  false,
+                   "score":  0.3,
+                   "reason":  "Honda CR-V claim unsupported"
+               }
+}

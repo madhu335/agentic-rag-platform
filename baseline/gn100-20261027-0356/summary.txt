@@ -1,0 +1,14 @@
+=== Judge (latencyMs per run) ===
+2-correct       runs=3  min=3232  avg=3,405  max=3667  scores=1.0,1.0,1.0
+3-hallucinated  runs=3  min=4604  avg=4,822  max=5246  scores=0.0,0.0,0.0
+4-partial       runs=3  min=7863  avg=8,477  max=9289  scores=0.66,0.5,0.3
+
+=== M3 /ask ===
+wallMs=5602  judgeScore=1.0  cited=bmw-m3-2025-competition:2
+answer: The 2025 BMW M3 Competition has 503 horsepower [bmw-m3-2025-competition:2].
+
+Sources: [bmw-m3-2025-competition:2]
+
+=== Recall eval ===
+recall=0.863  precision=0.444  passed=26/29  wallMs=2563
+failed: S2-002, S3-001, S3-003

@@ -87,7 +87,9 @@ judge:
   debug:
     enabled: true          # exposes POST /api/judge/test (dev only)
   halo:
-    base-url: ${HALO_BASE_URL:http://localhost:18002/api/v1}
+    # GN100 (NVIDIA GB10) via direct 10G link, llama.cpp llama-server
+    base-url: ${HALO_BASE_URL:http://192.168.50.20:18002/v1}
+    # Rollback to AMD Halo (Lemonade): http://localhost:18002/api/v1
     model: ${HALO_JUDGE_MODEL:gpt-oss-120b-Q4_K_M}
     api-key: ${HALO_API_KEY:}
     reasoning-effort: low  # low | medium | high (gpt-oss "Reasoning:" system line)

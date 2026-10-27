@@ -1,0 +1,11 @@
+{
+    "provider":  "halo",
+    "latencyMs":  9289,
+    "result":  {
+                   "grounded":  false,
+                   "correct":  false,
+                   "complete":  false,
+                   "score":  0.66,
+                   "reason":  "Unsupported claim: Honda CR-V Sport Hybrid"
+               }
+}
