@@ -1,0 +1,11 @@
+{
+    "provider":  "halo",
+    "latencyMs":  3417,
+    "result":  {
+                   "grounded":  false,
+                   "correct":  false,
+                   "complete":  false,
+                   "score":  0.0,
+                   "reason":  "620 horsepower claim unsupported"
+               }
+}

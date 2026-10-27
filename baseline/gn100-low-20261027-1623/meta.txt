@@ -1,0 +1,5 @@
+label:   gn100-low
+time:    2026-10-27T16:23:42.0356699-07:00
+commit:  d6b95fc
+dirty:   YES - uncommitted changes
+baseUrl: http://localhost:8080
