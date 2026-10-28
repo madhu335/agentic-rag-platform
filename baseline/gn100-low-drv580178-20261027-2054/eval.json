@@ -1,0 +1,229 @@
+{
+    "overallRecall":  0.8629129491198456,
+    "overallPrecision":  0.4441505812195467,
+    "totalPassed":  26,
+    "totalEntries":  29,
+    "meetsTarget":  true,
+    "byCategory":  {
+                       "MAINTENANCE":  {
+                                           "recall":  0.8333333333333334,
+                                           "precision":  0.4365079365079365,
+                                           "passed":  3,
+                                           "total":  3
+                                       },
+                       "OWNERSHIP_COST":  {
+                                              "recall":  0.75,
+                                              "precision":  0.3108974358974359,
+                                              "passed":  3,
+                                              "total":  4
+                                          },
+                       "SAFETY":  {
+                                      "recall":  1.0,
+                                      "precision":  0.40370370370370373,
+                                      "passed":  3,
+                                      "total":  3
+                                  },
+                       "PERFORMANCE":  {
+                                           "recall":  1.0,
+                                           "precision":  0.18055555555555555,
+                                           "passed":  3,
+                                           "total":  3
+                                       },
+                       "CROSS_CHUNK":  {
+                                           "recall":  0.5192307692307692,
+                                           "precision":  0.29423076923076924,
+                                           "passed":  2,
+                                           "total":  4
+                                       },
+                       "FLEET_FILTER":  {
+                                            "recall":  0.923076923076923,
+                                            "precision":  0.923076923076923,
+                                            "passed":  6,
+                                            "total":  6
+                                        },
+                       "FEATURES":  {
+                                        "recall":  0.9545454545454546,
+                                        "precision":  0.5378787878787878,
+                                        "passed":  2,
+                                        "total":  2
+                                    },
+                       "RANKINGS":  {
+                                        "recall":  1.0,
+                                        "precision":  0.19583333333333333,
+                                        "passed":  4,
+                                        "total":  4
+                                    }
+                   },
+    "byDifficulty":  {
+                         "EASY":  {
+                                      "recall":  0.958041958041958,
+                                      "precision":  0.4878399378399378,
+                                      "passed":  11,
+                                      "total":  11
+                                  },
+                         "MEDIUM":  {
+                                        "recall":  0.9818181818181818,
+                                        "precision":  0.5068181818181818,
+                                        "passed":  5,
+                                        "total":  5
+                                    },
+                         "EDGE_CASE":  {
+                                           "recall":  1.0,
+                                           "precision":  0.5285714285714286,
+                                           "passed":  5,
+                                           "total":  5
+                                       },
+                         "HARD":  {
+                                      "recall":  0.5721153846153846,
+                                      "precision":  0.29214743589743586,
+                                      "passed":  5,
+                                      "total":  8
+                                  }
+                     },
+    "bySource":  {
+                     "LLM_ASSISTED":  {
+                                          "recall":  0.3333333333333333,
+                                          "precision":  0.3333333333333333,
+                                          "passed":  1,
+                                          "total":  3
+                                      },
+                     "USER_LOG":  {
+                                      "recall":  0.831002331002331,
+                                      "precision":  0.2771561771561772,
+                                      "passed":  5,
+                                      "total":  6
+                                  },
+                     "DB_GENERATED":  {
+                                          "recall":  0.9076923076923077,
+                                          "precision":  0.9076923076923077,
+                                          "passed":  5,
+                                          "total":  5
+                                      },
+                     "MANUAL":  {
+                                    "recall":  0.9666666666666667,
+                                    "precision":  0.3785978835978836,
+                                    "passed":  15,
+                                    "total":  15
+                                }
+                 },
+    "failedEntries":  [
+                          {
+                              "entryId":  "S2-002",
+                              "query":  "good family car with low running costs",
+                              "expected":  [
+                                               "toyota-camry-2025-xse-hybrid",
+                                               "honda-crv-2025-sport-hybrid"
+                                           ],
+                              "returned":  [
+                                               "toyota-corolla-2024-hatchback-fwd-2-0l-4-cylinder-epa47345",
+                                               "toyota-highlander-2024-hybrid-fwd-2-5l-4-cylinder-hybrid-259v-li-ion-epa47636",
+                                               "chevrolet-suburban-2024-4wd-5-3l-8-cylinder-epa47418",
+                                               "lexus-rz-2024-300e-20-inch-wheels-fwd-electric-motor-150-kw-ac-synchronous-epa47833",
+                                               "audi-a5-2024-cabriolet-quattro-2-0l-4-cylinder-turbocharged-hybrid-14v-li-ion-epa47037",
+                                               "genesis-g70-2024-rwd-2-5l-4-cylinder-turbocharged-epa47324",
+                                               "toyota-corolla-cross-2024-fwd-2-0l-4-cylinder-epa47635",
+                                               "subaru-legacy-2024-awd-2-5l-4-cylinder-epa46528",
+                                               "lexus-es-2024-350-f-sport-fwd-3-5l-6-cylinder-epa46793",
+                                               "nissan-murano-2025-fwd-2-0l-4-cylinder-turbocharged-epa48909",
+                                               "lexus-is-2024-500-rwd-5-0l-8-cylinder-epa47328",
+                                               "lexus-rc-2024-f-rwd-5-0l-8-cylinder-epa47322",
+                                               "bmw-4-series-2024-m440i-xdrive-gran-coupe-3-0l-6-cylinder-turbocharged-hybrid-44v-li-ion-epa46527"
+                                           ],
+                              "recall":  0.07692307692307693,
+                              "analysis":  {
+                                               "primaryReason":  "TOO_FEW_RELEVANT",
+                                               "detail":  "1 of 13 returned vehicles are relevant; need 5. Irrelevant: [toyota-corolla-2024-hatchback-fwd-2-0l-4-cylinder-epa47345, toyota-highlander-2024-hybrid-fwd-2-5l-4-cylinder-hybrid-259v-li-ion-epa47636, chevrolet-suburban-2024-4wd-5-3l-8-cylinder-epa47418, audi-a5-2024-cabriolet-quattro-2-0l-4-cylinder-turbocharged-hybrid-14v-li-ion-epa47037, genesis-g70-2024-rwd-2-5l-4-cylinder-turbocharged-epa47324, toyota-corolla-cross-2024-fwd-2-0l-4-cylinder-epa47635, subaru-legacy-2024-awd-2-5l-4-cylinder-epa46528, lexus-es-2024-350-f-sport-fwd-3-5l-6-cylinder-epa46793, nissan-murano-2025-fwd-2-0l-4-cylinder-turbocharged-epa48909, lexus-is-2024-500-rwd-5-0l-8-cylinder-epa47328, lexus-rc-2024-f-rwd-5-0l-8-cylinder-epa47322, bmw-4-series-2024-m440i-xdrive-gran-coupe-3-0l-6-cylinder-turbocharged-hybrid-44v-li-ion-epa46527]",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+                                                                        "toyota-corolla-2024-hatchback-fwd-2-0l-4-cylinder-epa47345:6",
+                                                                        "toyota-highlander-2024-hybrid-fwd-2-5l-4-cylinder-hybrid-259v-li-ion-epa47636:6",
+                                                                        "chevrolet-suburban-2024-4wd-5-3l-8-cylinder-epa47418:6",
+                                                                        "lexus-rz-2024-300e-20-inch-wheels-fwd-electric-motor-150-kw-ac-synchronous-epa47833:6",
+                                                                        "audi-a5-2024-cabriolet-quattro-2-0l-4-cylinder-turbocharged-hybrid-14v-li-ion-epa47037:6",
+                                                                        "genesis-g70-2024-rwd-2-5l-4-cylinder-turbocharged-epa47324:6",
+                                                                        "toyota-corolla-cross-2024-fwd-2-0l-4-cylinder-epa47635:6",
+                                                                        "subaru-legacy-2024-awd-2-5l-4-cylinder-epa46528:6",
+                                                                        "lexus-es-2024-350-f-sport-fwd-3-5l-6-cylinder-epa46793:6",
+                                                                        "nissan-murano-2025-fwd-2-0l-4-cylinder-turbocharged-epa48909:6",
+                                                                        "lexus-is-2024-500-rwd-5-0l-8-cylinder-epa47328:6",
+                                                                        "lexus-rc-2024-f-rwd-5-0l-8-cylinder-epa47322:6",
+                                                                        "bmw-4-series-2024-m440i-xdrive-gran-coupe-3-0l-6-cylinder-turbocharged-hybrid-44v-li-ion-epa46527:6"
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Inspect why the irrelevant vehicles outrank relevant ones (lexical number/trim matches, missing structured filters, variant crowding)"
+                                                               ]
+                                           }
+                          },
+                          {
+                              "entryId":  "S3-001",
+                              "query":  "best car for someone who loves track days but needs daily practicality",
+                              "expected":  [
+                                               "bmw-m3-2025-competition"
+                                           ],
+                              "returned":  [
+                                               "porsche-taycan-2024-gts-sport-turismo-awd-electric-motor-254-kw-acpm-epa47469",
+                                               "nissan-ariya-2024-platinum-plus-e-4orce-87kwh-19in-wheels-awd-electric-motor-160-and-160-kw-ac-3-phase-epa47857",
+                                               "subaru-solterra-2024-limited-touring-awd-electric-motor-80-and-80-kw-ac-synchronous-epa47483",
+                                               "rolls-royce-spectre-2024-22-inch-wheels-awd-electric-motor-190-and-360-kw-eesm-epa47480",
+                                               "subaru-impreza-2024-awd-2-0l-4-cylinder-epa46530",
+                                               "maserati-mc20-2024-spyder-rwd-3-0l-6-cylinder-turbocharged-epa47287",
+                                               "mini-clubman-2024-cooper-s-clubman-fwd-2-0l-4-cylinder-turbocharged-epa46571",
+                                               "bmw-i4-2024-edrive40-gran-coupe-18-inch-wheels-rwd-electric-motor-250-kw-eesm-epa46921"
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "OUTRANKED",
+                                               "detail":  "bmw-m3-2025-competition: OUTRANKED â?? chunk scored 0.5522 but other vehicles scored higher and pushed it out of top-13",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+                                                                        "porsche-taycan-2024-gts-sport-turismo-awd-electric-motor-254-kw-acpm-epa47469:2",
+                                                                        "porsche-taycan-2024-gts-sport-turismo-awd-electric-motor-254-kw-acpm-epa47469:1",
+                                                                        "nissan-ariya-2024-platinum-plus-e-4orce-87kwh-19in-wheels-awd-electric-motor-160-and-160-kw-ac-3-phase-epa47857:2",
+                                                                        "subaru-solterra-2024-limited-touring-awd-electric-motor-80-and-80-kw-ac-synchronous-epa47483:2",
+                                                                        "rolls-royce-spectre-2024-22-inch-wheels-awd-electric-motor-190-and-360-kw-eesm-epa47480:1",
+                                                                        "subaru-impreza-2024-awd-2-0l-4-cylinder-epa46530:5",
+                                                                        "porsche-taycan-2024-gts-sport-turismo-awd-electric-motor-254-kw-acpm-epa47469:6",
+                                                                        "maserati-mc20-2024-spyder-rwd-3-0l-6-cylinder-turbocharged-epa47287:6",
+                                                                        "mini-clubman-2024-cooper-s-clubman-fwd-2-0l-4-cylinder-turbocharged-epa46571:6",
+                                                                        "subaru-impreza-2024-awd-2-0l-4-cylinder-epa46530:1",
+                                                                        "maserati-mc20-2024-spyder-rwd-3-0l-6-cylinder-turbocharged-epa47287:2",
+                                                                        "bmw-i4-2024-edrive40-gran-coupe-18-inch-wheels-rwd-electric-motor-250-kw-eesm-epa46921:2",
+                                                                        "subaru-impreza-2024-awd-2-0l-4-cylinder-epa46530:2"
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027CROSS_CHUNK\u0027 category queries"
+                                                               ]
+                                           }
+                          },
+                          {
+                              "entryId":  "S3-003",
+                              "query":  "vehicle with lowest total 5 year ownership cost",
+                              "expected":  [
+                                               "toyota-camry-2025-xse-hybrid",
+                                               "honda-crv-2025-sport-hybrid"
+                                           ],
+                              "returned":  [
+                                               "bmw-m3-2025-competition"
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "MISSING_CHUNK_TYPE",
+                                               "detail":  "honda-crv-2025-sport-hybrid: OUTRANKED â?? chunk scored 0.6149 but other vehicles scored higher and pushed it out of top-13 | toyota-camry-2025-xse-hybrid: MISSING CHUNK TYPE \u0027ownership_cost\u0027 â?? vehicle only has chunks: 1(identity)",
+                                               "chunkGaps":  [
+                                                                 "toyota-camry-2025-xse-hybrid missing: ownership_cost chunk"
+                                                             ],
+                                               "returnedChunkIds":  [
+                                                                        "bmw-m3-2025-competition:3"
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027OWNERSHIP_COST\u0027 category queries",
+                                                                   "Re-ingest toyota-camry-2025-xse-hybrid via /vehicles/ingest/rich with a fully populated RichVehicleRecord including ownership_cost data"
+                                                               ]
+                                           }
+                          }
+                      ]
+}

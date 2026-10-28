@@ -1,0 +1,111 @@
+{
+    "answer":  "The 2025 BMW M3 Competition has 503 horsepower [bmw-m3-2025-competition:2].\n\nSources: [bmw-m3-2025-competition:2]",
+    "citedChunkIds":  [
+                          "bmw-m3-2025-competition:2"
+                      ],
+    "retrievedChunkIds":  [
+                              "bmw-m3-2025-competition:2",
+                              "bmw-m3-2025-competition:4",
+                              "bmw-m3-2025-competition:7",
+                              "bmw-m-2024-3-competition-sedan-rwd-3-0l-6-cylinder-turbocharged-epa46659:2",
+                              "bmw-m3-2025-competition:6"
+                          ],
+    "usedChunks":  5,
+    "retrievalScore":  0.09090909090909091,
+    "judge":  {
+                  "grounded":  true,
+                  "correct":  true,
+                  "complete":  true,
+                  "score":  1.0,
+                  "reason":  "All claims supported by provided context"
+              },
+    "cards":  [
+                  {
+                      "vehicleId":  "bmw-m3-2025-competition",
+                      "title":  "2025 BMW M3 Competition",
+                      "imageUrl":  null,
+                      "score":  0.7737702567819421,
+                      "attributes":  {
+                                         "trim":  "Competition",
+                                         "year":  2025,
+                                         "chunkCount":  14,
+                                         "model":  "M3",
+                                         "make":  "BMW"
+                                     }
+                  },
+                  {
+                      "vehicleId":  "bmw-m-2025-3-competition-sedan-rwd-3-0l-6-cylinder-turbocharged-epa47977",
+                      "title":  "2025 BMW M 3 Competition Sedan RWD 3.0L 6-cylinder turbocharged",
+                      "imageUrl":  null,
+                      "score":  0.7236277114774342,
+                      "attributes":  {
+                                         "trim":  "3 Competition Sedan RWD 3.0L 6-cylinder turbocharged",
+                                         "year":  2025,
+                                         "chunkCount":  3,
+                                         "model":  "M",
+                                         "make":  "BMW"
+                                     }
+                  },
+                  {
+                      "vehicleId":  "bmw-m-2024-3-competition-sedan-rwd-3-0l-6-cylinder-turbocharged-epa46659",
+                      "title":  "2024 BMW M 3 Competition Sedan RWD 3.0L 6-cylinder turbocharged",
+                      "imageUrl":  null,
+                      "score":  0.7225794315952436,
+                      "attributes":  {
+                                         "trim":  "3 Competition Sedan RWD 3.0L 6-cylinder turbocharged",
+                                         "year":  2024,
+                                         "chunkCount":  3,
+                                         "model":  "M",
+                                         "make":  "BMW"
+                                     }
+                  },
+                  {
+                      "vehicleId":  "bmw-m-2025-8-competition-coupe-awd-4-4l-8-cylinder-turbocharged-epa47702",
+                      "title":  "2025 BMW M 8 Competition Coupe AWD 4.4L 8-cylinder turbocharged",
+                      "imageUrl":  null,
+                      "score":  0.7165558418929975,
+                      "attributes":  {
+                                         "trim":  "8 Competition Coupe AWD 4.4L 8-cylinder turbocharged",
+                                         "year":  2025,
+                                         "chunkCount":  3,
+                                         "model":  "M",
+                                         "make":  "BMW"
+                                     }
+                  },
+                  {
+                      "vehicleId":  "bmw-m-2024-8-competition-coupe-awd-4-4l-8-cylinder-turbocharged-epa46480",
+                      "title":  "2024 BMW M 8 Competition Coupe AWD 4.4L 8-cylinder turbocharged",
+                      "imageUrl":  null,
+                      "score":  0.7147409476638303,
+                      "attributes":  {
+                                         "trim":  "8 Competition Coupe AWD 4.4L 8-cylinder turbocharged",
+                                         "year":  2024,
+                                         "chunkCount":  3,
+                                         "model":  "M",
+                                         "make":  "BMW"
+                                     }
+                  }
+              ],
+    "chunks":  [
+                   {
+                       "id":  "bmw-m3-2025-competition:2",
+                       "text":  "2025 BMW M3 Competition sports sedan. Performance specs: Engine: 3.0L twin-turbo inline-6 (S58). Horsepower: 503 hp. Torque: 479 lb-ft. 0-60 mph: 3.4 seconds. Top speed: 180 mph. Drivetrain: RWD. Transmission: 8-speed M Steptronic automatic. Fuel economy: 16 city / 23 highway MPG."
+                   },
+                   {
+                       "id":  "bmw-m3-2025-competition:4",
+                       "text":  "2025 BMW M3 Competition sports sedan. Industry rankings and awards: Ranked 2nd of 18 in sports sedans by US News (2025), score 91/100. Praised for driving dynamics and engine character. Docked for infotainment learning curve. Ranked 1st of 12 in luxury sports cars by Car and Driver (2025), score 88/100. Editors choice award winner for the third consecutive year. Ranked 8th of 20 in reliability by Consumer Reports (2025), score 74/100. Above average reliability for the segment. Electrical system historically the weak point. Ranked 4th of 15 in resale value by Kelley Blue Book (2025), score 82/100. M3 retains value well, especially Competition trim. Limited supply supports residuals."
+                   },
+                   {
+                       "id":  "bmw-m3-2025-competition:7",
+                       "text":  "2025 BMW M3 Competition sports sedan. Expert reviews: Car and Driver (2025) rated it 9/10. The M3 Competition remains the benchmark sports sedan. The S58 engine is a masterpiece of forced-induction engineering. Pros: Extraordinary engine, razor-sharp chassis, usable daily driver. Cons: Divisive styling, complex iDrive menus, firm ride on rough roads. Motor Trend (2025) rated it 9/10. No sports sedan does more things better. The Competition is worth the premium over the base M3. Pros: Best-in-class lap times, excellent build quality, strong resale. Cons: Premium fuel required, insurance costs are high, rear tires wear quickly. Consumer Reports (2025) rated it 7/10. Performance is exceptional but reliability scores keep it from the top spot. Ownership costs are significant. Pros: Driving experience, brand prestige, strong residuals. Cons: Above-average repair costs, some owners report electrical gremlins."
+                   },
+                   {
+                       "id":  "bmw-m-2024-3-competition-sedan-rwd-3-0l-6-cylinder-turbocharged-epa46659:2",
+                       "text":  "2024 BMW M 3 Competition Sedan RWD 3.0L 6-cylinder turbocharged compact cars. Performance specs: Engine: 3.0L 6-cylinder turbocharged. Drivetrain: RWD. Transmission: 8-speed automatic. Fuel economy: 16 city / 23 highway MPG."
+                   },
+                   {
+                       "id":  "bmw-m3-2025-competition:6",
+                       "text":  "2025 BMW M3 Competition sports sedan. Features and trim levels: Standard features include: M sport seats with memory, adaptive M suspension, carbon fiber interior trim, head-up display, launch control, M Drive modes, Harman Kardon surround sound, wireless Apple CarPlay, parking assistant. The Base M3 trim is priced at $72,800 . Added features: M sport seats, adaptive suspension, launch control. The Competition trim is priced at $76,900 and adds 30hp over base. Added features: high-rev engine tune, M carbon bucket seats, enhanced cooling. The Competition xDrive trim is priced at $80,900 and adds 30hp over base. Added features: all-wheel drive, winter performance package. The CS trim is priced at $119,900 and adds 40hp over base. Added features: carbon roof, ceramic brakes, track-tuned suspension, lightweight wheels."
+                   }
+               ]
+}

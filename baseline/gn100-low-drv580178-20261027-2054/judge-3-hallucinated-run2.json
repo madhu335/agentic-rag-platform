@@ -1,0 +1,11 @@
+{
+    "provider":  "halo",
+    "latencyMs":  2906,
+    "result":  {
+                   "grounded":  false,
+                   "correct":  false,
+                   "complete":  false,
+                   "score":  0.0,
+                   "reason":  "Incorrect horsepower, unsupported top speed claim"
+               }
+}
