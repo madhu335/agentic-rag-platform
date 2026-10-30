@@ -1,0 +1,11 @@
+{
+    "provider":  "halo",
+    "latencyMs":  2963,
+    "result":  {
+                   "grounded":  true,
+                   "correct":  true,
+                   "complete":  true,
+                   "score":  1.0,
+                   "reason":  ""
+               }
+}

@@ -1,0 +1,10 @@
+# Nemotron-3-Nano-30B-A3B (NVFP4) served by Triton's vLLM backend.
+# Engine settings live in 1/model.json.
+backend: "vllm"
+
+instance_group [
+  {
+    count: 1
+    kind: KIND_MODEL
+  }
+]

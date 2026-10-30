@@ -32,7 +32,7 @@ spring:
 # LLM Provider, vllm, openai, claude
 # =========================
 llm:
-  provider: vllm
+  provider: ${LLM_PROVIDER:triton-vllm}   # triton-vllm (Nemotron on Triton) | vllm (Qwen rollback)
 
   vllm:
     base-url: http://localhost:8001
@@ -40,8 +40,14 @@ llm:
     temperature: 0.1   # low = repeatable RAG answers (vLLM default is 1.0)
 
   triton:
-    base-url: http://localhost:8000
-    model-name: llama-3.1-8b
+    # Nemotron-3-Nano-30B-A3B NVFP4 on Triton (vLLM backend), native /generate API.
+    # Same Triton server as text_embedding + cross_reranker below.
+    base-url: ${TRITON_LLM_BASE_URL:http://localhost:8000}
+    model-name: nemotron
+    max-tokens: 2048
+    temperature: 0.1        # same as Qwen, for a fair comparison
+    enable-thinking: false  # empty <think></think> block in the chat template
+    timeout-seconds: 120
 
 # =========================
 # OpenAI-compatible

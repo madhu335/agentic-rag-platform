@@ -1,0 +1,5 @@
+label:   triton-single
+time:    2026-10-30T03:02:07.5420025-07:00
+commit:  c1cd794
+dirty:   YES - uncommitted changes
+baseUrl: http://localhost:8080

@@ -1,0 +1,11 @@
+{
+    "provider":  "halo",
+    "latencyMs":  3280,
+    "result":  {
+                   "grounded":  false,
+                   "correct":  false,
+                   "complete":  false,
+                   "score":  0.0,
+                   "reason":  "Incorrect horsepower value; 620 hp unsupported"
+               }
+}

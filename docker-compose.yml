@@ -12,7 +12,49 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  # One Triton Inference Server (26.07, vLLM + Python backends) for all three models:
+  #   text_embedding  BAAI/bge-base-en-v1.5      (python backend, C:\triton-model-repo)
+  #   cross_reranker  BAAI/bge-reranker-base     (python backend, C:\triton-model-repo)
+  #   nemotron        NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4 (vllm backend, triton\models)
+  # Engine settings for nemotron: triton\models\nemotron\1\model.json
+  # (gpu_memory_utilization 0.70, max_model_len 32768, max_num_seqs 32, prefix caching).
+  # Startup takes ~3 min (weights load over the Windows file share, then warm-up).
   triton:
+    build:
+      context: ./triton
+    image: triton-rag:26.07
+    container_name: triton-rag
+    restart: always
+    shm_size: "8gb"
+    ports:
+      - "8000:8000"   # HTTP  (KServe v2: /infer, /generate, /generate_stream)
+      - "8001:8001"   # gRPC
+      - "8002:8002"   # Prometheus metrics
+    volumes:
+      - C:\triton-model-repo:/models
+      - ./triton/models:/models-llm
+      - C:\Users\Madhu\.cache\huggingface:/root/.cache/huggingface
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command:
+      - "tritonserver"
+      - "--model-repository=/models"
+      - "--model-repository=/models-llm"
+
+  # ── Rollback (pre-2026-10-30 stack): Triton 25.03 embed/rerank + standalone vLLM Qwen ──
+  # Not started by default. To roll back:
+  #   docker compose stop triton
+  #   docker compose --profile rollback up -d triton-legacy vllm
+  #   $env:LLM_PROVIDER = "vllm"   (then restart the app)
+  triton-legacy:
+    profiles: ["rollback"]
     image: triton-embed:local
     container_name: triton
     restart: always
@@ -27,24 +69,22 @@ services:
       - "--model-repository=/models"
 
   vllm:
+    profiles: ["rollback"]
     image: vllm/vllm-openai:latest
     container_name: vllm
     restart: always
     depends_on:
       - postgres
-      - triton
+      - triton-legacy
     ports:
       - "8001:8000"
     volumes:
       - C:\Users\Madhu\.cache\huggingface:/root/.cache/huggingface
     environment:
-      HF_TOKEN: ${HF_TOKEN}
+      HF_TOKEN: ${HF_TOKEN:-}
     runtime: nvidia
     # Qwen3-30B-A3B Instruct 2507, 4-bit AWQ (MoE: ~30B total / ~3B active per token).
     # ~17 GiB weights; 0.80 leaves ~5.5 GiB for Triton + Windows on the 32 GiB 5090.
-    # AWQ format is auto-detected, so no --quantization flag.
-    # Rollback: model "meta-llama/Meta-Llama-3.1-8B-Instruct", 0.75, 8192,
-    #           "--quantization" "fp8", tool parser "llama3_json".
     command:
       - "cyankiwi/Qwen3-30B-A3B-Instruct-2507-AWQ-4bit"
       - "--gpu-memory-utilization"
