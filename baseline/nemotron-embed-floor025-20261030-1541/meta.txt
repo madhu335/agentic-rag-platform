@@ -1,0 +1,5 @@
+label:   nemotron-embed-floor025
+time:    2026-10-30T15:41:30.2961367-07:00
+commit:  aab83bc
+dirty:   YES - uncommitted changes
+baseUrl: http://localhost:8080

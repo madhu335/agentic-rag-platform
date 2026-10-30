@@ -47,3 +47,6 @@ build/
 
 # Local eval reports
 /eval-*.json
+
+__pycache__/
+*.pyc

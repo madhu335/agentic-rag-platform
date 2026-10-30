@@ -190,7 +190,7 @@ public class VehicleIngestionService {
     // ─── Helpers ──────────────────────────────────────────────────────────
 
     private List<Double> embed(String text, String chunkId) {
-        List<Double> vec = embeddingClient.embed(text);
+        List<Double> vec = embeddingClient.embedPassage(text);
         if (vec == null || vec.isEmpty())
             throw new IllegalStateException("Embedding returned empty for chunkId=" + chunkId);
         return vec;

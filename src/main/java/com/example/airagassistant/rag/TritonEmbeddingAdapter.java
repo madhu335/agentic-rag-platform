@@ -17,13 +17,20 @@ public class TritonEmbeddingAdapter implements EmbeddingClient {
         this.tritonEmbeddingClient = tritonEmbeddingClient;
     }
 
+    /** Search query. */
     @Override
     public List<Double> embed(String text) {
-        return tritonEmbeddingClient.embed(text);
+        return tritonEmbeddingClient.embed(text, TritonEmbeddingClient.InputType.QUERY);
+    }
+
+    /** Stored passages (ingestion). */
+    @Override
+    public List<List<Double>> embedBatch(List<String> texts) {
+        return tritonEmbeddingClient.embedBatch(texts, TritonEmbeddingClient.InputType.PASSAGE);
     }
 
     @Override
-    public List<List<Double>> embedBatch(List<String> texts) {
-        return tritonEmbeddingClient.embedBatch(texts);
+    public List<Double> embedPassage(String text) {
+        return tritonEmbeddingClient.embed(text, TritonEmbeddingClient.InputType.PASSAGE);
     }
 }

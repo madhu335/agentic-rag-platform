@@ -66,7 +66,7 @@ public class VehicleSummaryService {
         log.info("Upserting vehicle summary for '{}' — {} chars, {} chunks",
                 vehicleId, summaryText.length(), chunkCount);
 
-        List<Double> embedding = embeddingClient.embed(summaryText);
+        List<Double> embedding = embeddingClient.embedPassage(summaryText);
         String vectorLiteral = toPgVector(embedding);
 
         String sql = """

@@ -1,0 +1,5 @@
+label:   nemotron-embed-2048
+time:    2026-10-30T15:52:11.1236524-07:00
+commit:  aab83bc
+dirty:   YES - uncommitted changes
+baseUrl: http://localhost:8080

@@ -43,6 +43,18 @@ public class VehicleRagService {
     @Value("${vehicle.search.collapse-variants:true}")
     private boolean collapseVariants = true;
 
+    /**
+     * Minimum best-match scores before fleet search returns anything. Both must be weak to reject.
+     * These depend on the embedding model's score scale: bge-base put real matches at 0.5-0.8
+     * (old hard-coded 0.50); Nemotron 3.5 Embed puts them at ~0.27-0.48 and nonsense at ~0.26.
+     * Nonsense close to the floor is left to the relevance gate (isRelevantAfterRetrieval).
+     */
+    @Value("${vehicle.search.min-vector-score:0.25}")
+    private double minVectorScore = 0.25;
+
+    @Value("${vehicle.search.min-keyword-score:0.2}")
+    private double minKeywordScore = 0.2;
+
     /** Variants are dropped after retrieval, so fetch a wider pool when collapsing. */
     private int candidatePool(int topK) {
         return collapseVariants ? Math.max(topK * 6, 40) : Math.max(topK * 3, 12);
@@ -146,8 +158,8 @@ public class VehicleRagService {
         double bestVector = vectorHits.isEmpty() ? 0 : vectorHits.get(0).score();
         double bestKeyword = keywordHits.isEmpty() ? 0 : keywordHits.get(0).score();
 
-        boolean weakVector = bestVector < 0.50;
-        boolean weakKeyword = bestKeyword < 0.2;
+        boolean weakVector = bestVector < minVectorScore;
+        boolean weakKeyword = bestKeyword < minKeywordScore;
 
         if (weakVector && weakKeyword) {
             log.warn("Rejecting low-quality retrieval: vector={} keyword={} q={}",
@@ -196,8 +208,8 @@ public class VehicleRagService {
         double bestVector = vectorHits.isEmpty() ? 0 : vectorHits.get(0).score();
         double bestKeyword = keywordHits.isEmpty() ? 0 : keywordHits.get(0).score();
 
-        boolean weakVector = bestVector < 0.50;
-        boolean weakKeyword = bestKeyword < 0.2;
+        boolean weakVector = bestVector < minVectorScore;
+        boolean weakKeyword = bestKeyword < minKeywordScore;
 
         if (weakVector && weakKeyword) {
             log.warn("Rejecting low-quality retrieval: vector={} keyword={} q={}",

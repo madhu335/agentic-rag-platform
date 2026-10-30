@@ -1,0 +1,407 @@
+{
+    "overallRecall":  0.5545977011494252,
+    "overallPrecision":  0.5741379310344827,
+    "totalPassed":  17,
+    "totalEntries":  29,
+    "meetsTarget":  false,
+    "byCategory":  {
+                       "MAINTENANCE":  {
+                                           "recall":  0.5,
+                                           "precision":  0.75,
+                                           "passed":  2,
+                                           "total":  3
+                                       },
+                       "OWNERSHIP_COST":  {
+                                              "recall":  0.5,
+                                              "precision":  0.5625,
+                                              "passed":  2,
+                                              "total":  4
+                                          },
+                       "SAFETY":  {
+                                      "recall":  0.6666666666666666,
+                                      "precision":  0.09444444444444444,
+                                      "passed":  2,
+                                      "total":  3
+                                  },
+                       "PERFORMANCE":  {
+                                           "recall":  1.0,
+                                           "precision":  0.25,
+                                           "passed":  3,
+                                           "total":  3
+                                       },
+                       "CROSS_CHUNK":  {
+                                           "recall":  0.25,
+                                           "precision":  0.75,
+                                           "passed":  1,
+                                           "total":  4
+                                       },
+                       "FLEET_FILTER":  {
+                                            "recall":  0.7638888888888888,
+                                            "precision":  0.7638888888888888,
+                                            "passed":  5,
+                                            "total":  6
+                                        },
+                       "FEATURES":  {
+                                        "recall":  0.5,
+                                        "precision":  0.1,
+                                        "passed":  1,
+                                        "total":  2
+                                    },
+                       "RANKINGS":  {
+                                        "recall":  0.25,
+                                        "precision":  0.8333333333333333,
+                                        "passed":  1,
+                                        "total":  4
+                                    }
+                   },
+    "byDifficulty":  {
+                         "EASY":  {
+                                      "recall":  0.8712121212121212,
+                                      "precision":  0.43863636363636366,
+                                      "passed":  10,
+                                      "total":  11
+                                  },
+                         "MEDIUM":  {
+                                        "recall":  0.4,
+                                        "precision":  0.625,
+                                        "passed":  2,
+                                        "total":  5
+                                    },
+                         "EDGE_CASE":  {
+                                           "recall":  0.6,
+                                           "precision":  0.54,
+                                           "passed":  3,
+                                           "total":  5
+                                       },
+                         "HARD":  {
+                                      "recall":  0.1875,
+                                      "precision":  0.75,
+                                      "passed":  2,
+                                      "total":  8
+                                  }
+                     },
+    "bySource":  {
+                     "LLM_ASSISTED":  {
+                                          "recall":  0.3333333333333333,
+                                          "precision":  0.6666666666666666,
+                                          "passed":  1,
+                                          "total":  3
+                                      },
+                     "USER_LOG":  {
+                                      "recall":  0.0,
+                                      "precision":  0.6666666666666666,
+                                      "passed":  0,
+                                      "total":  6
+                                  },
+                     "DB_GENERATED":  {
+                                          "recall":  0.7166666666666667,
+                                          "precision":  0.7166666666666667,
+                                          "passed":  4,
+                                          "total":  5
+                                      },
+                     "MANUAL":  {
+                                    "recall":  0.7666666666666667,
+                                    "precision":  0.4711111111111111,
+                                    "passed":  12,
+                                    "total":  15
+                                }
+                 },
+    "failedEntries":  [
+                          {
+                              "entryId":  "S4-005",
+                              "query":  "AWD vehicles",
+                              "expected":  [
+                                               "tesla-model3-2025-long-range",
+                                               "rivian-r1t-2025-adventure",
+                                               "honda-crv-2025-sport-hybrid"
+                                           ],
+                              "returned":  [
+
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "OUTRANKED",
+                                               "detail":  "tesla-model3-2025-long-range: OUTRANKED â?? chunk scored 0.2244 but other vehicles scored higher and pushed it out of top-13 | rivian-r1t-2025-adventure: OUTRANKED â?? chunk scored 0.2641 but other vehicles scored higher and pushed it out of top-13 | honda-crv-2025-sport-hybrid: OUTRANKED â?? chunk scored 0.2345 but other vehicles scored higher and pushed it out of top-13",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027FLEET_FILTER\u0027 category queries",
+                                                                   "Increase topK to 16 for \u0027FLEET_FILTER\u0027 category queries",
+                                                                   "Increase topK to 16 for \u0027FLEET_FILTER\u0027 category queries"
+                                                               ]
+                                           }
+                          },
+                          {
+                              "entryId":  "S1-RANK-002",
+                              "query":  "which car won editors choice award",
+                              "expected":  [
+                                               "bmw-m3-2025-competition"
+                                           ],
+                              "returned":  [
+
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "OUTRANKED",
+                                               "detail":  "bmw-m3-2025-competition: OUTRANKED â?? chunk scored 0.3156 but other vehicles scored higher and pushed it out of top-13",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027RANKINGS\u0027 category queries"
+                                                               ]
+                                           }
+                          },
+                          {
+                              "entryId":  "S2-001",
+                              "query":  "fast sports car that wont break the bank",
+                              "expected":  [
+                                               "bmw-m3-2025-competition"
+                                           ],
+                              "returned":  [
+
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "OUTRANKED",
+                                               "detail":  "bmw-m3-2025-competition: OUTRANKED â?? chunk scored 0.2819 but other vehicles scored higher and pushed it out of top-13",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027CROSS_CHUNK\u0027 category queries"
+                                                               ]
+                                           }
+                          },
+                          {
+                              "entryId":  "S2-002",
+                              "query":  "good family car with low running costs",
+                              "expected":  [
+                                               "toyota-camry-2025-xse-hybrid",
+                                               "honda-crv-2025-sport-hybrid"
+                                           ],
+                              "returned":  [
+
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "OUTRANKED",
+                                               "detail":  "honda-crv-2025-sport-hybrid: OUTRANKED â?? chunk scored 0.2664 but other vehicles scored higher and pushed it out of top-13 | toyota-camry-2025-xse-hybrid: OUTRANKED â?? chunk scored 0.1766 but other vehicles scored higher and pushed it out of top-13",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027CROSS_CHUNK\u0027 category queries",
+                                                                   "Increase topK to 16 for \u0027CROSS_CHUNK\u0027 category queries"
+                                                               ]
+                                           }
+                          },
+                          {
+                              "entryId":  "S2-003",
+                              "query":  "is the M3 reliable",
+                              "expected":  [
+                                               "bmw-m3-2025-competition"
+                                           ],
+                              "returned":  [
+
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "OUTRANKED",
+                                               "detail":  "bmw-m3-2025-competition: OUTRANKED â?? chunk scored 0.3954 but other vehicles scored higher and pushed it out of top-13",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027RANKINGS\u0027 category queries"
+                                                               ]
+                                           }
+                          },
+                          {
+                              "entryId":  "S2-004",
+                              "query":  "what do experts say about the M3",
+                              "expected":  [
+                                               "bmw-m3-2025-competition"
+                                           ],
+                              "returned":  [
+
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "OUTRANKED",
+                                               "detail":  "bmw-m3-2025-competition: OUTRANKED â?? chunk scored 0.4176 but other vehicles scored higher and pushed it out of top-13",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027RANKINGS\u0027 category queries"
+                                                               ]
+                                           }
+                          },
+                          {
+                              "entryId":  "S2-005",
+                              "query":  "how much will I spend on gas per year",
+                              "expected":  [
+                                               "bmw-m3-2025-competition"
+                                           ],
+                              "returned":  [
+
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "OUTRANKED",
+                                               "detail":  "bmw-m3-2025-competition: OUTRANKED â?? chunk scored 0.1870 but other vehicles scored higher and pushed it out of top-13",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027OWNERSHIP_COST\u0027 category queries"
+                                                               ]
+                                           }
+                          },
+                          {
+                              "entryId":  "S2-006",
+                              "query":  "truck with good off road capability",
+                              "expected":  [
+                                               "rivian-r1t-2025-adventure"
+                                           ],
+                              "returned":  [
+
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "OUTRANKED",
+                                               "detail":  "rivian-r1t-2025-adventure: OUTRANKED â?? chunk scored 0.2482 but other vehicles scored higher and pushed it out of top-13",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027FEATURES\u0027 category queries"
+                                                               ]
+                                           }
+                          },
+                          {
+                              "entryId":  "S3-001",
+                              "query":  "best car for someone who loves track days but needs daily practicality",
+                              "expected":  [
+                                               "bmw-m3-2025-competition"
+                                           ],
+                              "returned":  [
+
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "OUTRANKED",
+                                               "detail":  "bmw-m3-2025-competition: OUTRANKED â?? chunk scored 0.1703 but other vehicles scored higher and pushed it out of top-13",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027CROSS_CHUNK\u0027 category queries"
+                                                               ]
+                                           }
+                          },
+                          {
+                              "entryId":  "S3-003",
+                              "query":  "vehicle with lowest total 5 year ownership cost",
+                              "expected":  [
+                                               "toyota-camry-2025-xse-hybrid",
+                                               "honda-crv-2025-sport-hybrid"
+                                           ],
+                              "returned":  [
+                                               "bmw-m3-2025-competition"
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "MISSING_CHUNK_TYPE",
+                                               "detail":  "honda-crv-2025-sport-hybrid: OUTRANKED â?? chunk scored 0.3226 but other vehicles scored higher and pushed it out of top-13 | toyota-camry-2025-xse-hybrid: MISSING CHUNK TYPE \u0027ownership_cost\u0027 â?? vehicle only has chunks: 1(identity)",
+                                               "chunkGaps":  [
+                                                                 "toyota-camry-2025-xse-hybrid missing: ownership_cost chunk"
+                                                             ],
+                                               "returnedChunkIds":  [
+                                                                        "bmw-m3-2025-competition:3"
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027OWNERSHIP_COST\u0027 category queries",
+                                                                   "Re-ingest toyota-camry-2025-xse-hybrid via /vehicles/ingest/rich with a fully populated RichVehicleRecord including ownership_cost data"
+                                                               ]
+                                           }
+                          },
+                          {
+                              "entryId":  "EDGE-001",
+                              "query":  "vehicles with recalls",
+                              "expected":  [
+                                               "bmw-m3-2025-competition"
+                                           ],
+                              "returned":  [
+
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "OUTRANKED",
+                                               "detail":  "bmw-m3-2025-competition: OUTRANKED â?? chunk scored 0.4097 but other vehicles scored higher and pushed it out of top-13",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027SAFETY\u0027 category queries"
+                                                               ]
+                                           }
+                          },
+                          {
+                              "entryId":  "EDGE-003",
+                              "query":  "spark plug replacement interval BMW",
+                              "expected":  [
+                                               "bmw-m3-2025-competition"
+                                           ],
+                              "returned":  [
+
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "OUTRANKED",
+                                               "detail":  "bmw-m3-2025-competition: OUTRANKED â?? chunk scored 0.3586 but other vehicles scored higher and pushed it out of top-13",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027MAINTENANCE\u0027 category queries"
+                                                               ]
+                                           }
+                          }
+                      ]
+}

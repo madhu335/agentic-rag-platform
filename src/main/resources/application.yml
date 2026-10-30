@@ -111,7 +111,11 @@ embedding:
   provider: triton
   triton:
     base-url: http://localhost:8000
-    model-name: text_embedding
+    # text_embedding = bge-base-en-v1.5 (768, symmetric)  -> send-input-type: false
+    # nemotron_embed = Nemotron 3.5 Embed 1B (2048, query:/passage: prompts) -> send-input-type: true
+    # Switching models changes the vector size: migrate the pgvector columns and re-ingest.
+    model-name: ${EMBEDDING_MODEL:nemotron_embed}
+    send-input-type: ${EMBEDDING_SEND_INPUT_TYPE:true}
 
 reranker:
   triton:
@@ -127,6 +131,11 @@ vehicle:
     detail-top-k: 5
     hybrid-vector-weight: 0.7
     max-chunks-per-vehicle: 0   # 0 = disabled; cap=3 hurt precision (0.53 -> 0.22), pending spread-triggered version
+    # Fleet-search floor; depends on the embedding model (bge-base needed 0.50).
+    # Nemotron 2048: real queries >= 0.25, 'xyzabc vehicle' 0.242 -> rejected by a thin margin.
+    # The relevance gate answered relevant=true for every query, so it does not catch nonsense (task #14).
+    min-vector-score: 0.25
+    min-keyword-score: 0.2
 
   bulk:
     page-size: 50

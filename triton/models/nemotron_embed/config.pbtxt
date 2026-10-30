@@ -1,0 +1,46 @@
+# Nemotron 3.5 Embed 1B (BF16) via sentence-transformers in Triton's python backend.
+# Inputs per row: TEXT, optional INPUT_TYPE ("query" | "passage"; default "passage").
+# The model needs its retrieval prefixes ("query: " / "passage: "), applied in model.py.
+# EMBEDDING = first embedding_dim dims of the 2048-dim vector, re-L2-normalized.
+# If you change embedding_dim, also change dims below AND the pgvector column size, then re-ingest.
+name: "nemotron_embed"
+backend: "python"
+max_batch_size: 64
+
+input [
+  {
+    name: "TEXT"
+    data_type: TYPE_STRING
+    dims: [ 1 ]
+  },
+  {
+    name: "INPUT_TYPE"
+    data_type: TYPE_STRING
+    dims: [ 1 ]
+    optional: true
+  }
+]
+
+output [
+  {
+    name: "EMBEDDING"
+    data_type: TYPE_FP32
+    dims: [ 2048 ]
+  }
+]
+
+parameters: { key: "model_id"      value: { string_value: "nvidia/Nemotron-3.5-Embed-1B-BF16" } }
+parameters: { key: "embedding_dim" value: { string_value: "2048" } }
+parameters: { key: "encode_batch"  value: { string_value: "32" } }
+
+instance_group [
+  {
+    count: 1
+    kind: KIND_GPU
+  }
+]
+
+dynamic_batching {
+  preferred_batch_size: [ 8, 16, 32 ]
+  max_queue_delay_microseconds: 2000
+}
