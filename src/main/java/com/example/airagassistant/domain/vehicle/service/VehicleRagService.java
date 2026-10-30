@@ -6,6 +6,7 @@ import com.example.airagassistant.rag.PgVectorStore;
 import com.example.airagassistant.rag.RagAnswerService;
 import com.example.airagassistant.rag.RetrievalMode;
 import com.example.airagassistant.rag.SearchHit;
+import com.example.airagassistant.rag.TritonRerankerClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,6 +31,7 @@ public class VehicleRagService {
     private final PgVectorStore vectorStore;
     private final LlmClient llmClient;
     private final VehicleAttributeRepository attributeRepository;
+    private final TritonRerankerClient rerankerClient;
 
     /** Max chunks one vehicle may occupy in a fleet result before others get a slot. */
     @Value("${vehicle.search.max-chunks-per-vehicle:3}")
@@ -54,6 +56,22 @@ public class VehicleRagService {
 
     @Value("${vehicle.search.min-keyword-score:0.2}")
     private double minKeywordScore = 0.2;
+
+    /**
+     * Relevance gate after retrieval: "reranker" (default), "llm" (previous LLM prompt) or "off".
+     * The reranker gate scores the top hits with the cross-encoder (cross_reranker on Triton) and
+     * passes if the best (query, chunk) score >= min-rerank-score. A cross-encoder reads query and
+     * chunk together, so its score is a direct relevance signal; cosine similarity is not.
+     * The LLM gate answered relevant=true for every eval query, nonsense included.
+     */
+    @Value("${vehicle.search.relevance-gate:reranker}")
+    private String relevanceGate = "reranker";
+
+    @Value("${vehicle.search.min-rerank-score:0.0}")
+    private double minRerankScore = 0.0;
+
+    @Value("${vehicle.search.rerank-gate-top-n:5}")
+    private int rerankGateTopN = 5;
 
     /** Variants are dropped after retrieval, so fetch a wider pool when collapsing. */
     private int candidatePool(int topK) {
@@ -94,6 +112,41 @@ public class VehicleRagService {
         if (hits == null || hits.isEmpty()) {
             return false;
         }
+        return switch (relevanceGate == null ? "reranker" : relevanceGate.trim().toLowerCase()) {
+            case "off" -> true;
+            case "llm" -> isRelevantByLlm(question, hits);
+            default -> isRelevantByReranker(question, hits);
+        };
+    }
+
+    /**
+     * Cross-encoder gate: best rerank score over the top N hits must reach min-rerank-score.
+     * Always logs the best score so the threshold can be calibrated from eval runs.
+     * Fails open (returns true) if the reranker is unavailable, to protect recall.
+     */
+    private boolean isRelevantByReranker(String question, List<SearchHit> hits) {
+        List<SearchHit> top = hits.stream().limit(Math.max(1, rerankGateTopN)).toList();
+        try {
+            List<String> docs = top.stream().map(h -> h.record().text()).toList();
+            List<Double> scores = rerankerClient.score(question, docs);
+            int bestIdx = 0;
+            for (int i = 1; i < scores.size(); i++) {
+                if (scores.get(i) > scores.get(bestIdx)) bestIdx = i;
+            }
+            double best = scores.isEmpty() ? 0.0 : scores.get(bestIdx);
+            boolean pass = best >= minRerankScore;
+            log.info("Rerank gate: best={} threshold={} pass={} topChunk={} q={}",
+                    String.format("%.4f", best), minRerankScore, pass,
+                    scores.isEmpty() ? "-" : top.get(bestIdx).record().id(), question);
+            return pass;
+        } catch (Exception e) {
+            log.warn("Rerank gate failed; allowing results. query='{}'", question, e);
+            return true;
+        }
+    }
+
+    /** Previous gate: asks the LLM whether the query is gibberish/off-topic. Kept as an option. */
+    private boolean isRelevantByLlm(String question, List<SearchHit> hits) {
 
         String context = hits.stream()
                 .limit(5)

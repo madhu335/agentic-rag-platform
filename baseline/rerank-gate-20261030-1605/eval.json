@@ -1,0 +1,259 @@
+{
+    "overallRecall":  0.8289124668435014,
+    "overallPrecision":  0.5119994947581155,
+    "totalPassed":  25,
+    "totalEntries":  29,
+    "meetsTarget":  false,
+    "byCategory":  {
+                       "MAINTENANCE":  {
+                                           "recall":  0.8333333333333334,
+                                           "precision":  0.46428571428571425,
+                                           "passed":  3,
+                                           "total":  3
+                                       },
+                       "OWNERSHIP_COST":  {
+                                              "recall":  0.5,
+                                              "precision":  0.3,
+                                              "passed":  2,
+                                              "total":  4
+                                          },
+                       "SAFETY":  {
+                                      "recall":  1.0,
+                                      "precision":  0.42777777777777776,
+                                      "passed":  3,
+                                      "total":  3
+                                  },
+                       "PERFORMANCE":  {
+                                           "recall":  1.0,
+                                           "precision":  0.25,
+                                           "passed":  3,
+                                           "total":  3
+                                       },
+                       "CROSS_CHUNK":  {
+                                           "recall":  0.5,
+                                           "precision":  0.5416666666666667,
+                                           "passed":  2,
+                                           "total":  4
+                                       },
+                       "FLEET_FILTER":  {
+                                            "recall":  0.923076923076923,
+                                            "precision":  0.923076923076923,
+                                            "passed":  6,
+                                            "total":  6
+                                        },
+                       "FEATURES":  {
+                                        "recall":  1.0,
+                                        "precision":  0.625,
+                                        "passed":  2,
+                                        "total":  2
+                                    },
+                       "RANKINGS":  {
+                                        "recall":  1.0,
+                                        "precision":  0.31666666666666665,
+                                        "passed":  4,
+                                        "total":  4
+                                    }
+                   },
+    "byDifficulty":  {
+                         "EASY":  {
+                                      "recall":  0.958041958041958,
+                                      "precision":  0.5209207459207459,
+                                      "passed":  11,
+                                      "total":  11
+                                  },
+                         "MEDIUM":  {
+                                        "recall":  1.0,
+                                        "precision":  0.5916666666666666,
+                                        "passed":  5,
+                                        "total":  5
+                                    },
+                         "EDGE_CASE":  {
+                                           "recall":  1.0,
+                                           "precision":  0.5785714285714285,
+                                           "passed":  5,
+                                           "total":  5
+                                       },
+                         "HARD":  {
+                                      "recall":  0.4375,
+                                      "precision":  0.4083333333333333,
+                                      "passed":  4,
+                                      "total":  8
+                                  }
+                     },
+    "bySource":  {
+                     "LLM_ASSISTED":  {
+                                          "recall":  0.3333333333333333,
+                                          "precision":  0.6666666666666666,
+                                          "passed":  1,
+                                          "total":  3
+                                      },
+                     "USER_LOG":  {
+                                      "recall":  0.6666666666666666,
+                                      "precision":  0.3333333333333333,
+                                      "passed":  4,
+                                      "total":  6
+                                  },
+                     "DB_GENERATED":  {
+                                          "recall":  0.9076923076923077,
+                                          "precision":  0.9076923076923077,
+                                          "passed":  5,
+                                          "total":  5
+                                      },
+                     "MANUAL":  {
+                                    "recall":  0.9666666666666667,
+                                    "precision":  0.42063492063492064,
+                                    "passed":  15,
+                                    "total":  15
+                                }
+                 },
+    "failedEntries":  [
+                          {
+                              "entryId":  "S2-002",
+                              "query":  "good family car with low running costs",
+                              "expected":  [
+                                               "toyota-camry-2025-xse-hybrid",
+                                               "honda-crv-2025-sport-hybrid"
+                                           ],
+                              "returned":  [
+                                               "toyota-4runner-2024-2wd-4-0l-6-cylinder-epa47411",
+                                               "chrysler-voyager-2024-fwd-3-6l-6-cylinder-epa47134",
+                                               "kia-soul-2024-fwd-2-0l-4-cylinder-epa46807",
+                                               "chrysler-pacifica-2024-fwd-3-6l-6-cylinder-epa47133",
+                                               "kia-carnival-2024-fwd-3-5l-6-cylinder-epa46503",
+                                               "mini-countryman-2024-cooper-countryman-fwd-1-5l-3-cylinder-turbocharged-epa46499",
+                                               "hyundai-santa-cruz-2024-fwd-2-5l-4-cylinder-epa46697",
+                                               "nissan-sentra-2024-sr-fwd-2-0l-4-cylinder-epa47242",
+                                               "mazda-3-2024-4-door-2wd-2-5l-4-cylinder-epa47330",
+                                               "toyota-corolla-cross-2024-fwd-2-0l-4-cylinder-epa47635",
+                                               "kia-sorento-2024-fwd-2-5l-4-cylinder-epa47630",
+                                               "toyota-rav4-2024-fwd-2-5l-4-cylinder-epa47374",
+                                               "kia-seltos-2024-fwd-2-0l-4-cylinder-epa46454"
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "OUTRANKED",
+                                               "detail":  "honda-crv-2025-sport-hybrid: OUTRANKED â?? chunk scored 0.2409 but other vehicles scored higher and pushed it out of top-13 | toyota-camry-2025-xse-hybrid: OUTRANKED â?? chunk scored 0.1457 but other vehicles scored higher and pushed it out of top-13",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+                                                                        "toyota-4runner-2024-2wd-4-0l-6-cylinder-epa47411:6",
+                                                                        "chrysler-voyager-2024-fwd-3-6l-6-cylinder-epa47134:6",
+                                                                        "kia-soul-2024-fwd-2-0l-4-cylinder-epa46807:6",
+                                                                        "chrysler-pacifica-2024-fwd-3-6l-6-cylinder-epa47133:6",
+                                                                        "kia-carnival-2024-fwd-3-5l-6-cylinder-epa46503:6",
+                                                                        "mini-countryman-2024-cooper-countryman-fwd-1-5l-3-cylinder-turbocharged-epa46499:6",
+                                                                        "hyundai-santa-cruz-2024-fwd-2-5l-4-cylinder-epa46697:6",
+                                                                        "nissan-sentra-2024-sr-fwd-2-0l-4-cylinder-epa47242:6",
+                                                                        "mazda-3-2024-4-door-2wd-2-5l-4-cylinder-epa47330:6",
+                                                                        "toyota-corolla-cross-2024-fwd-2-0l-4-cylinder-epa47635:6",
+                                                                        "kia-sorento-2024-fwd-2-5l-4-cylinder-epa47630:6",
+                                                                        "toyota-rav4-2024-fwd-2-5l-4-cylinder-epa47374:6",
+                                                                        "kia-seltos-2024-fwd-2-0l-4-cylinder-epa46454:6"
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027CROSS_CHUNK\u0027 category queries",
+                                                                   "Increase topK to 16 for \u0027CROSS_CHUNK\u0027 category queries"
+                                                               ]
+                                           }
+                          },
+                          {
+                              "entryId":  "S2-005",
+                              "query":  "how much will I spend on gas per year",
+                              "expected":  [
+                                               "bmw-m3-2025-competition"
+                                           ],
+                              "returned":  [
+                                               "rolls-royce-cullinan-2024-awd-6-7l-12-cylinder-turbocharged-epa46809",
+                                               "infiniti-qx80-2024-2wd-5-6l-8-cylinder-epa46896",
+                                               "porsche-718-2024-spyder-rs-rwd-4-0l-6-cylinder-epa47759",
+                                               "chevrolet-trax-2024-fwd-1-2l-3-cylinder-turbocharged-epa46450",
+                                               "chevrolet-tahoe-2024-4wd-5-3l-8-cylinder-epa47419",
+                                               "nissan-z-2024-rwd-3-0l-6-cylinder-turbocharged-epa47012",
+                                               "chevrolet-traverse-2024-limited-fwd-3-6l-6-cylinder-epa47670",
+                                               "chevrolet-blazer-2024-fwd-3-6l-6-cylinder-epa46862",
+                                               "lamborghini-huracan-2024-spyder-awd-5-2l-10-cylinder-epa46633",
+                                               "cadillac-ct4-2024-v-rwd-3-6l-6-cylinder-turbocharged-epa46774",
+                                               "cadillac-ct5-2024-v-rwd-6-2l-8-cylinder-supercharged-epa46791",
+                                               "dodge-durango-2024-awd-5-7l-8-cylinder-epa47425",
+                                               "aston-martin-vanquish-2025-rwd-5-2l-12-cylinder-turbocharged-epa48801"
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "OUTRANKED",
+                                               "detail":  "bmw-m3-2025-competition: OUTRANKED â?? chunk scored 0.2027 but other vehicles scored higher and pushed it out of top-13",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+                                                                        "rolls-royce-cullinan-2024-awd-6-7l-12-cylinder-turbocharged-epa46809:6",
+                                                                        "infiniti-qx80-2024-2wd-5-6l-8-cylinder-epa46896:6",
+                                                                        "porsche-718-2024-spyder-rs-rwd-4-0l-6-cylinder-epa47759:6",
+                                                                        "chevrolet-trax-2024-fwd-1-2l-3-cylinder-turbocharged-epa46450:6",
+                                                                        "chevrolet-tahoe-2024-4wd-5-3l-8-cylinder-epa47419:6",
+                                                                        "nissan-z-2024-rwd-3-0l-6-cylinder-turbocharged-epa47012:6",
+                                                                        "chevrolet-traverse-2024-limited-fwd-3-6l-6-cylinder-epa47670:6",
+                                                                        "chevrolet-blazer-2024-fwd-3-6l-6-cylinder-epa46862:6",
+                                                                        "lamborghini-huracan-2024-spyder-awd-5-2l-10-cylinder-epa46633:6",
+                                                                        "cadillac-ct4-2024-v-rwd-3-6l-6-cylinder-turbocharged-epa46774:6",
+                                                                        "cadillac-ct5-2024-v-rwd-6-2l-8-cylinder-supercharged-epa46791:6",
+                                                                        "dodge-durango-2024-awd-5-7l-8-cylinder-epa47425:6",
+                                                                        "aston-martin-vanquish-2025-rwd-5-2l-12-cylinder-turbocharged-epa48801:6"
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027OWNERSHIP_COST\u0027 category queries"
+                                                               ]
+                                           }
+                          },
+                          {
+                              "entryId":  "S3-001",
+                              "query":  "best car for someone who loves track days but needs daily practicality",
+                              "expected":  [
+                                               "bmw-m3-2025-competition"
+                                           ],
+                              "returned":  [
+
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "OUTRANKED",
+                                               "detail":  "bmw-m3-2025-competition: OUTRANKED â?? chunk scored 0.1914 but other vehicles scored higher and pushed it out of top-13",
+                                               "chunkGaps":  [
+
+                                                             ],
+                                               "returnedChunkIds":  [
+
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027CROSS_CHUNK\u0027 category queries"
+                                                               ]
+                                           }
+                          },
+                          {
+                              "entryId":  "S3-003",
+                              "query":  "vehicle with lowest total 5 year ownership cost",
+                              "expected":  [
+                                               "toyota-camry-2025-xse-hybrid",
+                                               "honda-crv-2025-sport-hybrid"
+                                           ],
+                              "returned":  [
+                                               "bmw-m3-2025-competition"
+                                           ],
+                              "recall":  0.0,
+                              "analysis":  {
+                                               "primaryReason":  "MISSING_CHUNK_TYPE",
+                                               "detail":  "honda-crv-2025-sport-hybrid: OUTRANKED â?? chunk scored 0.3161 but other vehicles scored higher and pushed it out of top-13 | toyota-camry-2025-xse-hybrid: MISSING CHUNK TYPE \u0027ownership_cost\u0027 â?? vehicle only has chunks: 1(identity)",
+                                               "chunkGaps":  [
+                                                                 "toyota-camry-2025-xse-hybrid missing: ownership_cost chunk"
+                                                             ],
+                                               "returnedChunkIds":  [
+                                                                        "bmw-m3-2025-competition:3"
+                                                                    ],
+                                               "suggestions":  [
+                                                                   "Increase topK to 16 for \u0027OWNERSHIP_COST\u0027 category queries",
+                                                                   "Re-ingest toyota-camry-2025-xse-hybrid via /vehicles/ingest/rich with a fully populated RichVehicleRecord including ownership_cost data"
+                                                               ]
+                                           }
+                          }
+                      ]
+}

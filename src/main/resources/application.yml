@@ -131,11 +131,15 @@ vehicle:
     detail-top-k: 5
     hybrid-vector-weight: 0.7
     max-chunks-per-vehicle: 0   # 0 = disabled; cap=3 hurt precision (0.53 -> 0.22), pending spread-triggered version
-    # Fleet-search floor; depends on the embedding model (bge-base needed 0.50).
-    # Nemotron 2048: real queries >= 0.25, 'xyzabc vehicle' 0.242 -> rejected by a thin margin.
-    # The relevance gate answered relevant=true for every query, so it does not catch nonsense (task #14).
-    min-vector-score: 0.25
+    # Fleet-search vector floor: cheap pre-filter, depends on the embedding model (bge-base needed 0.50).
+    # Nemotron 2048: real queries >= 0.25. Set below that with margin; the rerank gate does the real filtering.
+    min-vector-score: 0.20
     min-keyword-score: 0.2
+    # Relevance gate: reranker | llm | off. The LLM gate said relevant=true for every query, nonsense included.
+    # Rerank gate = best bge-reranker-base score over the top N hits (sigmoid, 0..1). Calibration 2026-10-30:
+    #   passing real queries 0.138 - 0.9998 | 'xyzabc vehicle' 0.0027 | failing vague queries 0.0067 (track days), 0.0148 (gas/year)
+    min-rerank-score: 0.01
+    rerank-gate-top-n: 5
 
   bulk:
     page-size: 50

@@ -1,0 +1,5 @@
+label:   rerank-gate
+time:    2026-10-30T16:05:52.4403864-07:00
+commit:  3a43597
+dirty:   YES - uncommitted changes
+baseUrl: http://localhost:8080
