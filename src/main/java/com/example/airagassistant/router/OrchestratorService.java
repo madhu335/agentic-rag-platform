@@ -10,6 +10,7 @@ import com.example.airagassistant.rag.RetrievalMode;
 import com.example.airagassistant.trace.TraceHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
@@ -29,6 +30,15 @@ public class OrchestratorService {
     private final ResultEvaluationPolicy resultEvaluationPolicy;
     private final com.example.airagassistant.domain.article.service.ArticleRagService articleRagService;
     private final com.example.airagassistant.LlmClient llmClient;
+
+    /**
+     * Extra AGENT generations when the judge rejects an answer and the policy asks for a retry.
+     * Before this, a rejected answer (accepted=false, retry=true) was returned anyway.
+     * Nemotron's answers vary between runs even for an identical prompt, so a fresh generation
+     * usually passes. Keeps the best-judged answer if all attempts are rejected. 0 disables.
+     */
+    @Value("${orchestrator.agent.max-retries:1}")
+    private int agentMaxRetries = 1;
 
     public OrchestratorResult handle(String question, String docType, String docId, int k) {
         if (("article".equalsIgnoreCase(docType) || "article_all".equalsIgnoreCase(docType))
@@ -203,6 +213,25 @@ public class OrchestratorService {
 
             EvaluationDecision agentDecision = resultEvaluationPolicy.evaluateOrchestratorResult(agent);
 
+            int attempt = 1;
+            while (!agentDecision.acceptable() && agentDecision.shouldRetry() && attempt <= agentMaxRetries) {
+                attempt++;
+                log.info("AGENT answer rejected ({}, judge={}); regenerating, attempt {}/{}",
+                        agentDecision.reason(), judgeScore(agent), attempt, agentMaxRetries + 1);
+                var retry = runAttempt(
+                        "AGENT",
+                        () -> agentService.answer(docType, docId, question, k),
+                        agentDecision.reason(),
+                        "agent_retry",
+                        question
+                );
+                EvaluationDecision retryDecision = resultEvaluationPolicy.evaluateOrchestratorResult(retry);
+                if (retryDecision.acceptable() || judgeScore(retry) > judgeScore(agent)) {
+                    agent = retry;
+                    agentDecision = retryDecision;
+                }
+            }
+
             traceHelper.addAttributes(Map.of(
                     "langsmith.metadata.final_mode", "AGENT",
                     "langsmith.metadata.final_outcome", agent.outcome(),
@@ -210,6 +239,10 @@ public class OrchestratorService {
             ));
             return agent;
         });
+    }
+
+    private static double judgeScore(OrchestratorResult result) {
+        return result.judge() == null ? -1.0 : result.judge().score();
     }
 
     private OrchestratorResult runAttempt(

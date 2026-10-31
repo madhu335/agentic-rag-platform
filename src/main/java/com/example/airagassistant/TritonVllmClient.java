@@ -39,7 +39,12 @@ public class TritonVllmClient implements LlmClient {
 
     private static final String IM_START = "<|im_start|>";
     private static final String IM_END = "<|im_end|>";
-    private static final String SYSTEM_PROMPT = "You are a helpful assistant.";
+    /**
+     * Default system prompt. A "focused" prompt (answer only the named vehicle, 1-3 sentences) was
+     * A/B tested on 2026-10-30 and did not reduce multi-variant answers (8/20 vs 5/20 bare), so the
+     * bare prompt stays the default. Override with llm.triton.system-prompt.
+     */
+    private static final String DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant.";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final WebClient webClient;
@@ -48,6 +53,7 @@ public class TritonVllmClient implements LlmClient {
     private final double temperature;
     private final boolean enableThinking;
     private final Duration timeout;
+    private final String systemPrompt;
 
     public TritonVllmClient(
             WebClient.Builder builder,
@@ -56,7 +62,8 @@ public class TritonVllmClient implements LlmClient {
             @Value("${llm.triton.max-tokens:2048}") int maxTokens,
             @Value("${llm.triton.temperature:0.1}") double temperature,
             @Value("${llm.triton.enable-thinking:false}") boolean enableThinking,
-            @Value("${llm.triton.timeout-seconds:120}") long timeoutSeconds
+            @Value("${llm.triton.timeout-seconds:120}") long timeoutSeconds,
+            @Value("${llm.triton.system-prompt:}") String systemPrompt
     ) {
         this.webClient = builder.baseUrl(baseUrl).build();
         this.modelName = modelName;
@@ -64,13 +71,15 @@ public class TritonVllmClient implements LlmClient {
         this.temperature = temperature;
         this.enableThinking = enableThinking;
         this.timeout = Duration.ofSeconds(timeoutSeconds);
-        log.info("TritonVllmClient -> {} model={} maxTokens={} temperature={} thinking={}",
-                baseUrl, modelName, maxTokens, temperature, enableThinking);
+        this.systemPrompt = (systemPrompt == null || systemPrompt.isBlank()) ? DEFAULT_SYSTEM_PROMPT : systemPrompt;
+        log.info("TritonVllmClient -> {} model={} maxTokens={} temperature={} thinking={} systemPrompt={} chars",
+                baseUrl, modelName, maxTokens, temperature, enableThinking, this.systemPrompt.length());
     }
 
     @Override
     public String answer(String question, List<String> contextChunks) {
         Map<String, Object> request = buildRequest(question, contextChunks, false);
+        String promptText = (String) request.get("text_input");
 
         String raw = webClient.post()
                 .uri("/v2/models/{model}/generate", modelName)
@@ -88,6 +97,12 @@ public class TritonVllmClient implements LlmClient {
             }
             String text = root.path("text_output").asText("");
             String cleaned = cleanOutput(text);
+            // #15 diagnostics: identical prompt hash + different output => engine non-determinism;
+            // different prompt hash => the app sent different context/instructions.
+            log.debug("Triton generate: promptChars={} promptHash={} chunks={} outChars={} outHash={}",
+                    promptText.length(), Integer.toHexString(promptText.hashCode()),
+                    contextChunks == null ? 0 : contextChunks.size(),
+                    cleaned.length(), Integer.toHexString(cleaned.hashCode()));
             return cleaned.isBlank() ? "I don't know." : cleaned;
         } catch (RuntimeException e) {
             throw e;
@@ -160,7 +175,7 @@ public class TritonVllmClient implements LlmClient {
         parameters.put("temperature", temperature);
 
         Map<String, Object> request = new LinkedHashMap<>();
-        request.put("text_input", renderChatTemplate(SYSTEM_PROMPT, buildUserMessage(question, contextChunks)));
+        request.put("text_input", renderChatTemplate(systemPrompt, buildUserMessage(question, contextChunks)));
         request.put("parameters", parameters);
         return request;
     }
@@ -173,7 +188,7 @@ public class TritonVllmClient implements LlmClient {
                 + (enableThinking ? "<think>\n" : "<think></think>");
     }
 
-    /** Same RAG prompt body as VllmClient, so the Qwen vs Nemotron comparison is fair. */
+    /** Same RAG prompt body as VllmClient (context, question, "Answer:"). */
     private String buildUserMessage(String question, List<String> contextChunks) {
         StringBuilder sb = new StringBuilder();
 
