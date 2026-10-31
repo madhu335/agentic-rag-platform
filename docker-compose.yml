@@ -36,6 +36,11 @@ services:
       - C:\Users\Madhu\.cache\huggingface:/root/.cache/huggingface
     environment:
       HF_TOKEN: ${HF_TOKEN:-}
+      # All models are already in the mounted HF cache. Offline mode stops sentence-transformers /
+      # transformers from calling the Hub at load time (that call fails inside the Python backend
+      # with "Cannot send a request, as the client has been closed"). Set to 0 to download a new model.
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
     deploy:
       resources:
         reservations:
