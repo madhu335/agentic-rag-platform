@@ -1,0 +1,292 @@
+[
+  {
+    "id": "S4-001",
+    "category": "FLEET_FILTER",
+    "provider": "halo",
+    "latencyMs": 2635,
+    "verdict": "UNSUPPORTED",
+    "score": 0.5,
+    "stage": "thorough",
+    "reason": "Corvette horsepower not provided in context"
+  },
+  {
+    "id": "S4-002",
+    "category": "FLEET_FILTER",
+    "provider": "halo",
+    "latencyMs": 2190,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "All claims supported"
+  },
+  {
+    "id": "S4-003",
+    "category": "FLEET_FILTER",
+    "provider": "halo",
+    "latencyMs": 4445,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "All claims supported"
+  },
+  {
+    "id": "S4-004",
+    "category": "FLEET_FILTER",
+    "provider": "halo",
+    "latencyMs": 3409,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "All claims supported"
+  },
+  {
+    "id": "S4-005",
+    "category": "FLEET_FILTER",
+    "provider": "halo",
+    "latencyMs": 1819,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "All claims supported"
+  },
+  {
+    "id": "S1-PERF-001",
+    "category": "PERFORMANCE",
+    "provider": "halo",
+    "latencyMs": 2663,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "All claims supported"
+  },
+  {
+    "id": "S1-PERF-002",
+    "category": "PERFORMANCE",
+    "provider": "halo",
+    "latencyMs": 2030,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "All claims supported"
+  },
+  {
+    "id": "S1-COST-001",
+    "category": "OWNERSHIP_COST",
+    "provider": "halo",
+    "latencyMs": 4464,
+    "verdict": "INCORRECT",
+    "score": 0.5,
+    "stage": "thorough",
+    "reason": "Provides unsupported $65,000 breakdown"
+  },
+  {
+    "id": "S1-COST-002",
+    "category": "OWNERSHIP_COST",
+    "provider": "halo",
+    "latencyMs": 1530,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "All claims supported by context"
+  },
+  {
+    "id": "S1-MAINT-001",
+    "category": "MAINTENANCE",
+    "provider": "halo",
+    "latencyMs": 1769,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "All claims supported"
+  },
+  {
+    "id": "S1-MAINT-002",
+    "category": "MAINTENANCE",
+    "provider": "halo",
+    "latencyMs": 2096,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "All claims supported by context"
+  },
+  {
+    "id": "S1-SAFETY-001",
+    "category": "SAFETY",
+    "provider": "halo",
+    "latencyMs": 2784,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "All claims match context"
+  },
+  {
+    "id": "S1-RANK-001",
+    "category": "RANKINGS",
+    "provider": "halo",
+    "latencyMs": 1625,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "All claims supported"
+  },
+  {
+    "id": "S1-RANK-002",
+    "category": "RANKINGS",
+    "provider": "halo",
+    "latencyMs": 1557,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "All claims supported by context"
+  },
+  {
+    "id": "S1-RECALL-001",
+    "category": "SAFETY",
+    "provider": "halo",
+    "latencyMs": 2669,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "All claims supported"
+  },
+  {
+    "id": "S2-001",
+    "category": "CROSS_CHUNK",
+    "provider": "halo",
+    "latencyMs": 2340,
+    "verdict": "UNSUPPORTED",
+    "score": 0.0,
+    "stage": "thorough",
+    "reason": "engine size claim not in context"
+  },
+  {
+    "id": "S2-002",
+    "category": "CROSS_CHUNK",
+    "provider": "halo",
+    "latencyMs": 2657,
+    "verdict": "UNSUPPORTED",
+    "score": 0.0,
+    "stage": "thorough",
+    "reason": "Honda CR-V fuel cost $3,400 not in context"
+  },
+  {
+    "id": "S2-003",
+    "category": "RANKINGS",
+    "provider": "halo",
+    "latencyMs": 2154,
+    "verdict": "UNSUPPORTED",
+    "score": 0.2,
+    "stage": "thorough",
+    "reason": "Reliability claim not in context"
+  },
+  {
+    "id": "S2-004",
+    "category": "RANKINGS",
+    "provider": "halo",
+    "latencyMs": 4735,
+    "verdict": "UNSUPPORTED",
+    "score": 0.4,
+    "stage": "thorough",
+    "reason": "Speculative claim about \"razor-sharp c...\" and unrelated critique"
+  },
+  {
+    "id": "S2-005",
+    "category": "OWNERSHIP_COST",
+    "provider": "halo",
+    "latencyMs": 1856,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "All claims supported"
+  },
+  {
+    "id": "S2-006",
+    "category": "FEATURES",
+    "provider": "halo",
+    "latencyMs": 2616,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "All claims supported by context"
+  },
+  {
+    "id": "S3-001",
+    "category": "CROSS_CHUNK",
+    "provider": "halo",
+    "latencyMs": 2420,
+    "verdict": "UNSUPPORTED",
+    "score": 0.0,
+    "stage": "thorough",
+    "reason": "daily practicality claim not in context"
+  },
+  {
+    "id": "S3-002",
+    "category": "CROSS_CHUNK",
+    "provider": "halo",
+    "latencyMs": 2030,
+    "verdict": "UNSUPPORTED",
+    "score": 0.0,
+    "stage": "thorough",
+    "reason": "claims about efficiency and range not in context"
+  },
+  {
+    "id": "S3-003",
+    "category": "OWNERSHIP_COST",
+    "provider": "halo",
+    "latencyMs": 1758,
+    "verdict": "UNSUPPORTED",
+    "score": 0.0,
+    "stage": "thorough",
+    "reason": "claims lowest cost without comparative data"
+  },
+  {
+    "id": "EDGE-001",
+    "category": "SAFETY",
+    "provider": "halo",
+    "latencyMs": 1417,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "All claims supported"
+  },
+  {
+    "id": "EDGE-002",
+    "category": "FEATURES",
+    "provider": "halo",
+    "latencyMs": 2211,
+    "verdict": "UNSUPPORTED",
+    "score": 0.0,
+    "stage": "thorough",
+    "reason": "MSRP for CS not in context"
+  },
+  {
+    "id": "EDGE-003",
+    "category": "MAINTENANCE",
+    "provider": "halo",
+    "latencyMs": 3238,
+    "verdict": "UNSUPPORTED",
+    "score": 0.2,
+    "stage": "thorough",
+    "reason": "Incorrect claim about spark plug at 30,000 miles"
+  },
+  {
+    "id": "EDGE-004",
+    "category": "FLEET_FILTER",
+    "provider": "halo",
+    "latencyMs": 1301,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "thorough",
+    "reason": "Answer admits lack of information"
+  },
+  {
+    "id": "EDGE-005",
+    "category": "PERFORMANCE",
+    "provider": "halo",
+    "latencyMs": 2113,
+    "verdict": "INCOMPLETE",
+    "score": 0.2,
+    "stage": "thorough",
+    "reason": "Answer too minimal, lacks context details"
+  }
+]

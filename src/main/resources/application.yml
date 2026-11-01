@@ -52,6 +52,11 @@ llm:
 orchestrator:
   agent:
     max-retries: 1   # regenerate once when the judge rejects an AGENT answer (#16); 0 = off
+  judge:
+    # risky: sync THOROUGH judge only for risky answers (AGENT route, numeric/threshold/ranking question,
+    #        or a deterministic answer check fired); everything else returns immediately + async audit.
+    # all:   previous behavior - every retrieval attempt judged synchronously (rollback switch).
+    sync: ${ORCHESTRATOR_JUDGE_SYNC:risky}
 
 # =========================
 # OpenAI-compatible
@@ -102,8 +107,11 @@ judge:
   # Only active for providers with a fast mode (triton). Validated with scripts/judge-compare (2026-11-01).
   cascade:
     enabled: true
-    verify-fast-rejects: false   # true = also re-check fast REJECTs with the thorough judge (0 false rejects seen)
+    verify-fast-rejects: true    # re-check fast REJECTs with the thorough judge (real traffic: fast rejects flip between runs)
   thorough-attempts: 2           # thorough judge tries (unusable output / verdict-score conflict) before UNAVAILABLE
+  async:                         # background audit of answers returned without a sync judge
+    threads: 2                   # judge calls share the GPU with generation; keep small
+    queue-capacity: 200          # when full, new audits are dropped (logged), never block requests
   triton:
     base-url: ${TRITON_LLM_BASE_URL:http://localhost:8000}
     model-name: nemotron

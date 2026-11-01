@@ -1,0 +1,356 @@
+[
+  {
+    "id": "S4-001",
+    "category": "FLEET_FILTER",
+    "question": "which vehicles have over 500 horsepower",
+    "context": [
+      "2025 Rivian R1T Adventure N/A. Performance specs: Engine: Quad motor electric. Horsepower: 835 hp. Torque: 908 lb-ft. Drivetrain: AWD. Transmission: Single-speed automatic. Fuel economy: N/A city / N/\u2026",
+      "2025 Chevrolet Corvette Z06 vehicle specification.\nVehicle ID: chevrolet-corvette-2025-z06\nYear: 2025\nMake: Chevrolet\nModel: Corvette\nTrim: Z06\nBody Style: Coupe\nEngine: 5.5L flat-plane V8\nHorsepower:\u2026",
+      "2025 BMW M3 Competition sports sedan. Performance specs: Engine: 3.0L twin-turbo inline-6 (S58). Horsepower: 503 hp. Torque: 479 lb-ft. 0-60 mph: 3.4 seconds. Top speed: 180 mph. Drivetrain: RWD. Tran\u2026"
+    ],
+    "answer": "The 2025 Rivian R1T Adventure and the 2025 Chevrolet Corvette Z06 both have over 500 horsepower. The BMW M3 Competition has 503 horsepower, which also exceeds 500. Therefore, all three vehicles meet the criterion. \n\n**Answer:**  \n2025 Rivian R1T Adventure, 2025 Chevrolet Corvette Z06, 2025 BMW M3 Competition"
+  },
+  {
+    "id": "S4-002",
+    "category": "FLEET_FILTER",
+    "question": "vehicles under $40000",
+    "context": [
+      "2025 Toyota Camry XSE Hybrid vehicle specification.\nVehicle ID: toyota-camry-2025-xse-hybrid\nYear: 2025\nMake: Toyota\nModel: Camry\nTrim: XSE Hybrid\nBody Style: Sedan\nEngine: 2.5L hybrid inline-4\nHorsep\u2026",
+      "2025 Honda CR-V Sport Hybrid compact SUV. Body style: SUV. Class: compact SUV. Fuel type: Regular gasoline. MSRP: $36,100. Invoice: N/A."
+    ],
+    "answer": "Based on the provided context, the only vehicle explicitly listed with a price under $40,000 is the **2025 Honda CR-V Sport Hybrid**. Its MSRP is **$36,100**, which falls below the $40,000 threshold.  \n\nThe **2025 Toyota Camry XSE Hybrid** is not included in the answer because its price is not specified in the context (only \"Horsep\u2026\" is listed under Engine, with no MSRP or invoice provided). Since the question asks for vehicles *under $40,000* and the Camry's price is unknown, it cannot be confirmed to meet the criteria.  \n\n**Answer:**  \n2025 Honda CR-V Sport Hybrid"
+  },
+  {
+    "id": "S4-003",
+    "category": "FLEET_FILTER",
+    "question": "electric vehicles",
+    "context": [
+      "2024 Nissan ARIYA ENGAGE+/EVOLVE+ e-4ORCE 87kWh AWD Electric motor (160 and 160 kW AC 3-phase) small station wagons. Performance specs: Engine: Electric motor (160 and 160 kW AC 3-phase). Drivetrain: \u2026",
+      "2025 Mazda CX-70 4WD 3.3L 6-cylinder turbocharged hybrid (44V Li-Ion) standard SUV. Recall 24V817000 (2024-10-31): Electrical System:Propulsion System:Inverter. Mazda North American Operations (Mazda)\u2026",
+      "2025 Chevrolet Silverado EV (11 kW Charger) 4WD Electric motor (189 and 189 kW ACPM) full-size pickup truck. Performance specs: Engine: Electric motor (189 and 189 kW ACPM). Drivetrain: 4WD. Transmiss\u2026",
+      "2024 Chevrolet Equinox EV AWD Electric motor (67 and 180 kW AC Induction) small SUV. Performance specs: Engine: Electric motor (67 and 180 kW AC Induction). Drivetrain: AWD. Transmission: single-speed\u2026",
+      "2024 Mazda CX-90 4WD 3.3L 6-cylinder turbocharged hybrid (44V Li-Ion) standard SUV. Recall 24V817000 (2024-10-31): Electrical System:Propulsion System:Inverter. Mazda North American Operations (Mazda)\u2026"
+    ],
+    "answer": "**Answer:**  \nThe context describes several 2024\u20112025 electric vehicles (EVs) and hybrid models, including:\n\n- **2024 Nissan Ariya** \u2013 an all\u2011electric small station wagon with a 87\u202fkWh battery and dual\u2011motor AWD (160\u202fkW each).  \n- **2025 Mazda CX\u201170** \u2013 a plug\u2011in hybrid SUV with a 3.3\u202fL turbo\u2011charged 6\u2011cylinder engine paired with a 44\u202fV Li\u2011Ion battery; it is subject to a recall (24V817000) involving the inverter/in\u2011propulsion system.  \n- **2025 Chevrolet Silverado EV** \u2013 a full\u2011size electric pickup that uses dual\u2011motor AWD (189\u202fkW each) and supports an 11\u202fkW charger.  \n- **2024 Chevrolet Equinox EV** \u2013 an all\u2011electric compact SUV with dual\u2011motor AWD (67\u202fkW and 180\u202fkW AC induction).  \n- **2024 Mazda CX\u201190** \u2013 a plug\u2011in hybrid SUV (similar to the CX\u201170) also affected by the same recall (24V817000) concerning the inverter/propulsion system.\n\nThese vehicles illustrate the range of electric\u2011driven powertrains (pure EVs, plug\u2011in hybrids, and dual\u2011motor AWD configurations) that are currently being introduced or recalled in the market."
+  },
+  {
+    "id": "S4-004",
+    "category": "FLEET_FILTER",
+    "question": "vehicles with at least 40 mpg fuel economy",
+    "context": [
+      "2024 Toyota Mirai XLE RWD compact cars. Performance specs: Engine: N/A. Drivetrain: RWD. Transmission: CVT (continuously variable). Fuel economy: 76 city / 71 highway MPG.",
+      "2024 Hyundai Nexo Blue FWD small SUV. Performance specs: Engine: N/A. Drivetrain: FWD. Transmission: 1-speed automatic. Fuel economy: 65 city / 58 highway MPG.",
+      "2024 Toyota Prius FWD 2.0L 4-cylinder hybrid (222V Li-Ion) midsize cars. Performance specs: Engine: 2.0L 4-cylinder hybrid (222V Li-Ion). Drivetrain: FWD. Transmission: CVT (continuously variable). Fu\u2026",
+      "2024 Hyundai Elantra Hybrid Blue FWD 1.6L 4-cylinder hybrid (240V Li-Ion) midsize cars. Performance specs: Engine: 1.6L 4-cylinder hybrid (240V Li-Ion). Drivetrain: FWD. Transmission: 6-speed automati\u2026",
+      "2024 Kia Niro FE FWD 1.6L 4-cylinder hybrid (240V Li-Ion) small SUV. Performance specs: Engine: 1.6L 4-cylinder hybrid (240V Li-Ion). Drivetrain: FWD. Transmission: 6-speed automatic. Fuel economy: 53\u2026"
+    ],
+    "answer": "Based on the provided context, the vehicles that meet the requirement of **at least 40 mpg fuel economy** are:\n\n- **2024 Toyota Mirai XLE RWD compact cars**  \n  Fuel economy: **76 city / 71 highway MPG** (both values exceed 40 mpg).\n\n- **2024 Hyundai Nexo Blue FWD small SUV**  \n  Fuel economy: **65 city / 58 highway MPG** (both values exceed 40 mpg).\n\n- **2024 Toyota Prius FWD 2.0L 4-cylinder hybrid (222V Li-Ion) midsize cars**  \n  Fuel economy: **53 city / 52 highway MPG** (both values exceed 40 mpg).\n\n- **2024 Hyundai Elantra Hybrid Blue FWD 1.6L 4-cylinder hybrid (240V Li-Ion) midsize cars**  \n  Fuel economy: **52 city / 54 highway MPG** (both values exceed 40 mpg).\n\n- **2024 Kia Niro FE FWD 1.6L 4-cylinder hybrid (240V Li-Ion) small SUV**  \n  Fuel economy: **53 city / 55 highway MPG** (both values exceed 40 mpg).\n\n### Summary of Vehicles Meeting the Criteria:\n| Vehicle Model                          | City MPG | Highway MPG | Drivetrain | Transmission       |\n|----------------------------------------|----------|-------------|------------|--------------------|\n| 2024 Toyota Mirai XLE RWD              | 76       | 71          | RWD        | CVT                |\n| 2024 Hyundai Nexo Blue FWD             | 65       | 58          | FWD        | 1-speed automatic  |\n| 2024 Toyota Prius FWD (hybrid)         | 53       | 52          | FWD        | CVT                |\n| 2024 Hyundai Elantra Hybrid Blue       | 52       | 54          | FWD        | 6-speed automatic  |\n| 2024 Kia Niro FE FWD (hybrid)          | 53       | 55          | FWD"
+  },
+  {
+    "id": "S4-005",
+    "category": "FLEET_FILTER",
+    "question": "AWD vehicles",
+    "context": [
+      "2025 Lucid Air Touring AWD with 21 inch wheels Electric motor (178 and 433 kW ACPM) large cars. Body style: Car. Class: large cars. Fuel type: electric. ",
+      "MotorTrend first drive featuring 2025 Tesla Model 3 Long Range AWD. Vehicles: vehicleId:tesla-model3-2025-long-range. Published 2025-02-18. Vehicles featured in this article: The 2025 Tesla Model 3 Lo\u2026",
+      "MotorTrend first drive featuring 2025 Tesla Model 3 Long Range AWD. Vehicles: vehicleId:tesla-model3-2025-long-range. Published 2025-02-18. Article excerpt 1 of 1. Tesla's 2025 Model 3 refresh \u2014 coden\u2026",
+      "MotorTrend first drive featuring 2025 Tesla Model 3 Long Range AWD. Vehicles: vehicleId:tesla-model3-2025-long-range. Published 2025-02-18.  Article: 2025 Tesla Model 3 Long Range Review: Refined Yet \u2026",
+      "2025 Audi S3 AWD 2.0L 4-cylinder turbocharged subcompact cars. Body style: Car. Class: subcompact cars. Fuel type: premium gasoline. "
+    ],
+    "answer": "Based on the provided context, the vehicles explicitly labeled as \"AWD\" (All-Wheel Drive) are:\n\n1. **2025 Lucid Air Touring AWD**  \n   - Body style: Car  \n   - Class: Large cars  \n   - Fuel type: Electric  \n   - *Note: The context specifies \"AWD\" in the vehicle description.*\n\n2. **2025 Tesla Model 3 Long Range AWD**  \n   - Body style: Car  \n   - Class: Not explicitly stated (but implied as a standard sedan, though context focuses on \"Long Range AWD\" as the key feature).  \n   - Fuel type: Electric  \n   - *Note: The context explicitly states \"2025 Tesla Model 3 Long Range AWD\" in multiple entries (items 2\u20134).*\n\n3. **2025 Audi S3 AWD**  \n   - Body style: Car  \n   - Class: Subcompact cars  \n   - Fuel type: Premium gasoline  \n   - *Note: The context explicitly states \"2025 Audi S3 AWD\" in item 5.*\n\n### Summary of AWD Vehicles:\n- **Lucid Air Touring AWD** (large car, electric)  \n- **Tesla Model 3 Long Range AWD** (electric, featured in MotorTrend articles)  \n- **Audi S3 AWD** (subcompact car, premium gasoline)  \n\nAll three vehicles are explicitly identified as \"AWD\" in the context. The Tesla Model 3 appears in multiple entries but is listed as a single vehicle model. \n\n**Answer:**  \nThe AWD vehicles are the **2025 Lucid Air Touring AWD**, **2025 Tesla Model 3 Long Range AWD**, and **2025 Audi S3 AWD**."
+  },
+  {
+    "id": "S1-PERF-001",
+    "category": "PERFORMANCE",
+    "question": "what engine does the BMW M3 use and how fast is it",
+    "context": [
+      "2025 BMW M3 Competition sports sedan. Performance specs: Engine: 3.0L twin-turbo inline-6 (S58). Horsepower: 503 hp. Torque: 479 lb-ft. 0-60 mph: 3.4 seconds. Top speed: 180 mph. Drivetrain: RWD. Tran\u2026",
+      "2024 BMW M 3 Sedan RWD 3.0L 6-cylinder turbocharged compact cars. Performance specs: Engine: 3.0L 6-cylinder turbocharged. Drivetrain: RWD. Transmission: 6-speed manual. Fuel economy: 16 city / 23 hig\u2026",
+      "2024 BMW M 3 Sedan RWD 3.0L 6-cylinder turbocharged compact cars. Features and trim levels: Standard features include: EPA estimated annual fuel cost $4,350 (15,000 miles/year), EPA combined fuel econ\u2026",
+      "2024 BMW 3 Series 330i Sedan RWD 2.0L 4-cylinder turbocharged compact cars. Performance specs: Engine: 2.0L 4-cylinder turbocharged. Drivetrain: RWD. Transmission: 8-speed automatic. Fuel economy: 25 \u2026",
+      "MotorTrend first drive featuring 2025 BMW M3 Competition. Vehicles: vehicleId:bmw-m3-2025-competition. Published 2025-03-15. Section: Performance and track testing. The S58 engine produces 503 horsepo\u2026"
+    ],
+    "answer": "The BMW\u202fM3 is powered by the **3.0\u2011liter twin\u2011turbocharged inline\u20116 engine (the S58 unit)**. In the 2025 M3 Competition it delivers **503\u202fhorsepower** and **479\u202flb\u2011ft of torque**, enabling it to sprint from **0\u201160\u202fmph in about 3.4\u202fseconds**. (Top speed is electronically limited to 180\u202fmph.)"
+  },
+  {
+    "id": "S1-PERF-002",
+    "category": "PERFORMANCE",
+    "question": "which car has the most torque",
+    "context": [
+      "2025 Rivian R1T Adventure N/A. Performance specs: Engine: Quad motor electric. Horsepower: 835 hp. Torque: 908 lb-ft. Drivetrain: AWD. Transmission: Single-speed automatic. Fuel economy: N/A city / N/\u2026",
+      "2025 Ford F-150 Lariat full-size truck. Performance specs: Engine: 3.5L EcoBoost V6. Horsepower: 400 hp. Torque: 500 lb-ft. Drivetrain: 4WD. Transmission: 10-speed automatic. Fuel economy: 18 city / 2\u2026",
+      "2025 BMW M3 Competition sports sedan. Performance specs: Engine: 3.0L twin-turbo inline-6 (S58). Horsepower: 503 hp. Torque: 479 lb-ft. 0-60 mph: 3.4 seconds. Top speed: 180 mph. Drivetrain: RWD. Tran\u2026",
+      "2025 Tesla Model 3 Long Range electric sedan. Performance specs: Engine: Dual motor electric. Horsepower: 450 hp. Torque: 471 lb-ft. 0-60 mph: 4.2 seconds. Top speed: 145 mph. Drivetrain: AWD. Transmi\u2026",
+      "2025 Chevrolet Corvette Z06 vehicle specification.\nVehicle ID: chevrolet-corvette-2025-z06\nYear: 2025\nMake: Chevrolet\nModel: Corvette\nTrim: Z06\nBody Style: Coupe\nEngine: 5.5L flat-plane V8\nHorsepower:\u2026"
+    ],
+    "answer": "The 2025 Rivian R1T Adventure has the most torque at **908\u202flb\u2011ft**."
+  },
+  {
+    "id": "S1-COST-001",
+    "category": "OWNERSHIP_COST",
+    "question": "how much does it cost to own the BMW M3 over 5 years",
+    "context": [
+      "2025 BMW M3 Competition sports sedan. 5-year ownership costs: Fuel $2800/year. Insurance $3400/year. Maintenance $1100/year. 5-year depreciation: $28000. Total 5-year cost: $52000. Resale value after \u2026",
+      "MotorTrend first drive featuring 2025 BMW M3 Competition. Vehicles: vehicleId:bmw-m3-2025-competition. Published 2025-03-15. Section: Value pricing and cost of ownership. At $76,900 the M3 Competition\u2026",
+      "2025 BMW M3 Competition sports sedan. Maintenance at 30000 miles: Oil change, air filter, brake pads front, tire rotation. Parts cost: $380. Labor: 3.0 hours. Dealer estimate: $950. DIY estimate: $420\u2026",
+      "2025 BMW M3 Competition sports sedan. Maintenance at 10000 miles: Oil change (M-grade synthetic), oil filter, cabin air filter, tire rotation. Parts cost: $95. Labor: 1.0 hours. Dealer estimate: $280.\u2026",
+      "2025 BMW M 3 Competition M xDrive Sedan 3.0L 6-cylinder turbocharged compact cars. Features and trim levels: Standard features include: EPA estimated annual fuel cost $4,550 (15,000 miles/year), EPA c\u2026"
+    ],
+    "answer": "Based on the provided context, the **total 5-year cost of ownership for the 2025 BMW M3 Competition** is explicitly stated as **$52,000**. This figure includes:\n\n- **Fuel**: $2,800/year \u00d7 5 years = **$14,000**  \n- **Insurance**: $3,400/year \u00d7 5 years = **$17,000**  \n- **Maintenance**: $1,100/year \u00d7 5 years = **$5,500**  \n- **Depreciation**: **$28,000** (5-year depreciation cost)  \n\n**Total 5-year cost**: $14,000 + $17,000 + $5,500 + $28,000 = **$65,000**.  \n\nHowever, the context **directly states** \"Total 5-year cost: $52,000\" (point 1). This appears to be a discrepancy in the provided data, but the question asks for the cost *as per the given context*. Since the context explicitly lists \"$52,000\" as the \"Total 5-year cost,\" this is the figure to use for the answer.  \n\n**Answer**: $52,000.  \n\n*(Note: The detailed breakdown above sums to $65,000, but the context explicitly states \"$52,000\" as the total. This may reflect a typo or simplified figure in the source material, but the answer must align with the provided context.)*"
+  },
+  {
+    "id": "S1-COST-002",
+    "category": "OWNERSHIP_COST",
+    "question": "which vehicle has the best resale value",
+    "context": [
+      "2025 BMW M3 Competition sports sedan. 5-year ownership costs: Fuel $2800/year. Insurance $3400/year. Maintenance $1100/year. 5-year depreciation: $28000. Total 5-year cost: $52000. Resale value after \u2026"
+    ],
+    "answer": "Based on the provided context, the resale value of the 2025 BMW M3 Competition is explicitly stated as **$28,000** after 5 years (i.e., the depreciation amount is $28,000, meaning the resale value is the original purchase price minus $28,000). However, the context does not provide the resale value for any other vehicle for comparison. \n\nSince the question asks \"which vehicle has the best resale value,\" but only one vehicle (the 2025 BMW M3 Competition) is described in the context, there is no other vehicle to compare it to. Therefore, **no other vehicle is mentioned**, making it impossible to determine which vehicle has the best resale value based solely on the given information.\n\n**Answer:** The context does not provide resale values for any other vehicle, so it is impossible to determine which vehicle has the best resale value. Only the BMW M3 Competition's resale value ($28,000 after 5 years) is given, but no comparison is possible. \n\n*(Note: The context only discusses the BMW M3 Competition, so there is no basis for comparison. The answer must reflect this limitation.)*"
+  },
+  {
+    "id": "S1-MAINT-001",
+    "category": "MAINTENANCE",
+    "question": "what does the 30000 mile service cost on the BMW M3",
+    "context": [
+      "2025 BMW M3 Competition sports sedan. Maintenance at 30000 miles: Oil change, air filter, brake pads front, tire rotation. Parts cost: $380. Labor: 3.0 hours. Dealer estimate: $950. DIY estimate: $420\u2026",
+      "2025 BMW M3 Competition sports sedan. Maintenance at 10000 miles: Oil change (M-grade synthetic), oil filter, cabin air filter, tire rotation. Parts cost: $95. Labor: 1.0 hours. Dealer estimate: $280.\u2026",
+      "2025 BMW M3 Competition sports sedan. Maintenance at 60000 miles: Spark plugs, serpentine belt, coolant flush, transmission service, rear diff fluid. Parts cost: $820. Labor: 6.0 hours. Dealer estimat\u2026",
+      "2025 BMW M3 Competition sports sedan. Maintenance at 20000 miles: Oil change, brake fluid test, spark plug inspection. Parts cost: $110. Labor: 1.5 hours. Dealer estimate: $320. DIY estimate: $130. No\u2026",
+      "2025 BMW M3 Competition sports sedan. Maintenance at 100000 miles: Timing chain inspection, water pump, full fluid refresh, valve adjustment. Parts cost: $1400. Labor: 10.0 hours. Dealer estimate: $42\u2026"
+    ],
+    "answer": "The 30,000\u2011mile service for the 2025 BMW M3 Competition sports sedan is estimated to cost **$950** when performed by the dealer. (A DIY alternative would be about $420.)"
+  },
+  {
+    "id": "S1-MAINT-002",
+    "category": "MAINTENANCE",
+    "question": "which vehicles are most expensive to maintain",
+    "context": [
+      "2025 BMW M3 Competition sports sedan. 5-year ownership costs: Fuel $2800/year. Insurance $3400/year. Maintenance $1100/year. 5-year depreciation: $28000. Total 5-year cost: $52000. Resale value after \u2026"
+    ],
+    "answer": "Based on the provided context, the **2025 BMW M3 Competition** is explicitly identified as the vehicle with the highest **5-year ownership costs** ($52,000 total), which includes maintenance. The breakdown shows:  \n- **Maintenance: $1,100/year** (part of the $52,000 total 5-year cost).  \n\nThe context does not provide data for other vehicles, so **no other vehicles are mentioned or compared**. Therefore, **the BMW M3 Competition is the only vehicle referenced**, and it is the most expensive to maintain *within the given information*.  \n\n**Answer**:  \nThe 2025 BMW M3 Competition is the most expensive vehicle to maintain based on the provided context.  \n\n*(Note: The question asks \"which vehicles\" (plural), but the context only describes one vehicle. No other vehicles are listed for comparison.)*"
+  },
+  {
+    "id": "S1-SAFETY-001",
+    "category": "SAFETY",
+    "question": "what are the NHTSA safety ratings for the BMW M3",
+    "context": [
+      "2025 BMW M3 Competition sports sedan. Safety ratings: NHTSA overall 5-star (frontal: 5-star, side: 5-star, rollover: 4-star). IIHS overall: Good (small overlap: Good, headlights: Acceptable). Automati\u2026",
+      "2024 BMW X3 M AWD 3.0L 6-cylinder turbocharged small SUV. Safety ratings: NHTSA overall 5-star (frontal: 5-star, side: 5-star, rollover: 4-star). ",
+      "2024 Audi Q3 quattro 2.0L 4-cylinder turbocharged small SUV. Safety ratings: NHTSA overall 5-star (frontal: 4-star, side: 5-star, rollover: 4-star). Lane departure warning standard. ",
+      "2024 BMW X1 M35i AWD 2.0L 4-cylinder turbocharged small SUV. Safety ratings: NHTSA overall 4-star (frontal: 4-star, side: 5-star, rollover: 4-star). ",
+      "2024 Mitsubishi Mirage FWD 1.2L 3-cylinder compact cars. Safety ratings: NHTSA overall 4-star (frontal: 4-star, side: 4-star, rollover: 4-star). "
+    ],
+    "answer": "The NHTSA safety ratings for the **2025 BMW M3 Competition** are:\n\n- **Overall Rating:** 5 stars  \n- **Frontal Crash (Driver):** 5 stars  \n- **Side Crash (Driver):** 5 stars  \n- **Rollover Risk:** 4 stars  \n\nThese ratings reflect the vehicle's performance in NHTSA's crash tests, with the highest possible overall score of 5 stars. Note that the IIHS (Insurance Institute for Highway Safety) ratings are not included in the provided context for this specific model."
+  },
+  {
+    "id": "S1-RANK-001",
+    "category": "RANKINGS",
+    "question": "how does the BMW M3 rank compared to other sports sedans",
+    "context": [
+      "2025 BMW M3 Competition sports sedan. Industry rankings and awards: Ranked 2nd of 18 in sports sedans by US News (2025), score 91/100. Praised for driving dynamics and engine character. Docked for inf\u2026",
+      "2025 BMW M3 Competition sports sedan. Safety ratings: NHTSA overall 5-star (frontal: 5-star, side: 5-star, rollover: 4-star). IIHS overall: Good (small overlap: Good, headlights: Acceptable). Automati\u2026",
+      "MotorTrend first drive featuring 2025 BMW M3 Competition. Vehicles: vehicleId:bmw-m3-2025-competition. Published 2025-03-15. Article excerpt 1 of 1. The BMW M3 has been the sports sedan benchmark for \u2026",
+      "2025 BMW M3 Competition sports sedan. Expert reviews: Car and Driver (2025) rated it 9/10. The M3 Competition remains the benchmark sports sedan. The S58 engine is a masterpiece of forced-induction en\u2026",
+      "2025 BMW M3 Competition sports sedan. Performance specs: Engine: 3.0L twin-turbo inline-6 (S58). Horsepower: 503 hp. Torque: 479 lb-ft. 0-60 mph: 3.4 seconds. Top speed: 180 mph. Drivetrain: RWD. Tran\u2026"
+    ],
+    "answer": "Based on the provided context, the BMW M3 Competition ranks **2nd out of 18 sports sedans** in the 2025 US News rankings, with a score of **91/100**. It is praised for its driving dynamics and engine character but is noted to have some drawbacks (e.g., \"Docked for inf\u2026\" as mentioned in the context). This places it just behind the top-ranked sports sedan in the category. \n\n**Answer:**  \nThe BMW M3 Competition ranks **2nd** among 18 sports sedans in the 2025 US News rankings, with a score of 91/100."
+  },
+  {
+    "id": "S1-RANK-002",
+    "category": "RANKINGS",
+    "question": "which car won editors choice award",
+    "context": [
+      "2025 BMW M3 Competition sports sedan. Industry rankings and awards: Ranked 2nd of 18 in sports sedans by US News (2025), score 91/100. Praised for driving dynamics and engine character. Docked for inf\u2026",
+      "MotorTrend comparison featuring 2025 BMW M3 Competition, 2025 Mercedes-AMG C63 S E Performance, 2025 Cadillac CT4-V Blackwing. Vehicles: vehicleId:bmw-m3-2025-competition, vehicleId:mercedes-amg-c63-2\u2026",
+      "MotorTrend comparison featuring 2025 BMW M3 Competition, 2025 Mercedes-AMG C63 S E Performance, 2025 Cadillac CT4-V Blackwing. Vehicles: vehicleId:bmw-m3-2025-competition, vehicleId:mercedes-amg-c63-2\u2026",
+      "2025 Tesla Model 3 Long Range electric sedan. Industry rankings and awards: Ranked 3rd of 25 in electric cars by US News (2025), score 87/100.",
+      "MotorTrend comparison featuring 2025 BMW M3 Competition, 2025 Mercedes-AMG C63 S E Performance, 2025 Cadillac CT4-V Blackwing. Vehicles: vehicleId:bmw-m3-2025-competition, vehicleId:mercedes-amg-c63-2\u2026"
+    ],
+    "answer": "The provided context does not mention any \"Editors' Choice Award\" or specify which car won it. The only awards referenced are from **US News** (e.g., \"Ranked 2nd of 18 in sports sedans by US News (2025), score 91/100\" for the BMW M3 Competition). The MotorTrend comparisons and Tesla Model 3 details also do not reference an \"Editors' Choice Award.\" \n\nSince the question asks about an award not described in the context, **no answer can be derived from the given information**. \n\n**Answer:** The context does not provide information about an \"Editors' Choice Award\" or which car won it."
+  },
+  {
+    "id": "S1-RECALL-001",
+    "category": "SAFETY",
+    "question": "are there any open recalls on the BMW M3",
+    "context": [
+      "2025 BMW M3 Competition sports sedan. Recall NHTSA-2024-0318 (2024-11): Fuel system. High-pressure fuel injector may develop micro-crack under sustained track use causing rough idle. Remedy: Injector \u2026",
+      "2025 BMW M3 Competition sports sedan. Recall NHTSA-2025-0041 (2025-02): Software \u2014 driver assistance. Adaptive cruise control may disengage without warning in certain road gradient conditions. Remedy:\u2026",
+      "2024 BMW X3 M Competition AWD 3.0L 6-cylinder turbocharged small SUV. Recall 25V106000 (2025-02-20): Latches/Locks/Linkages:Doors:Lock. BMW of North America, LLC (BMW) is recalling certain 2022-2024 X\u2026",
+      "2024 BMW X3 M Competition AWD 3.0L 6-cylinder turbocharged small SUV. Recall 23V770000 (2023-11-16): Steering. BMW of North America, LLC (BMW) is recalling certain 2024 2 Series Coupe (230i), 330i, X3\u2026",
+      "2024 BMW X3 M Competition AWD 3.0L 6-cylinder turbocharged small SUV. Recall 26V524000 (2026-08-12): Steering:Linkages:Knuckle:Spindle:Arm. BMW of North America, LLC (BMW) is recalling certain 2024-20\u2026"
+    ],
+    "answer": "Yes.  \n- **2025 BMW M3 Competition** \u2013 Recall **NHTSA\u20112024\u20110318** (fuel\u2011system issue with the high\u2011pressure fuel injector).  \n- **2025 BMW M3 Competition** \u2013 Recall **NHTSA\u20112025\u20110041** (software\u2011related adaptive cruise\u2011control disengagement).  \n\nBoth of these recalls are listed as open for the 2025 BMW M3 Competition."
+  },
+  {
+    "id": "S2-001",
+    "category": "CROSS_CHUNK",
+    "question": "fast sports car that wont break the bank",
+    "context": [
+      "2025 Porsche 911 Carrera S sports car. Performance specs: Engine: 3.0L twin-turbo flat-6. Horsepower: 443 hp. Torque: 390 lb-ft. 0-60 mph: 3.3 seconds. Top speed: 191 mph. Drivetrain: RWD. Transmissio\u2026",
+      "MotorTrend track test featuring 2025 Chevrolet Corvette Z06. Vehicles: vehicleId:chevrolet-corvette-2025-z06. Published 2025-02-25. Section: Track performance. Test track lap time 1:24.8 at Willow Spr\u2026",
+      "2025 Porsche 911 Carrera S sports car. Expert reviews: Car and Driver (2025) rated it 10/10. The benchmark sports car, period.",
+      "MotorTrend track test featuring 2025 Chevrolet Corvette Z06. Vehicles: vehicleId:chevrolet-corvette-2025-z06. Published 2025-02-25. Article excerpt 1 of 1. The Chevrolet Corvette Z06 represents someth\u2026",
+      "MotorTrend first drive featuring 2025 BMW M3 Competition. Vehicles: vehicleId:bmw-m3-2025-competition. Published 2025-03-15. Section: Performance and track testing. The S58 engine produces 503 horsepo\u2026"
+    ],
+    "answer": "Based on the provided context, the **2025 Chevrolet Corvette Z06** is the best fit for a \"fast sports car that won't break the bank.\" Here's why:\n\n- **Performance**: It features a **5.5L flat-6 engine** (as referenced in context #2 and #4) with track-focused performance, including a **1:24.8 lap time at Willow Springs** (context #2), proving it\u2019s exceptionally fast on the track.\n- **Value**: While the Porsche 911 Carrera S (context #1) is a benchmark sports car with impressive specs (443 hp, 0-60 mph in 3.3 seconds), it is **significantly more expensive** than the Corvette. The Corvette Z06 is widely recognized as a **high-performance, budget-friendly option** in the sports car segment, offering track-level capability at a lower price point than European rivals like the Porsche or BMW M3 (context #5, which mentions the BMW M3 Competition but doesn\u2019t specify pricing, making the Corvette the more accessible choice).\n- **Context alignment**: The Corvette Z06 is explicitly highlighted in track tests (contexts #2 and #4) and is the only vehicle in the provided data that balances **extreme performance** with **affordability** relative to the other options.\n\n**Answer**: 2025 Chevrolet Corvette Z06"
+  },
+  {
+    "id": "S2-002",
+    "category": "CROSS_CHUNK",
+    "question": "good family car with low running costs",
+    "context": [
+      "MotorTrend buyers guide featuring 2025 Honda CR-V Sport Hybrid. Vehicles: vehicleId:honda-crv-2025-sport-hybrid. Published 2025-03-28. Section: Top pick \u2014 Honda CR-V Sport Hybrid. Starting at $34,995 \u2026",
+      "MotorTrend buyers guide featuring 2025 Honda CR-V Sport Hybrid. Vehicles: vehicleId:honda-crv-2025-sport-hybrid. Published 2025-03-28.  Article: Best Family SUVs Under $40,000 in 2025: A Buyer's Guide\u2026",
+      "2024 Toyota 4Runner 2WD 4.0L 6-cylinder standard SUV. Features and trim levels: Standard features include: EPA estimated annual fuel cost $3,950 (15,000 miles/year), EPA combined fuel economy 17 MPG, \u2026",
+      "2024 Chrysler Voyager FWD 3.6L 6-cylinder minivan -. Features and trim levels: Standard features include: EPA estimated annual fuel cost $3,050 (15,000 miles/year), EPA combined fuel economy 22 MPG, T\u2026",
+      "2024 Kia Soul FWD 2.0L 4-cylinder small station wagons. Features and trim levels: Standard features include: EPA estimated annual fuel cost $2,250 (15,000 miles/year), EPA combined fuel economy 30 MPG\u2026"
+    ],
+    "answer": "Based on the provided context, the **2024 Kia Soul FWD 2.0L 4-cylinder small station wagon** is the best fit for a \"good family car with low running costs.\" Here's why:\n\n- **Low running costs**: It has the **lowest EPA estimated annual fuel cost at $2,250** (for 15,000 miles/year), significantly lower than the Honda CR-V Hybrid ($3,400), Toyota 4Runner ($3,950), and Chrysler Voyager ($3,050).  \n- **Family suitability**: As a \"small station wagon,\" it offers practical space for families (e.g., cargo room, rear-seat comfort), and its high fuel efficiency (30 MPG combined) reduces long-term ownership expenses.  \n- **Context alignment**: The other vehicles either target different segments (e.g., SUVs like the CR-V Hybrid or 4Runner) or have higher fuel costs. The Kia Soul is explicitly listed as a \"small station wagon\" with the most economical fuel cost in the data.  \n\n*Note: The Honda CR-V Hybrid (from context 1 and 2) is a strong family SUV but has higher running costs ($3,400/year) than the Kia Soul. The Kia Soul\u2019s fuel efficiency and cost make it the top choice for \"low running costs\" in this context.*"
+  },
+  {
+    "id": "S2-003",
+    "category": "RANKINGS",
+    "question": "is the M3 reliable",
+    "context": [
+      "2025 BMW M3 Competition sports sedan. Industry rankings and awards: Ranked 2nd of 18 in sports sedans by US News (2025), score 91/100. Praised for driving dynamics and engine character. Docked for inf\u2026",
+      "2025 BMW M3 Competition sports sedan. Expert reviews: Car and Driver (2025) rated it 9/10. The M3 Competition remains the benchmark sports sedan. The S58 engine is a masterpiece of forced-induction en\u2026",
+      "MotorTrend first drive featuring 2025 BMW M3 Competition. Vehicles: vehicleId:bmw-m3-2025-competition. Published 2025-03-15. Article excerpt 1 of 1. The BMW M3 has been the sports sedan benchmark for \u2026",
+      "MotorTrend first drive featuring 2025 BMW M3 Competition. Vehicles: vehicleId:bmw-m3-2025-competition. Published 2025-03-15. Section: Value pricing and cost of ownership. At $76,900 the M3 Competition\u2026",
+      "2025 BMW M3 Competition sports sedan. Maintenance at 30000 miles: Oil change, air filter, brake pads front, tire rotation. Parts cost: $380. Labor: 3.0 hours. Dealer estimate: $950. DIY estimate: $420\u2026"
+    ],
+    "answer": "Based on the provided context, **the M3 is not explicitly rated for reliability**. However, the available information suggests it is **generally regarded as reliable** in the context of its class and ownership experience, though with some caveats:\n\n1. **Industry Rankings**:  \n   - The 2025 BMW M3 Competition was ranked **2nd out of 18 in sports sedans** by *U.S. News* (score: 91/100), praised for driving dynamics and engine character. While this ranking focuses on performance and quality, it does not directly address long-term reliability. BMW\u2019s overall reputation for reliability has historically been mixed compared to competitors, but the M3\u2019s high score implies strong build quality and engineering in its segment.\n\n2. **Expert Reviews**:  \n   - *Car and Driver* called the M3 Competition \"the benchmark sports sedan,\" highlighting its **S58 engine as a \"masterpiece of forced-induction engineering.\"** This praise for engineering excellence indirectly supports reliability, as a well-engineered powertrain often correlates with durability. However, no explicit reliability claims are made.\n\n3. **Maintenance Costs**:  \n   - At 30,000 miles, maintenance (oil change, brake pads, tire rotation) costs **$950 at a dealer** or **$420 DIY**. While this is typical for high-performance vehicles, the relatively low DIY cost suggests parts and labor are manageable, which could imply reasonable long-term ownership costs if maintained properly.\n\n4. **Contextual Limitations**:  \n   - The context does not provide data on long-term reliability (e.g., J.D. Power ratings, common issues, or owner surveys). BMW\u2019s reputation for complex electronics and higher repair costs compared to brands like Toyota or Honda may apply, but the M3\u2019s performance-oriented design could prioritize robustness in critical systems.\n\n**Conclusion**:  \nThe M3 is **not explicitly labeled as \"reliable\"** in the provided context, but its high industry ranking, expert praise for engineering, and manageable maintenance costs suggest it is **competitive in reliability within the sports sedan segment**. However, potential buyers should research long-term ownership data (e.g., consumer reviews, reliability scores) for a comprehensive view, as the context does not address this directly."
+  },
+  {
+    "id": "S2-004",
+    "category": "RANKINGS",
+    "question": "what do experts say about the M3",
+    "context": [
+      "2025 BMW M3 Competition sports sedan. Expert reviews: Car and Driver (2025) rated it 9/10. The M3 Competition remains the benchmark sports sedan. The S58 engine is a masterpiece of forced-induction en\u2026",
+      "MotorTrend first drive featuring 2025 BMW M3 Competition. Vehicles: vehicleId:bmw-m3-2025-competition. Published 2025-03-15. Expert assessment: Strengths: Extraordinary engine character, razor-sharp c\u2026",
+      "MotorTrend first drive featuring 2025 BMW M3 Competition. Vehicles: vehicleId:bmw-m3-2025-competition. Published 2025-03-15. Article excerpt 1 of 1. The BMW M3 has been the sports sedan benchmark for \u2026",
+      "2025 BMW M3 Competition sports sedan. Industry rankings and awards: Ranked 2nd of 18 in sports sedans by US News (2025), score 91/100. Praised for driving dynamics and engine character. Docked for inf\u2026",
+      "2025 Tesla Model 3 Long Range electric sedan. Expert reviews: Car and Driver (2025) rated it 8/10. The best value EV sedan on the market. Pros: Range, tech, value. Cons: Interior quality, ride harshne\u2026"
+    ],
+    "answer": "Based on the provided context, experts consistently praise the 2025 BMW M3 Competition for its **exceptional engine character and driving dynamics**, positioning it as the benchmark sports sedan. Key expert assessments include:\n\n- **Car and Driver (2025)** rated it **9/10**, calling the S58 engine a \"masterpiece of forced-induction engineering\" and highlighting its \"extraordinary engine character\" and \"razor-sharp handling\" as core strengths.\n- **MotorTrend** (in its March 15, 2025, first drive) emphasized **\"extraordinary engine character\"** and **\"razor-sharp c...\"** (likely \"curb weight\" or \"cornering,\" though truncated), confirming its status as the sports sedan benchmark.\n- **US News** ranked it **#2 out of 18 sports sedans** (2025), scoring **91/100**, specifically praising its **\"driving dynamics and engine character\"** (though noting minor dockings for interior space or practicality).\n\n**Summary of expert consensus**:  \nExperts universally highlight the **S58 engine's performance and character** as the M3 Competition's standout feature, cementing its reputation as the top-tier sports sedan in its class. While minor critiques exist (e.g., interior quality or ride comfort in comparisons like the Tesla Model 3), the overwhelming expert sentiment centers on its **unmatched driving experience and engine prowess**.  \n\n*Note: No negative expert opinions about the M3 Competition are cited in the provided context.*"
+  },
+  {
+    "id": "S2-005",
+    "category": "OWNERSHIP_COST",
+    "question": "how much will I spend on gas per year",
+    "context": [
+      "2024 Rolls-Royce Cullinan AWD 6.7L 12-cylinder turbocharged midsize station wagons. Features and trim levels: Standard features include: EPA estimated annual fuel cost $5,850 (15,000 miles/year), EPA \u2026",
+      "2024 Infiniti QX80 2WD 5.6L 8-cylinder standard SUV. Features and trim levels: Standard features include: EPA estimated annual fuel cost $5,150 (15,000 miles/year), EPA combined fuel economy 16 MPG, T\u2026",
+      "2024 Porsche 718 Spyder RS RWD 4.0L 6-cylinder two seaters. Features and trim levels: Standard features include: EPA estimated annual fuel cost $5,150 (15,000 miles/year), EPA combined fuel economy 16\u2026",
+      "2024 Chevrolet Trax FWD 1.2L 3-cylinder turbocharged small station wagons. Features and trim levels: Standard features include: EPA estimated annual fuel cost $2,250 (15,000 miles/year), EPA combined \u2026",
+      "2024 Chevrolet Tahoe 4WD 5.3L 8-cylinder standard SUV. Features and trim levels: Standard features include: EPA estimated annual fuel cost $4,200 (15,000 miles/year), EPA combined fuel economy 16 MPG,\u2026"
+    ],
+    "answer": "Based on the EPA estimated annual fuel cost provided for each vehicle, the amount you will spend on gas per year is directly given in the context. Here is the breakdown:\n\n- **2024 Rolls-Royce Cullinan AWD 6.7L 12-cylinder turbocharged midsize station wagon**: $5,850 per year  \n- **2024 Infiniti QX80 2WD 5.6L 8-cylinder standard SUV**: $5,150 per year  \n- **2024 Porsche 718 Spyder RS RWD 4.0L 6-cylinder two seater**: $5,150 per year  \n- **2024 Chevrolet Trax FWD 1.2L 3-cylinder turbocharged small station wagon**: $2,250 per year  \n- **2024 Chevrolet Tahoe 4WD 5.3L 8-cylinder standard SUV**: $4,200 per year  \n\n**Answer**:  \nThe annual gas cost depends on the specific vehicle you choose. For example:  \n- If you choose the **2024 Chevrolet Trax**, you will spend **$2,250 per year** on gas.  \n- If you choose the **2024 Infiniti QX80 or 2024 Porsche 718 Spyder RS**, you will spend **$5,150 per year** on gas.  \n- If you choose the **2024 Rolls-Royce Cullinan**, you will spend **$5,850 per year** on gas.  \n- If you choose the **2024 Chevrolet Tahoe**, you will spend **$4,200 per year** on gas.  \n\n*Note: The context provides the EPA estimated annual fuel cost for each vehicle, so the exact amount is specified in the data above. No additional calculations are needed.*"
+  },
+  {
+    "id": "S2-006",
+    "category": "FEATURES",
+    "question": "truck with good off road capability",
+    "context": [
+      "MotorTrend long term featuring 2025 Rivian R1T Adventure. Vehicles: vehicleId:rivian-r1t-2025-adventure. Published 2025-04-10. Section: Off-road capability. The quad-motor configuration enables torque\u2026",
+      "MotorTrend long term featuring 2025 Rivian R1T Adventure. Vehicles: vehicleId:rivian-r1t-2025-adventure. Published 2025-04-10.  Article: Living With the 2025 Rivian R1T Adventure: A Long-Term Review. \u2026",
+      "2025 Toyota Tacoma SR5/Sport/Off-Road/Limited 4WD 2.4L 4-cylinder turbocharged mid-size pickup truck. Body style: Pickup Truck. Class: mid-size pickup truck. Fuel type: gasoline. ",
+      "2025 Chevrolet Silverado Mud Terrain Tires 4WD 5.3L 8-cylinder full-size pickup truck. Body style: Pickup Truck. Class: full-size pickup truck. Fuel type: flex-fuel (gasoline or E85). ",
+      "2025 GMC Sierra Mud Terrain Tires 4WD 6.2L 8-cylinder full-size pickup truck. Body style: Pickup Truck. Class: full-size pickup truck. Fuel type: premium gasoline. "
+    ],
+    "answer": "Based on the provided context, the **2025 Rivian R1T Adventure** is explicitly highlighted as having \"good off-road capability\" in the first two entries. Here's why:\n\n1. **Entry 1** states:  \n   > *\"MotorTrend long term featuring 2025 Rivian R1T Adventure. Vehicles: vehicleId:rivian-r1t-2025-adventure. Published 2025-04-10. Section: Off-road capability. The quad-motor configuration enables torque...\"*  \n   \u2192 This directly identifies the **Rivian R1T Adventure** as the vehicle with **explicit off-road capability** (emphasized in the \"Section\" field).\n\n2. **Entry 2** reinforces this with:  \n   > *\"MotorTrend long term featuring 2025 Rivian R1T Adventure. Vehicles: vehicleId:rivian-r1t-2025-adventure. Published 2025-04-10. Article: Living With the 2025 Rivian R1T Adventure: A Long-Term Review.\"*  \n   \u2192 This confirms the Rivian R1T Adventure is the focus of a dedicated off-road review.\n\n### Why not the others?\n- **Entries 3, 4, and 5** describe **Toyota Tacoma** and **Chevrolet/GMC Silverados** as pickup trucks, but **none mention off-road capability** in their descriptions.  \n  - Entry 3: Only lists specs (e.g., \"2.4L 4-cylinder turbocharged\") without any off-road context.  \n  - Entry 4: Focuses on \"Mud Terrain Tires\" and engine specs but **does not state off-road capability** as a feature.  \n  - Entry 5: Similar to Entry 4, with no off-road capability noted.  \n\n### Key Distinction:\n- The **Rivian R1T Adventure** (Entry 1 & 2) is the **only vehicle explicitly tied to \"off-road capability\"** in the context.  \n- The other trucks (Tacoma, Silverado, Sierra) are described as standard pickup trucks with no off-road emphasis.  \n\n### Answer:\n**2025 Rivian R1T Adventure**"
+  },
+  {
+    "id": "S3-001",
+    "category": "CROSS_CHUNK",
+    "question": "best car for someone who loves track days but needs daily practicality",
+    "context": [
+      "MotorTrend track test featuring 2025 Chevrolet Corvette Z06. Vehicles: vehicleId:chevrolet-corvette-2025-z06. Published 2025-02-25. Expert assessment: Strengths: Exotic-car performance, extraordinary \u2026",
+      "MotorTrend track test featuring 2025 Chevrolet Corvette Z06. Vehicles: vehicleId:chevrolet-corvette-2025-z06. Published 2025-02-25. Section: Track performance. Test track lap time 1:24.8 at Willow Spr\u2026",
+      "MotorTrend track test featuring 2025 Chevrolet Corvette Z06. Vehicles: vehicleId:chevrolet-corvette-2025-z06. Published 2025-02-25. MotorTrend ratings: Overall score 9.4 out of 10. Performance rated 1\u2026",
+      "MotorTrend first drive featuring 2025 BMW M3 Competition. Vehicles: vehicleId:bmw-m3-2025-competition. Published 2025-03-15. Expert assessment: Strengths: Extraordinary engine character, razor-sharp c\u2026",
+      "2025 Honda CR-V Sport Hybrid compact SUV. Expert reviews: Consumer Reports (2025) rated it 9/10. The most practical compact SUV you can buy."
+    ],
+    "answer": "Based on the provided context, the **2025 Chevrolet Corvette Z06** is the best car for someone who loves track days but needs daily practicality. Here's why:\n\n- **Track Performance**: It excels in track-focused capabilities, as highlighted by MotorTrend's track test (lap time of 1:24.8 at Willow Springs) and an overall expert rating of **9.4/10**. Its \"exotic-car performance\" and \"extraordinary\" track capabilities make it ideal for enthusiasts who prioritize high-speed handling and performance on circuits.\n  \n- **Daily Practicality**: Despite its track-oriented design, the Corvette Z06 is a **street-legal sports car** that offers usable everyday functionality. It features a comfortable interior, modern infotainment, and ample cargo space for a high-performance vehicle, making it suitable for daily commutes and errands without sacrificing its track-ready DNA.\n\n- **Contextual Support**: \n  - The first context explicitly mentions \"exotic-car performance\" and \"extraordinary\" track capabilities, confirming its track prowess.\n  - The second context provides concrete evidence of its track performance (1:24.8 lap time), validating its suitability for track days.\n  - The fourth context (BMW M3 Competition) is noted for track performance but lacks explicit mention of daily practicality, making it a less direct fit.\n  - The Honda CR-V Sport Hybrid (context 5) is practical for daily use but is a **compact SUV**, not designed for track days, and thus irrelevant to the query.\n\nWhile the BMW M3 Competition (context 4) is also track-capable, the Corvette Z06 is explicitly positioned as the top choice in the context due to its **balanced combination of track performance and practicality** for daily use. The BMW is described as \"razor-sharp\" but doesn't emphasize daily usability as clearly as the Corvette's profile.\n\n**Answer: 2025 Chevrolet Corvette Z06**"
+  },
+  {
+    "id": "S3-002",
+    "category": "CROSS_CHUNK",
+    "question": "most environmentally friendly option with good range",
+    "context": [
+      "2024 Lucid Air G Touring XR AWD with19 inch wheels Electric motor (178 and 433 kW ACPM) large cars. Performance specs: Engine: Electric motor (178 and 433 kW ACPM). Drivetrain: AWD. Transmission: sing\u2026",
+      "2025 Chevrolet Silverado EV 8WT 4WD Electric motor (189 and 189 kW ACPM) full-size pickup truck. Performance specs: Engine: Electric motor (189 and 189 kW ACPM). Drivetrain: 4WD. Transmission: single-\u2026",
+      "2025 Lucid Gravity GT w/20F21R wheels (2R) AWD Electric motor (170 and 448 kW ACPM) standard SUV. Performance specs: Engine: Electric motor (170 and 448 kW ACPM). Drivetrain: AWD. Transmission: single\u2026",
+      "2025 Rivian R1T Dual Max (22in) Part-time 4WD Electric motor (264 and 264 kW ACPM) full-size pickup truck. Performance specs: Engine: Electric motor (264 and 264 kW ACPM). Drivetrain: Part-time 4WD. T\u2026",
+      "2025 Rivian R1S Dual Max (22in) Part-time 4WD Electric motor (264 and 264 kW ACPM) standard SUV. Performance specs: Engine: Electric motor (264 and 264 kW ACPM). Drivetrain: Part-time 4WD. Transmissio\u2026"
+    ],
+    "answer": "**Answer:**  \nThe most environmentally friendly option with a good range among the listed vehicles is the **2025 Lucid Gravity GT** (standard SUV).  \n\n**Why:**  \n- **Efficiency:** Lucid Motors is known for industry-leading battery efficiency, and the Gravity GT\u2019s dual\u2011motor setup (170\u202fkW / 448\u202fkW ACPM) delivers strong performance while maintaining low energy consumption per mile.  \n- **Range:** The Gravity GT offers a competitive EPA\u2011estimated range (often exceeding 400\u202fmiles on a single charge), placing it among the longest\u2011range electric SUVs available.  \n- **Environmental Impact:** Its high efficiency translates to lower overall electricity usage for the same driving distance, reducing the vehicle\u2019s carbon footprint over its lifetime.  \n\nWhile the other models (Lucid Air, Chevrolet Silverado EV, Rivian R1T/R1S) also have respectable ranges, the Lucid Gravity GT combines the highest efficiency and longest range in the group, making it the most environmentally friendly choice."
+  },
+  {
+    "id": "S3-003",
+    "category": "OWNERSHIP_COST",
+    "question": "vehicle with lowest total 5 year ownership cost",
+    "context": [
+      "2025 BMW M3 Competition sports sedan. 5-year ownership costs: Fuel $2800/year. Insurance $3400/year. Maintenance $1100/year. 5-year depreciation: $28000. Total 5-year cost: $52000. Resale value after \u2026"
+    ],
+    "answer": "The vehicle with the lowest total 5-year ownership cost is the **2025 BMW M3 Competition sports sedan**.  \n\n**Total 5-year cost: $52,000**  \n*(Breakdown: Fuel $14,000 + Insurance $17,000 + Maintenance $5,500 + Depreciation $28,000)*  \n\n*Note: The question asks for the vehicle with the lowest total 5-year cost, and the context explicitly provides the BMW M3 Competition as the subject with a defined total cost. No other vehicles are mentioned in the context for comparison, so it is the only candidate.*"
+  },
+  {
+    "id": "EDGE-001",
+    "category": "SAFETY",
+    "question": "vehicles with recalls",
+    "context": [
+      "2024 Lexus LC 500 Convertible RWD 5.0L 8-cylinder minicompact cars. Recall 25V744000 (2025-10-30): Back Over Prevention:Display Function. Toyota Motor Engineering & Manufacturing (Toyota) is recalling\u2026",
+      "2024 Cadillac XT5 Hearse FWD 2.0L 4-cylinder turbocharged special purpose vehicle. Recall 24V311000 (2024-05-02): Air Bags:Frontal. General Motors, LLC (GM) is recalling certain 2024 Cadillac XT5 vehi\u2026",
+      "2024 Cadillac Escalade V AWD 6.2L 8-cylinder supercharged standard SUV. Recall 24V674000 (2024-09-12): Service Brakes, Hydraulic:Brake Fluid Low Warning: Lamp. General Motors, LLC (GM) is recalling ce\u2026",
+      "2024 GMC Yukon 2WD 5.3L 8-cylinder standard SUV. Recall 24V674000 (2024-09-12): Service Brakes, Hydraulic:Brake Fluid Low Warning: Lamp. General Motors, LLC (GM) is recalling certain 2023 Chevrolet Si\u2026",
+      "2025 Vinfast VF 8 Eco AWD Electric motor (260 and 300 kW ACPM 3-Phase) special purpose vehicle. Recall 25V559000 (2025-08-28): Lane Departure: Lane Keep: Automatic Steering. VinFast Auto, LLC (VinFast\u2026"
+    ],
+    "answer": "Based on the provided context, the vehicles with recalls are:\n\n1. **2024 Lexus LC 500 Convertible RWD 5.0L 8-cylinder minicompact cars**  \n   - Recall: 25V744000 (2025-10-30)  \n   - Issue: Back Over Prevention: Display Function  \n\n2. **2024 Cadillac XT5 Hearse FWD 2.0L 4-cylinder turbocharged special purpose vehicle**  \n   - Recall: 24V311000 (2024-05-02)  \n   - Issue: Air Bags: Frontal  \n\n3. **2024 Cadillac Escalade V AWD 6.2L 8-cylinder supercharged standard SUV**  \n   - Recall: 24V674000 (2024-09-12)  \n   - Issue: Service Brakes, Hydraulic: Brake Fluid Low Warning: Lamp  \n\n4. **2024 GMC Yukon 2WD 5.3L 8-cylinder standard SUV**  \n   - Recall: 24V674000 (2024-09-12)  \n   - Issue: Service Brakes, Hydraulic: Brake Fluid Low Warning: Lamp  \n\n5. **2025 VinFast VF 8 Eco AWD Electric motor (260 and 300 kW ACPM 3-Phase) special purpose vehicle**  \n   - Recall: 25V559000 (2025-08-28)  \n   - Issue: Lane Departure: Lane Keep: Automatic Steering  \n\n**Summary of vehicles with recalls**:  \n- 2024 Lexus LC 500 Convertible  \n- 2024 Cadillac XT5 Hearse  \n- 2024 Cadillac Escalade V  \n- 2024 GMC Yukon  \n- 2025 VinFast VF 8 Eco  \n\nAll recalls are explicitly listed in the context with specific models, years, and recall numbers. The answer includes all vehicles mentioned in the context that have active recalls"
+  },
+  {
+    "id": "EDGE-002",
+    "category": "FEATURES",
+    "question": "BMW M3 CS trim price",
+    "context": [
+      "2025 BMW M3 Competition sports sedan. Features and trim levels: Standard features include: M sport seats with memory, adaptive M suspension, carbon fiber interior trim, head-up display, launch control\u2026",
+      "2024 BMW M 3 CS Sedan AWD 3.0L 6-cylinder turbocharged compact cars. Features and trim levels: Standard features include: EPA estimated annual fuel cost $4,550 (15,000 miles/year), EPA combined fuel e\u2026",
+      "2024 BMW M 3 CS Sedan AWD 3.0L 6-cylinder turbocharged compact cars. Body style: Car. Class: compact cars. Fuel type: premium gasoline. ",
+      "MotorTrend first drive featuring 2025 BMW M3 Competition. Vehicles: vehicleId:bmw-m3-2025-competition. Published 2025-03-15. Section: Value pricing and cost of ownership. At $76,900 the M3 Competition\u2026",
+      "2025 BMW M3 Competition sports sedan. Body style: Sedan. Class: sports sedan. Fuel type: gasoline. Exterior: Isle of Man Green. MSRP: $76,900. Invoice: $72,840."
+    ],
+    "answer": "The 2024 BMW\u202fM\u202f3\u202fCS sedan is priced at a **Manufacturer\u2019s Suggested Retail Price (MSRP) of $76,900**. This figure is listed in the 2025 BMW\u202fM3 Competition sports\u2011sedan description (which also includes the MSRP for the Competition trim) and is the price that applies to the CS variant.  \n\n*Note:* The $76,900 MSRP is for the 2025 model year; the 2024 CS may have a very similar price, but the provided data specifically cites $76,900 as the MSRP for the M3 Competition, which aligns with the pricing of the CS trim."
+  },
+  {
+    "id": "EDGE-003",
+    "category": "MAINTENANCE",
+    "question": "spark plug replacement interval BMW",
+    "context": [
+      "2025 BMW M3 Competition sports sedan. Maintenance at 60000 miles: Spark plugs, serpentine belt, coolant flush, transmission service, rear diff fluid. Parts cost: $820. Labor: 6.0 hours. Dealer estimat\u2026",
+      "2025 BMW M3 Competition sports sedan. Maintenance at 10000 miles: Oil change (M-grade synthetic), oil filter, cabin air filter, tire rotation. Parts cost: $95. Labor: 1.0 hours. Dealer estimate: $280.\u2026",
+      "2025 BMW M3 Competition sports sedan. Maintenance at 20000 miles: Oil change, brake fluid test, spark plug inspection. Parts cost: $110. Labor: 1.5 hours. Dealer estimate: $320. DIY estimate: $130. No\u2026",
+      "2025 BMW M3 Competition sports sedan. Maintenance at 100000 miles: Timing chain inspection, water pump, full fluid refresh, valve adjustment. Parts cost: $1400. Labor: 10.0 hours. Dealer estimate: $42\u2026",
+      "2025 BMW M3 Competition sports sedan. Maintenance at 30000 miles: Oil change, air filter, brake pads front, tire rotation. Parts cost: $380. Labor: 3.0 hours. Dealer estimate: $950. DIY estimate: $420\u2026"
+    ],
+    "answer": "Based on the provided maintenance records for the 2025 BMW M3 Competition, the **spark plug replacement interval is 60,000 miles**.  \n\n### Key Evidence from the Context:\n- **Record #1** explicitly states:  \n  > *\"Maintenance at 60000 miles: Spark plugs, serpentine belt, coolant flush, transmission service, rear diff fluid.\"*  \n  This indicates that spark plug replacement is scheduled at **60,000 miles** as part of routine maintenance.  \n\n- **Record #3** mentions *\"spark plug inspection\"* at **20,000 miles**, but this is only an inspection (not replacement). Replacement is not specified at this interval.  \n- **Record #5** includes spark plug replacement as part of a service at **30,000 miles** (alongside oil change, air filter, brake pads, and tire rotation), but this appears to be an **exceptional or early service** (likely due to specific driving conditions or dealer recommendation). However, the **standard interval** for spark plug replacement in BMW M3 models (especially high-performance engines) is typically **60,000 miles** per manufacturer guidelines.  \n\n### Why 60,000 Miles?\n- BMW's official maintenance schedule for the M3 (and most modern BMWs) recommends spark plug replacement at **60,000 miles** for models with high-performance engines like the M3. This aligns with the record showing spark plug replacement as a scheduled service at 60,000 miles.  \n- Earlier intervals (e.g., 20,000 or 30,000 miles) are not standard and likely reflect specific customer needs or dealer-specific recommendations, not the baseline interval.  \n\n### Conclusion:\nThe **standard spark plug replacement interval for a 2025 BMW M3 Competition is 60,000 miles**, as confirmed by the maintenance record at that mileage. Always consult your vehicle\u2019s owner\u2019s manual or a BMW dealer for model-specific guidance, but **60,000 miles is the established interval** in the provided context.  \n\n> \ud83d\udca1 **Note**: If you\u2019re planning a DIY replacement, Record #3 shows a DIY estimate of $130 for spark plug inspection (not replacement) at 20,000 miles,"
+  },
+  {
+    "id": "EDGE-004",
+    "category": "FLEET_FILTER",
+    "question": "xyzabc vehicle",
+    "context": [],
+    "answer": "I don't know."
+  },
+  {
+    "id": "EDGE-005",
+    "category": "PERFORMANCE",
+    "question": "M3",
+    "context": [
+      "MotorTrend first drive featuring 2025 BMW M3 Competition. Vehicles: vehicleId:bmw-m3-2025-competition. Published 2025-03-15. Article excerpt 1 of 1. The BMW M3 has been the sports sedan benchmark for \u2026",
+      "MotorTrend first drive featuring 2025 BMW M3 Competition. Vehicles: vehicleId:bmw-m3-2025-competition. Published 2025-03-15. Vehicles featured in this article: The 2025 BMW M3 Competition (primary). P\u2026",
+      "MotorTrend first drive featuring 2025 BMW M3 Competition. Vehicles: vehicleId:bmw-m3-2025-competition. Published 2025-03-15.  Article: 2025 BMW M3 Competition Review: The Benchmark Returns. Type: firs\u2026",
+      "2025 BMW M 3 Competition M xDrive Sedan 3.0L 6-cylinder turbocharged compact cars. Features and trim levels: Standard features include: EPA estimated annual fuel cost $4,550 (15,000 miles/year), EPA c\u2026",
+      "MotorTrend comparison featuring 2025 BMW M3 Competition, 2025 Mercedes-AMG C63 S E Performance, 2025 Cadillac CT4-V Blackwing. Vehicles: vehicleId:bmw-m3-2025-competition, vehicleId:mercedes-amg-c63-2\u2026"
+    ],
+    "answer": "M3"
+  }
+]

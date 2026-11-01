@@ -142,21 +142,24 @@ non-reasoning judge, and `grounded` was ambiguous (both judges split on "numbers
 attached to the wrong quantity"). With the verdict prompt both Nemotron and gpt-oss-120b scored
 24/24 decisions with 0 verdict/score conflicts (`scripts/judge-compare/judge_compare.py`).
 
-#### Judge cascade (implemented — `JudgeService`, `judge.provider: triton`)
+#### Judge cascade (implemented — `JudgeService.evaluate`, `judge.provider: triton`)
+
+Used by the async audit. The orchestrator's synchronous path calls `JudgeService.evaluateThorough`
+(thorough judge only).
 
 ```mermaid
 flowchart TD
     IN["JudgeService.evaluate(question, answer, context)"] --> HASFAST{"Client has a fast mode?<br/>triton: yes<br/>halo / claude / openai / default: no"}
     HASFAST -- "no" --> THOROUGH
     HASFAST -- "yes (judge.cascade.enabled)" --> FAST["Fast judge<br/>Nemotron, reasoning OFF<br/>512 tokens, ~0.2 s"]
-    FAST --> NUM["NumbersCheck (no LLM)<br/>every number in the answer<br/>must appear in the context"]
+    FAST --> NUM["AnswerChecks (no LLM)<br/>numbers in context · quoted text in context<br/>answer not trivially short"]
     NUM --> FD{"Fast result"}
     FD -- "unusable output, or<br/>verdict/score conflict" --> THOROUGH
     FD -- "REJECT" --> VR{"verify-fast-rejects?"}
-    VR -- "false (default)" --> FR["Return fast verdict<br/>stage = fast_reject"]
-    VR -- "true" --> THOROUGH
-    FD -- "PASS, a number is<br/>not in the context" --> THOROUGH
-    FD -- "PASS, all numbers<br/>in the context" --> FP["Return PASS<br/>stage = fast_pass"]
+    VR -- "false" --> FR["Return fast verdict<br/>stage = fast_reject"]
+    VR -- "true (default)" --> THOROUGH
+    FD -- "PASS, a check fired" --> THOROUGH
+    FD -- "PASS, no check fired" --> FP["Return PASS<br/>stage = fast_pass"]
     THOROUGH["Thorough judge<br/>triton: Nemotron reasoning ON, 3072 tokens<br/>halo: gpt-oss-120b on GN100"] --> TC{"Usable and<br/>consistent?"}
     TC -- "yes" --> TR["Return verdict<br/>stage = thorough or escalated:reason"]
     TC -- "no, attempts left" --> THOROUGH
@@ -166,7 +169,7 @@ flowchart TD
 Consistency guard: `PASS` with score < 0.5, or `UNSUPPORTED`/`INCORRECT` with score ≥ 0.8, is
 treated as unreliable (fast stage escalates, thorough stage retries once).
 
-#### Where the judge runs in the orchestrator today
+#### Before: judge on every attempt (`orchestrator.judge.sync: all`, rollback switch)
 
 ```mermaid
 flowchart TD
@@ -186,24 +189,25 @@ flowchart TD
     AG -- "accepted / out of retries" --> OUT
 ```
 
-Every attempt is judged synchronously, so one hard question can cost up to 5 generations and
-5 judge calls before the user sees anything. `AsyncJudgeService` exists but is not called.
+Every attempt above 0.15 retrieval score was judged synchronously, so one hard question could cost up to
+5 generations and 5 judge calls before the user saw anything. (`AsyncJudgeService` existed but was never
+called, and `@EnableAsync` is off, so its `@Async` would have run on the request thread anyway.)
 
-#### Target flow (proposed — not implemented yet)
+#### Request flow (implemented — `orchestrator.judge.sync: risky`, default)
 
 ```mermaid
 flowchart TD
-    Q["Question"] --> GEN["Retrieve + generate answer<br/>(route chosen by retrieval score,<br/>not by judging every attempt)"]
-    GEN --> CHK["Deterministic checks (no LLM, &lt;1 ms)<br/>numbers in context · quoted text in context<br/>citations valid · answer not trivially short"]
-    CHK --> RISK{"Risky?<br/>AGENT route, numeric / comparison question,<br/>or any check fired"}
-    RISK -- "yes" --> SYNC["Sync thorough judge<br/>(user waits ~2-3 s)<br/>missing numbers = hard reject signal"]
-    SYNC --> OK{"PASS?"}
+    Q["Question"] --> GEN["Retrieve + generate answer<br/>RAG: BM25 → HYBRID → HYBRID_RERANK → VECTOR,<br/>skip attempts below the route's retrieval threshold"]
+    GEN --> CHK["AnswerChecks (no LLM, &lt;1 ms)<br/>numbers in context · quoted text in context<br/>answer not trivially short"]
+    CHK --> RISK{"Risky?<br/>AGENT / AGENT_FALLBACK route,<br/>numeric · threshold · ranking question,<br/>or any check fired"}
+    RISK -- "yes" --> SYNC["Sync thorough judge<br/>JudgeService.evaluateThorough<br/>(user waits ~2-3 s)"]
+    SYNC --> OK{"Accepted?"}
     OK -- "yes" --> RESP["Response"]
-    OK -- "no, retries left" --> GEN
-    OK -- "no, out of retries" --> RESP
+    OK -- "no: next RAG mode,<br/>or AGENT retry" --> GEN
+    OK -- "no, nothing left" --> RESP
     RISK -- "no" --> RESP
-    RISK -. "no: fire and forget" .-> ASYNC["AsyncJudgeService (user does not wait)<br/>cascade: fast judge + all checks,<br/>escalate on check or reject"]
-    ASYNC --> OBS["Log verdict + stage<br/>LangSmith metrics, quality flag"]
+    RISK -. "no: fire and forget" .-> ASYNC["AsyncJudgeService (user does not wait)<br/>bounded pool: 2 threads, queue 200, drop when full<br/>cascade: fast judge + checks, verify rejects"]
+    ASYNC --> OBS["Log verdict + stage<br/>WARN when a returned answer is flagged"]
 ```
 
 #### Real-traffic evaluation (`scripts/judge-compare/judge_eval.py`, 29 vehicle golden-set questions)
@@ -221,8 +225,11 @@ Same answers judged by both providers (Nemotron-generated from `/vehicles/ask` e
   on invented mpg figures that the NumbersCheck proves are absent from the context, which gpt-oss missed.
 - Offline replay of the 29 cases: refining the checks (ignore list markers and "Entry N" citations,
   add a quoted-text check and a short-answer check) and verifying fast rejects brings the cascade to
-  ~1 wrong of 29 — but at ~59% escalation, only ~20-25% faster than thorough-only. Hence the target
-  flow: thorough judge where the user waits, cascade for the async audit where it saves GPU time.
+  ~1 wrong of 29 — but at ~59% escalation, only ~20-25% faster than thorough-only. Hence the request
+  flow above: thorough judge where the user waits, cascade for the async audit where it saves GPU time.
+- On the 29 golden questions, the risk rules send 20/29 answers to the sync judge (12 by question type,
+  8 because an answer check fired — 6 of those 8 were real problems). The golden set is deliberately
+  heavy on numeric and ranking questions; general traffic should mostly take the async path.
 
 
 ---

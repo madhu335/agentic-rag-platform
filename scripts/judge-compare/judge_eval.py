@@ -19,6 +19,7 @@ Standard library only. Python 3.9+. Run from C:\\dev\\ai-rag-assistant (app runn
 
   python scripts\\judge-compare\\judge_eval.py generate
   python scripts\\judge-compare\\judge_eval.py judge --label triton      (app started with JUDGE_PROVIDER=triton)
+  python scripts\\judge-compare\\judge_eval.py judge --label triton-thorough --mode thorough   (sync-path judge)
   python scripts\\judge-compare\\judge_eval.py judge --label halo        (app restarted with JUDGE_PROVIDER=halo)
   python scripts\\judge-compare\\judge_eval.py compare --a halo --b triton
 """
@@ -99,11 +100,12 @@ def cmd_judge(args):
         t0 = time.perf_counter()
         try:
             r = post(f"{APP}/api/judge/test",
-                     {"question": c["question"], "answer": c["answer"], "context": c["context"]})
+                     {"question": c["question"], "answer": c["answer"], "context": c["context"], "mode": args.mode})
             res = r["result"]
             row = {"id": c["id"], "category": c["category"], "provider": r.get("provider"),
                    "latencyMs": r.get("latencyMs"), "verdict": res.get("verdict"), "score": res.get("score"),
-                   "stage": res.get("stage"), "reason": res.get("reason")}
+                   "stage": res.get("stage"), "reason": res.get("reason"),
+                   "questionRisk": r.get("questionRisk"), "answerChecks": r.get("answerChecks")}
         except (urllib.error.URLError, OSError, KeyError, ValueError) as e:
             row = {"id": c["id"], "category": c["category"], "error": str(e),
                    "latencyMs": int((time.perf_counter() - t0) * 1000)}
@@ -119,12 +121,15 @@ def cmd_judge(args):
     lat = [r["latencyMs"] for r in ok]
     stages = Counter(("escalated" if str(r["stage"]).startswith("escalated") else r["stage"]) for r in ok)
     esc_why = Counter(str(r["stage"]).split(":")[1] for r in ok if str(r["stage"]).startswith("escalated"))
-    print(f"\n== {args.label}  (provider={ok[0]['provider'] if ok else '?'})  saved -> {path}")
+    print(f"\n== {args.label}  (provider={ok[0]['provider'] if ok else '?'}, mode={args.mode})  saved -> {path}")
     print(f"   verdicts : {dict(Counter(r['verdict'] for r in ok))}")
     print(f"   accepted : {pct(sum(r['verdict'] == 'PASS' for r in ok), len(ok))}   errors: {len(results) - len(ok)}")
     print(f"   stages   : {dict(stages)}")
     if esc_why:
         print(f"   escalated: {pct(sum(esc_why.values()), len(ok))}  why: {dict(esc_why)}")
+    if ok and ok[0].get("questionRisk") is not None:
+        sync = [r for r in ok if r["questionRisk"] != "none" or r["answerChecks"] != "none"]
+        print(f"   orchestrator would judge synchronously (risky question or check fired): {pct(len(sync), len(ok))}")
     if lat:
         lat_sorted = sorted(lat)
         p95 = lat_sorted[min(len(lat_sorted) - 1, int(round(0.95 * (len(lat_sorted) - 1))))]
@@ -168,6 +173,8 @@ def main():
     g.add_argument("--limit", type=int, default=0, help="only the first N questions")
     j = sub.add_parser("judge")
     j.add_argument("--label", required=True, help="name for this run, e.g. triton or halo")
+    j.add_argument("--mode", default="auto", choices=["auto", "thorough"],
+                   help="auto = cascade/async-audit path, thorough = the orchestrator's sync path")
     c = sub.add_parser("compare")
     c.add_argument("--a", required=True)
     c.add_argument("--b", required=True)

@@ -12,6 +12,10 @@ import java.util.List;
 /**
  * Dev-only endpoint to exercise the judge in isolation (no retrieval, no answer generation).
  * Enabled with judge.debug.enabled=true.
+ *
+ * mode (optional): "auto" (default) = JudgeService.evaluate (cascade on triton, the async-audit path);
+ *                  "thorough"       = JudgeService.evaluateThorough (the orchestrator's synchronous path).
+ * The response also reports what the orchestrator's risk check would decide for this question and answer.
  */
 @RestController
 @RequestMapping("/api/judge")
@@ -29,21 +33,25 @@ public class JudgeDebugController {
         this.provider = provider;
     }
 
-    public record JudgeTestRequest(String question, String answer, List<String> context) {}
+    public record JudgeTestRequest(String question, String answer, List<String> context, String mode) {}
 
-    public record JudgeTestResponse(String provider, long latencyMs, JudgeResult result) {}
+    public record JudgeTestResponse(String provider, String mode, long latencyMs, String questionRisk,
+                                    String answerChecks, JudgeResult result) {}
 
     @PostMapping("/test")
     public JudgeTestResponse test(@RequestBody JudgeTestRequest request) {
+        List<String> context = request.context() == null ? List.of() : request.context();
+        String mode = "thorough".equalsIgnoreCase(request.mode()) ? "thorough" : "auto";
+
         long start = System.nanoTime();
-
-        JudgeResult result = judgeService.evaluate(
-                request.question(),
-                request.answer(),
-                request.context() == null ? List.of() : request.context()
-        );
-
+        JudgeResult result = "thorough".equals(mode)
+                ? judgeService.evaluateThorough(request.question(), request.answer(), context)
+                : judgeService.evaluate(request.question(), request.answer(), context);
         long latencyMs = (System.nanoTime() - start) / 1_000_000;
-        return new JudgeTestResponse(provider, latencyMs, result);
+
+        String questionRisk = QuestionRisk.reason(request.question());
+        String answerChecks = AnswerChecks.check(request.question(), request.answer(), context).reason();
+        return new JudgeTestResponse(provider, mode, latencyMs, questionRisk == null ? "none" : questionRisk,
+                answerChecks, result);
     }
 }

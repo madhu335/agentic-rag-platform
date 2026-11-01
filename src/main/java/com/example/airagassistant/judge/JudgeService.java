@@ -20,17 +20,25 @@ import java.util.function.Supplier;
  * JSON (true/true/true/0.7) was copied verbatim by a non-reasoning judge, and its "grounded" boolean was
  * ambiguous. With this prompt: Nemotron thinking-on and gpt-oss-120b both 24/24 decisions, 0 conflicts.
  *
- * <h3>Cascade (only when the client has a fast mode, i.e. judge.provider=triton)</h3>
+ * <h3>Two entry points</h3>
+ * <ul>
+ *   <li>{@link #evaluate} - cascade when the client has a fast mode (judge.provider=triton), else thorough.
+ *       Used by the async audit (AsyncJudgeService) and other callers.</li>
+ *   <li>{@link #evaluateThorough} - always the thorough judge. Used by the orchestrator's synchronous path for
+ *       risky answers, where accuracy matters more than ~2 s.</li>
+ * </ul>
+ *
+ * <h3>Cascade</h3>
  * <pre>
- *   fast judge (reasoning off, ~0.2 s)  +  NumbersCheck (no LLM)
- *     fast REJECT                          -> return it              (stage fast_reject; 0 false rejects in tests)
- *     fast PASS and every number in context -> return it             (stage fast_pass)
- *     fast PASS but a number is not in context,
+ *   fast judge (reasoning off, ~0.2 s)  +  AnswerChecks (numbers / quotes / short answer, no LLM)
+ *     fast REJECT                          -> thorough if judge.cascade.verify-fast-rejects, else return it
+ *     fast PASS and no check fired         -> return it             (stage fast_pass)
+ *     fast PASS but a check fired,
  *     fast output unusable, or verdict/score conflict
- *                                          -> thorough judge (reasoning on, ~1.2 s)  (stage escalated:&lt;why&gt;)
+ *                                          -> thorough judge (reasoning on)  (stage escalated:&lt;why&gt;)
  * </pre>
- * The fast judge misses answers that look right (an extra invented claim, a wrong sum); the numbers check misses
- * numbers attached to the wrong quantity. Together they caught every bad case in the test set.
+ * judge_eval.py on 29 real answers: the fast judge both over-rejected (flipping between runs) and passed invented
+ * non-numeric claims; verifying rejects plus the quote/short checks brought the replay to ~1 wrong of 29.
  * Providers without a fast mode (halo, claude, openai, default) always use the thorough judge.
  *
  * <h3>Consistency guard</h3>
@@ -56,7 +64,7 @@ public class JudgeService {
             ObjectMapper objectMapper,
             TraceHelper traceHelper,
             @Value("${judge.cascade.enabled:true}") boolean cascadeEnabled,
-            @Value("${judge.cascade.verify-fast-rejects:false}") boolean verifyFastRejects,
+            @Value("${judge.cascade.verify-fast-rejects:true}") boolean verifyFastRejects,
             @Value("${judge.thorough-attempts:2}") int thoroughAttempts
     ) {
         this.judgeClient = judgeClient;
@@ -69,16 +77,27 @@ public class JudgeService {
                 + "thoroughAttempts={}", cascadeEnabled, verifyFastRejects, this.thoroughAttempts);
     }
 
+    /** Cascade when the client supports a fast mode and judge.cascade.enabled, otherwise thorough. */
     public JudgeResult evaluate(String question, String answer, List<String> contextChunks) {
+        return run(question, answer, contextChunks, cascadeEnabled && judgeClient.supportsFastMode());
+    }
+
+    /** Always the thorough judge (synchronous path for risky answers). */
+    public JudgeResult evaluateThorough(String question, String answer, List<String> contextChunks) {
+        return run(question, answer, contextChunks, false);
+    }
+
+    private JudgeResult run(String question, String answer, List<String> contextChunks, boolean useCascade) {
         Map<String, Object> attrs = new LinkedHashMap<>();
         attrs.put("langsmith.span.kind", "chain");
         attrs.put("langsmith.metadata.context_chunk_count", contextChunks != null ? contextChunks.size() : 0);
         attrs.put("langsmith.metadata.answer_length", answer != null ? answer.length() : 0);
+        attrs.put("langsmith.metadata.judge.mode", useCascade ? "cascade" : "thorough");
 
         return traceHelper.run("judge-evaluation", attrs, () -> {
             String prompt = buildPrompt(question, answer);
-            JudgeResult result = (cascadeEnabled && judgeClient.supportsFastMode())
-                    ? cascade(prompt, answer, contextChunks)
+            JudgeResult result = useCascade
+                    ? cascade(prompt, question, answer, contextChunks)
                     : thorough(prompt, contextChunks, "thorough");
 
             traceHelper.addAttributes(buildJudgeResultAttributes(result));
@@ -90,9 +109,9 @@ public class JudgeService {
 
     // ── cascade ──────────────────────────────────────────────────────────────────────────────────────
 
-    private JudgeResult cascade(String prompt, String answer, List<String> contextChunks) {
+    private JudgeResult cascade(String prompt, String question, String answer, List<String> contextChunks) {
         JudgeResult fast = attempt(() -> judgeClient.evaluateFast(prompt, contextChunks), "fast");
-        List<String> missingNumbers = NumbersCheck.missingNumbers(answer, contextChunks);
+        AnswerChecks.Result checks = AnswerChecks.check(question, answer, contextChunks);
 
         String escalation;
         if (fast == null) {
@@ -104,8 +123,8 @@ public class JudgeService {
                 return fast.withStage("fast_reject");
             }
             escalation = "verify_fast_reject";
-        } else if (!missingNumbers.isEmpty()) {
-            escalation = "numbers_not_in_context:" + String.join(",", missingNumbers);
+        } else if (checks.fired()) {
+            escalation = checks.reason();
         } else {
             return fast.withStage("fast_pass");
         }

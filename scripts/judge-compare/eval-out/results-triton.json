@@ -1,0 +1,292 @@
+[
+  {
+    "id": "S4-001",
+    "category": "FLEET_FILTER",
+    "provider": "triton",
+    "latencyMs": 2346,
+    "verdict": "UNSUPPORTED",
+    "score": 0.5,
+    "stage": "escalated:numbers_not_in_context:500",
+    "reason": "Corvette horsepower not stated in context"
+  },
+  {
+    "id": "S4-002",
+    "category": "FLEET_FILTER",
+    "provider": "triton",
+    "latencyMs": 2270,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "escalated:numbers_not_in_context:40000",
+    "reason": "All claims supported; answer correct."
+  },
+  {
+    "id": "S4-003",
+    "category": "FLEET_FILTER",
+    "provider": "triton",
+    "latencyMs": 173,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "fast_pass",
+    "reason": "All claims supported and correctly answered"
+  },
+  {
+    "id": "S4-004",
+    "category": "FLEET_FILTER",
+    "provider": "triton",
+    "latencyMs": 5158,
+    "verdict": "UNSUPPORTED",
+    "score": 0.5,
+    "stage": "escalated:numbers_not_in_context:40,52,54,55",
+    "reason": "Unsupported fuel economy numbers for Prius, Elantra, Niro"
+  },
+  {
+    "id": "S4-005",
+    "category": "FLEET_FILTER",
+    "provider": "triton",
+    "latencyMs": 2130,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "escalated:numbers_not_in_context:5",
+    "reason": "All AWD vehicles correctly identified and supported by context."
+  },
+  {
+    "id": "S1-PERF-001",
+    "category": "PERFORMANCE",
+    "provider": "triton",
+    "latencyMs": 183,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "fast_pass",
+    "reason": "All claims supported and correct"
+  },
+  {
+    "id": "S1-PERF-002",
+    "category": "PERFORMANCE",
+    "provider": "triton",
+    "latencyMs": 186,
+    "verdict": "INCORRECT",
+    "score": 0.5,
+    "stage": "fast_reject",
+    "reason": "Torque comparison not supported"
+  },
+  {
+    "id": "S1-COST-001",
+    "category": "OWNERSHIP_COST",
+    "provider": "triton",
+    "latencyMs": 314,
+    "verdict": "INCORRECT",
+    "score": 0.0,
+    "stage": "fast_reject",
+    "reason": "Answer claims $52,000 total cost but context states $52,000 as total; however, breakdown sums to $65,000, making the answer's reasoning inconsistent with context's stated figure."
+  },
+  {
+    "id": "S1-COST-002",
+    "category": "OWNERSHIP_COST",
+    "provider": "triton",
+    "latencyMs": 184,
+    "verdict": "INCOMPLETE",
+    "score": 0.5,
+    "stage": "fast_reject",
+    "reason": "Leaves out that no comparison is possible"
+  },
+  {
+    "id": "S1-MAINT-001",
+    "category": "MAINTENANCE",
+    "provider": "triton",
+    "latencyMs": 150,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "fast_pass",
+    "reason": "Correctly cites $950 dealer cost"
+  },
+  {
+    "id": "S1-MAINT-002",
+    "category": "MAINTENANCE",
+    "provider": "triton",
+    "latencyMs": 215,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "fast_pass",
+    "reason": "Answer correctly identifies BMW M3 Competition as most expensive to maintain based on context."
+  },
+  {
+    "id": "S1-SAFETY-001",
+    "category": "SAFETY",
+    "provider": "triton",
+    "latencyMs": 174,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "fast_pass",
+    "reason": "All claims match context exactly"
+  },
+  {
+    "id": "S1-RANK-001",
+    "category": "RANKINGS",
+    "provider": "triton",
+    "latencyMs": 168,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "fast_pass",
+    "reason": "Correctly cites 2nd of 18, 91 score"
+  },
+  {
+    "id": "S1-RANK-002",
+    "category": "RANKINGS",
+    "provider": "triton",
+    "latencyMs": 170,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "fast_pass",
+    "reason": "Context lacks editors choice award info"
+  },
+  {
+    "id": "S1-RECALL-001",
+    "category": "SAFETY",
+    "provider": "triton",
+    "latencyMs": 179,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "fast_pass",
+    "reason": "All claims supported and correct"
+  },
+  {
+    "id": "S2-001",
+    "category": "CROSS_CHUNK",
+    "provider": "triton",
+    "latencyMs": 214,
+    "verdict": "INCORRECT",
+    "score": 0.5,
+    "stage": "fast_reject",
+    "reason": "Claims 5.5L engine and budget-friendly pricing not in context"
+  },
+  {
+    "id": "S2-002",
+    "category": "CROSS_CHUNK",
+    "provider": "triton",
+    "latencyMs": 2820,
+    "verdict": "UNSUPPORTED",
+    "score": 0.5,
+    "stage": "escalated:numbers_not_in_context:3400,1",
+    "reason": "unsupported claim about Honda CR-V Hybrid fuel cost"
+  },
+  {
+    "id": "S2-003",
+    "category": "RANKINGS",
+    "provider": "triton",
+    "latencyMs": 3259,
+    "verdict": "UNSUPPORTED",
+    "score": 0.2,
+    "stage": "escalated:numbers_not_in_context:4",
+    "reason": "Unsupported claim of general reliability"
+  },
+  {
+    "id": "S2-004",
+    "category": "RANKINGS",
+    "provider": "triton",
+    "latencyMs": 167,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "fast_pass",
+    "reason": "All claims supported by context"
+  },
+  {
+    "id": "S2-005",
+    "category": "OWNERSHIP_COST",
+    "provider": "triton",
+    "latencyMs": 189,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "fast_pass",
+    "reason": "All claims are directly supported by the context."
+  },
+  {
+    "id": "S2-006",
+    "category": "FEATURES",
+    "provider": "triton",
+    "latencyMs": 1747,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "escalated:numbers_not_in_context:1,2,3,5",
+    "reason": "Correctly identifies Rivian R1T Adventure as off\u2011road capable"
+  },
+  {
+    "id": "S3-001",
+    "category": "CROSS_CHUNK",
+    "provider": "triton",
+    "latencyMs": 4497,
+    "verdict": "UNSUPPORTED",
+    "score": 0.4,
+    "stage": "escalated:numbers_not_in_context:5,4",
+    "reason": "Unsupported claim about interior comfort and practicality"
+  },
+  {
+    "id": "S3-002",
+    "category": "CROSS_CHUNK",
+    "provider": "triton",
+    "latencyMs": 200,
+    "verdict": "INCOMPLETE",
+    "score": 0.7,
+    "stage": "fast_reject",
+    "reason": "Leaves out other vehicles' environmental claims"
+  },
+  {
+    "id": "S3-003",
+    "category": "OWNERSHIP_COST",
+    "provider": "triton",
+    "latencyMs": 2124,
+    "verdict": "UNSUPPORTED",
+    "score": 0.0,
+    "stage": "escalated:numbers_not_in_context:14000,17000,5500",
+    "reason": "states lowest without context comparison"
+  },
+  {
+    "id": "EDGE-001",
+    "category": "SAFETY",
+    "provider": "triton",
+    "latencyMs": 4214,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "escalated:numbers_not_in_context:1",
+    "reason": "All claims supported and complete"
+  },
+  {
+    "id": "EDGE-002",
+    "category": "FEATURES",
+    "provider": "triton",
+    "latencyMs": 245,
+    "verdict": "INCORRECT",
+    "score": 0.5,
+    "stage": "fast_reject",
+    "reason": "Uses $76,900 MSRP for 2025 Competition, not 2024 CS trim"
+  },
+  {
+    "id": "EDGE-003",
+    "category": "MAINTENANCE",
+    "provider": "triton",
+    "latencyMs": 3638,
+    "verdict": "INCORRECT",
+    "score": 0.6,
+    "stage": "escalated:numbers_not_in_context:5",
+    "reason": "Mentions 30,000\u2011mile spark plug replacement not in context"
+  },
+  {
+    "id": "EDGE-004",
+    "category": "FLEET_FILTER",
+    "provider": "triton",
+    "latencyMs": 137,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "fast_pass",
+    "reason": "Answer correctly indicates lack of context"
+  },
+  {
+    "id": "EDGE-005",
+    "category": "PERFORMANCE",
+    "provider": "triton",
+    "latencyMs": 141,
+    "verdict": "PASS",
+    "score": 1.0,
+    "stage": "fast_pass",
+    "reason": "Answer correctly identifies M3 from context"
+  }
+]
