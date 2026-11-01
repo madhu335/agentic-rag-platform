@@ -5,6 +5,21 @@ import com.example.airagassistant.judge.JudgeResult;
 import com.example.airagassistant.router.OrchestratorResult;
 import org.springframework.stereotype.Service;
 
+/**
+ * Accept/reject decisions for orchestrator attempts and research results.
+ *
+ * Judge decisions are driven by {@link JudgeResult#verdict()} (2026-11-01), not by the grounded/correct
+ * booleans, which could contradict each other and the score:
+ *   PASS         accept (unless score is below MIN_JUDGE_SCORE)
+ *   INCOMPLETE   accept if score >= MIN_INCOMPLETE_JUDGE_SCORE, else reject + retry
+ *   UNSUPPORTED  reject + retry
+ *   INCORRECT    reject + retry
+ *   UNAVAILABLE  fall back to the retrieval score (route-specific threshold)
+ *
+ * Fix: UNAVAILABLE used to arrive as grounded=false and was rejected as "judge_not_grounded" before the
+ * judge_unavailable branch could run, so a judge outage rejected every attempt and the orchestrator fell
+ * through to AGENT_FALLBACK. It is now checked first.
+ */
 @Service
 public class DefaultResultEvaluationPolicy implements ResultEvaluationPolicy {
 
@@ -51,29 +66,13 @@ public class DefaultResultEvaluationPolicy implements ResultEvaluationPolicy {
             return EvaluationDecision.accepted(shouldJudge, "judge_missing_but_score_passed");
         }
 
-        if (!judge.grounded()) {
-            return EvaluationDecision.rejected(true, true, "judge_not_grounded");
-        }
-
-        if (!judge.correct()) {
-            return EvaluationDecision.rejected(true, true, "judge_not_correct");
-        }
-
-        if ("judge_unavailable".equalsIgnoreCase(judge.reason())) {
+        if (judge.isUnavailable()) {
             return bestScore >= fallbackJudgeUnavailableThreshold(routeUsed)
                     ? EvaluationDecision.accepted(true, "judge_unavailable_score_passed")
                     : EvaluationDecision.rejected(true, true, "judge_unavailable_score_too_low");
         }
 
-        if (judge.score() < MIN_JUDGE_SCORE) {
-            return EvaluationDecision.rejected(true, true, "judge_score_too_low");
-        }
-
-        if (!judge.complete() && judge.score() < MIN_INCOMPLETE_JUDGE_SCORE) {
-            return EvaluationDecision.rejected(true, true, "judge_incomplete_and_low_score");
-        }
-
-        return EvaluationDecision.accepted(true, "accepted");
+        return decideOnVerdict(judge);
     }
 
     @Override
@@ -82,16 +81,16 @@ public class DefaultResultEvaluationPolicy implements ResultEvaluationPolicy {
             return EvaluationDecision.rejected(false, true, "research_result_null");
         }
 
-        Double retrievalScore  = result.retrievalScore();
+        Double retrievalScore = result.retrievalScore();
         JudgeResult judge = result.judge();
 
-        // In your actual runtime, retrievalScore  comes from orchestrator bestScore,
+        // In the actual runtime, retrievalScore comes from orchestrator bestScore,
         // and practical runtime is centered on HYBRID_RERANK-style scoring.
-        if (retrievalScore  == null) {
+        if (retrievalScore == null) {
             return EvaluationDecision.rejected(false, true, "confidence_null");
         }
 
-        if (retrievalScore  < MIN_HYBRID_RERANK_SCORE) {
+        if (retrievalScore < MIN_HYBRID_RERANK_SCORE) {
             return EvaluationDecision.rejected(false, true, "confidence_below_hybrid_rerank_threshold");
         }
 
@@ -99,23 +98,25 @@ public class DefaultResultEvaluationPolicy implements ResultEvaluationPolicy {
             return EvaluationDecision.rejected(true, true, "judge_null");
         }
 
-        if (!judge.grounded()) {
-            return EvaluationDecision.rejected(true, true, "judge_not_grounded");
+        if (judge.isUnavailable()) {
+            return EvaluationDecision.rejected(true, true, "judge_unavailable");
         }
 
-        if (!judge.correct()) {
-            return EvaluationDecision.rejected(true, true, "judge_not_correct");
-        }
+        return decideOnVerdict(judge);
+    }
 
-        if (judge.score() < MIN_JUDGE_SCORE) {
-            return EvaluationDecision.rejected(true, true, "judge_score_too_low");
-        }
-
-        if (!judge.complete() && judge.score() < MIN_INCOMPLETE_JUDGE_SCORE) {
-            return EvaluationDecision.rejected(true, true, "judge_incomplete_and_low_score");
-        }
-
-        return EvaluationDecision.accepted(true, "accepted");
+    private EvaluationDecision decideOnVerdict(JudgeResult judge) {
+        return switch (judge.verdict()) {
+            case PASS -> judge.score() >= MIN_JUDGE_SCORE
+                    ? EvaluationDecision.accepted(true, "accepted")
+                    : EvaluationDecision.rejected(true, true, "judge_pass_but_score_too_low");
+            case INCOMPLETE -> judge.score() >= MIN_INCOMPLETE_JUDGE_SCORE
+                    ? EvaluationDecision.accepted(true, "accepted_incomplete")
+                    : EvaluationDecision.rejected(true, true, "judge_incomplete_and_low_score");
+            case UNSUPPORTED -> EvaluationDecision.rejected(true, true, "judge_unsupported");
+            case INCORRECT -> EvaluationDecision.rejected(true, true, "judge_incorrect");
+            case UNAVAILABLE -> EvaluationDecision.rejected(true, true, "judge_unavailable");
+        };
     }
 
     private boolean shouldJudgeForRoute(String routeUsed, double bestScore) {
@@ -154,7 +155,7 @@ public class DefaultResultEvaluationPolicy implements ResultEvaluationPolicy {
             default -> 0.25;
         };
     }
-    // In DefaultResultEvaluationPolicy.java
+
     public double getMinJudgeScore() {
         return MIN_JUDGE_SCORE;
     }

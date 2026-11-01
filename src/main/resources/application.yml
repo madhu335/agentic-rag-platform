@@ -93,7 +93,25 @@ ollama:
 # Judge: vllm, openai, claude, halo
 # =========================
 judge:
-  provider: halo
+  # halo   = gpt-oss-120b on the GN100 (always reasons; thorough-only, no cascade)
+  # triton = Nemotron-3-Nano-30B on the 5090 Triton (fast + thorough modes -> cascade)
+  # A/B without editing this file: set JUDGE_PROVIDER=triton in the IntelliJ run config.
+  provider: ${JUDGE_PROVIDER:halo}
+  # Cascade (JudgeService): fast judge + NumbersCheck; escalate to the thorough judge when the fast judge
+  # passes but a number in the answer is not in the context, or its output is unusable/inconsistent.
+  # Only active for providers with a fast mode (triton). Validated with scripts/judge-compare (2026-11-01).
+  cascade:
+    enabled: true
+    verify-fast-rejects: false   # true = also re-check fast REJECTs with the thorough judge (0 false rejects seen)
+  thorough-attempts: 2           # thorough judge tries (unusable output / verdict-score conflict) before UNAVAILABLE
+  triton:
+    base-url: ${TRITON_LLM_BASE_URL:http://localhost:8000}
+    model-name: nemotron
+    fast-max-tokens: 512         # reasoning off: verdict JSON only
+    thorough-max-tokens: 3072    # reasoning on: 1024 cut reasoning off on hard cases, 3072 never did
+    temperature: 0.1
+    connect-timeout-seconds: 5
+    read-timeout-seconds: 60
   debug:
     enabled: true          # exposes POST /api/judge/test (dev only)
   halo:
