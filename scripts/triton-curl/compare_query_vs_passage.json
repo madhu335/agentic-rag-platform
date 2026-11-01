@@ -1,0 +1,13 @@
+{
+  "inputs": [
+    {
+      "name": "TEXT", "shape": [2, 1], "datatype": "BYTES",
+      "data": [
+        "The 2025 BMW M3 Competition produces 503 hp.",
+        "The 2025 BMW M3 Competition produces 503 hp."
+      ]
+    },
+    { "name": "INPUT_TYPE", "shape": [2, 1], "datatype": "BYTES", "data": ["query", "passage"] }
+  ],
+  "outputs": [ { "name": "EMBEDDING" } ]
+}

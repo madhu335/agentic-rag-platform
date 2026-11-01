@@ -1,0 +1,4 @@
+{
+  "text_input": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nContext:\n1. The 2025 BMW M3 Competition uses a twin-turbo 3.0L inline-six producing 503 hp and 479 lb-ft of torque.\n\nQuestion:\nHow much horsepower does the BMW M3 Competition have?\n\nAnswer:<|im_end|>\n<|im_start|>assistant\n<think></think>",
+  "parameters": { "stream": false, "exclude_input_in_output": true, "max_tokens": 256, "temperature": 0.0 }
+}

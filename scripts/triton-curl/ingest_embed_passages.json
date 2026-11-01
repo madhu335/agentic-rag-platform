@@ -1,0 +1,14 @@
+{
+  "inputs": [
+    {
+      "name": "TEXT", "shape": [3, 1], "datatype": "BYTES",
+      "data": [
+        "The 2025 BMW M3 Competition uses a twin-turbo 3.0L inline-six producing 503 hp and 479 lb-ft of torque.",
+        "The 2025 Toyota Camry XSE Hybrid returns 47 mpg combined and has low five-year maintenance costs.",
+        "The 2025 Honda CR-V Sport Hybrid offers a spacious cabin, AWD and strong resale value for families."
+      ]
+    },
+    { "name": "INPUT_TYPE", "shape": [3, 1], "datatype": "BYTES", "data": ["passage", "passage", "passage"] }
+  ],
+  "outputs": [ { "name": "EMBEDDING" } ]
+}

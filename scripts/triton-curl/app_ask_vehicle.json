@@ -1,0 +1,5 @@
+{
+  "question": "What engine and drivetrain does it have, and what is the fuel economy?",
+  "topK": 5,
+  "mode": "HYBRID"
+}

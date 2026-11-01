@@ -68,7 +68,10 @@ class TritonPythonModel:
         )
         self.model.eval()
 
-        full_dim = self.model.get_sentence_embedding_dimension()
+        # sentence-transformers 6.x renamed get_sentence_embedding_dimension -> get_embedding_dimension
+        get_dim = getattr(self.model, "get_embedding_dimension", None) \
+            or self.model.get_sentence_embedding_dimension
+        full_dim = get_dim()
         if full_dim is not None and self.dim > full_dim:
             raise ValueError(f"embedding_dim {self.dim} > model dimension {full_dim}")
 

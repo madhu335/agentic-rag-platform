@@ -1,0 +1,7 @@
+{
+  "inputs": [
+    { "name": "TEXT",       "shape": [1, 1], "datatype": "BYTES", "data": ["How much horsepower does the BMW M3 Competition have?"] },
+    { "name": "INPUT_TYPE", "shape": [1, 1], "datatype": "BYTES", "data": ["query"] }
+  ],
+  "outputs": [ { "name": "EMBEDDING" } ]
+}

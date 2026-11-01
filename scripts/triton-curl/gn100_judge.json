@@ -1,0 +1,16 @@
+{
+  "model": "gpt-oss-120b-Q4_K_M",
+  "temperature": 0.1,
+  "max_tokens": 1024,
+  "stream": false,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Reasoning: low\nYou are a strict evaluator for a retrieval-augmented QA system. Judge the answer only against the provided context. Respond with a single JSON object and nothing else."
+    },
+    {
+      "role": "user",
+      "content": "CONTEXT:\nThe 2025 BMW M3 Competition uses a twin-turbo 3.0L inline-six producing 503 hp and 479 lb-ft of torque.\n\nYou are an evaluator.\n\nEvaluate the answer using only the provided context.\n\nQuestion:\nHow much horsepower does the BMW M3 Competition have?\n\nAnswer:\nThe BMW M3 Competition produces 503 hp and does 0-60 mph in 3.0 seconds.\n\nDecide quickly: check each claim in the answer against the context once,\nthen give your verdict. Do not deliberate at length.\n\nReturn JSON only in this exact format:\n{\n  \"grounded\": true,\n  \"correct\": true,\n  \"complete\": true,\n  \"score\": 0.7,\n  \"reason\": \"max 12 words, name the unsupported claim if any\"\n}\n\nRules:\n- score must be a decimal between 0.0 and 1.0\n- reason must be at most 12 words\n- do NOT use a 1-10 scale\n- do NOT use percentages\n- do NOT return markdown\n- do NOT return any text outside the JSON\n"
+    }
+  ]
+}
