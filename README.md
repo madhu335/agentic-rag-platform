@@ -617,7 +617,7 @@ llm:
     model-name: llama-3.1-8b
 
 judge:
-  provider: ${JUDGE_PROVIDER:halo} # halo | triton | claude | openai | default | vllm | ollama
+  provider: ${JUDGE_PROVIDER:triton} # triton | halo | claude | openai | default | vllm | ollama
                                   # default/vllm/ollama all go through DefaultJudgeClient
                                   # and inherit whichever LlmRouter provider is active
   cascade:

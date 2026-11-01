@@ -100,8 +100,10 @@ ollama:
 judge:
   # halo   = gpt-oss-120b on the GN100 (always reasons; thorough-only, no cascade)
   # triton = Nemotron-3-Nano-30B on the 5090 Triton (fast + thorough modes -> cascade)
-  # A/B without editing this file: set JUDGE_PROVIDER=triton in the IntelliJ run config.
-  provider: ${JUDGE_PROVIDER:halo}
+  # Default triton (2026-11-01): Nemotron thorough judge was right on 3 of 4 disagreements with gpt-oss-120b
+  # on the 29 golden-set answers (judge_eval.py). Use JUDGE_PROVIDER=halo to point at an OpenAI-compatible
+  # gpt-oss endpoint (HALO_BASE_URL / HALO_JUDGE_MODEL / HALO_API_KEY), e.g. a cloud endpoint later.
+  provider: ${JUDGE_PROVIDER:triton}
   # Cascade (JudgeService): fast judge + NumbersCheck; escalate to the thorough judge when the fast judge
   # passes but a number in the answer is not in the context, or its output is unusable/inconsistent.
   # Only active for providers with a fast mode (triton). Validated with scripts/judge-compare (2026-11-01).
