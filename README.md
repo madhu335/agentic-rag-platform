@@ -65,7 +65,7 @@ User query
   -> Re-ranking (TritonRerankerClient -> cross_reranker)
   -> Retrieval relevance judge (fleet only: strict LLM gate)
   -> LLM synthesis (LlmRouter -> active provider, default vLLM)
-  -> Answer judge (JudgeRouter -> active provider, grounded/correct/complete)
+  -> Answer judge (JudgeRouter -> active provider, single verdict; cascade on Triton)
   -> Response with citations
 ```
 
@@ -101,15 +101,19 @@ to pick up whichever one is in the context.
 | `claude` | `ClaudeJudgeClient` | Wraps `@Qualifier("claudeClient")` directly |
 | `openai` | `OpenAiJudgeClient` | Wraps `@Qualifier("openAiClient")` directly |
 | `default` / `vllm` / `ollama` | `DefaultJudgeClient` | Wraps the current `LlmRouter` — judge reuses whatever answer model is active |
+| `halo` | `HaloJudgeClient` | gpt-oss-120b on the GN100 (llama.cpp, OpenAI-compatible); thorough only |
+| `triton` | `TritonJudgeClient` | Nemotron-3-Nano-30B on Triton; fast (reasoning off) + thorough (reasoning on) modes, enables the cascade |
 
 This split lets you run a cheap local model (vLLM / Ollama) for answer
 generation while using Claude or OpenAI as a stronger independent judge,
 or vice versa — without touching the rest of the pipeline.
 
-`JudgeService` wraps the chosen client with: prompt construction,
-lenient JSON extraction (strips markdown fences, finds first `{...}`
-object), 1–10 to 0.0–1.0 score normalization, one retry on parse
-failure, and LangSmith span attributes on every attempt.
+`JudgeService` wraps the chosen client with: the verdict prompt, lenient JSON
+extraction (strips markdown fences, finds first `{...}` object, also accepts the
+old boolean shape), 1–10 to 0.0–1.0 score normalization, a verdict/score
+consistency guard, retries, the fast/thorough cascade for clients with a fast
+mode, and LangSmith span attributes (`judge.verdict`, `judge.stage`,
+`judge.escalation_reason`). See [Answer judge](#answer-judge-verdict-contract-and-cascade).
 
 ### Two-tier fleet retrieval
 
@@ -119,6 +123,107 @@ Fleet query ("which car has best fuel economy?")
   -> Tier 2: chunks_vehicle WHERE doc_id IN (top-10) -> detail chunks           (<1ms)
   -> Total: ~6ms instead of 500ms-2s with single-tier at 9M chunks
 ```
+
+### Answer judge: verdict contract and cascade
+
+`JudgeService` returns one **verdict** per answer. The `grounded` / `correct` / `complete`
+booleans are derived from it (kept for logs, LangSmith and existing callers).
+
+| Verdict | Meaning | Policy decision |
+|---|---|---|
+| `PASS` | Every claim supported and correct; honest "not in context" also passes | accept if score ≥ 0.70 |
+| `UNSUPPORTED` | States a fact/number the context does not, or attaches a number to the wrong quantity | reject + retry |
+| `INCORRECT` | Uses context facts but derives something wrongly (total, comparison, conclusion) | reject + retry |
+| `INCOMPLETE` | Correct but leaves part of the question unanswered | accept if score ≥ 0.75, else reject + retry |
+| `UNAVAILABLE` | Judge timed out / unusable output | fall back to the route's retrieval-score threshold |
+
+Why one verdict: the old prompt's example JSON (`true/true/true/0.7`) was copied verbatim by a
+non-reasoning judge, and `grounded` was ambiguous (both judges split on "numbers from the context
+attached to the wrong quantity"). With the verdict prompt both Nemotron and gpt-oss-120b scored
+24/24 decisions with 0 verdict/score conflicts (`scripts/judge-compare/judge_compare.py`).
+
+#### Judge cascade (implemented — `JudgeService`, `judge.provider: triton`)
+
+```mermaid
+flowchart TD
+    IN["JudgeService.evaluate(question, answer, context)"] --> HASFAST{"Client has a fast mode?<br/>triton: yes<br/>halo / claude / openai / default: no"}
+    HASFAST -- "no" --> THOROUGH
+    HASFAST -- "yes (judge.cascade.enabled)" --> FAST["Fast judge<br/>Nemotron, reasoning OFF<br/>512 tokens, ~0.2 s"]
+    FAST --> NUM["NumbersCheck (no LLM)<br/>every number in the answer<br/>must appear in the context"]
+    NUM --> FD{"Fast result"}
+    FD -- "unusable output, or<br/>verdict/score conflict" --> THOROUGH
+    FD -- "REJECT" --> VR{"verify-fast-rejects?"}
+    VR -- "false (default)" --> FR["Return fast verdict<br/>stage = fast_reject"]
+    VR -- "true" --> THOROUGH
+    FD -- "PASS, a number is<br/>not in the context" --> THOROUGH
+    FD -- "PASS, all numbers<br/>in the context" --> FP["Return PASS<br/>stage = fast_pass"]
+    THOROUGH["Thorough judge<br/>triton: Nemotron reasoning ON, 3072 tokens<br/>halo: gpt-oss-120b on GN100"] --> TC{"Usable and<br/>consistent?"}
+    TC -- "yes" --> TR["Return verdict<br/>stage = thorough or escalated:reason"]
+    TC -- "no, attempts left" --> THOROUGH
+    TC -- "no, out of attempts" --> TU["Conflict: keep verdict<br/>Unusable: UNAVAILABLE"]
+```
+
+Consistency guard: `PASS` with score < 0.5, or `UNSUPPORTED`/`INCORRECT` with score ≥ 0.8, is
+treated as unreliable (fast stage escalates, thorough stage retries once).
+
+#### Where the judge runs in the orchestrator today
+
+```mermaid
+flowchart TD
+    Q["Question"] --> ROUTE{"QueryRouter"}
+    ROUTE -- "RAG" --> B["BM25 answer + judge"]
+    B -- "rejected" --> H["HYBRID answer + judge"]
+    H -- "rejected" --> HR["HYBRID_RERANK answer + judge"]
+    HR -- "rejected" --> V["VECTOR answer + judge"]
+    V -- "rejected" --> AF["AGENT_FALLBACK answer + judge"]
+    B -- "accepted" --> OUT["Response"]
+    H -- "accepted" --> OUT
+    HR -- "accepted" --> OUT
+    V -- "accepted" --> OUT
+    AF --> OUT
+    ROUTE -- "AGENT" --> AG["AGENT answer + judge"]
+    AG -- "rejected, retries left" --> AG
+    AG -- "accepted / out of retries" --> OUT
+```
+
+Every attempt is judged synchronously, so one hard question can cost up to 5 generations and
+5 judge calls before the user sees anything. `AsyncJudgeService` exists but is not called.
+
+#### Target flow (proposed — not implemented yet)
+
+```mermaid
+flowchart TD
+    Q["Question"] --> GEN["Retrieve + generate answer<br/>(route chosen by retrieval score,<br/>not by judging every attempt)"]
+    GEN --> CHK["Deterministic checks (no LLM, &lt;1 ms)<br/>numbers in context · quoted text in context<br/>citations valid · answer not trivially short"]
+    CHK --> RISK{"Risky?<br/>AGENT route, numeric / comparison question,<br/>or any check fired"}
+    RISK -- "yes" --> SYNC["Sync thorough judge<br/>(user waits ~2-3 s)<br/>missing numbers = hard reject signal"]
+    SYNC --> OK{"PASS?"}
+    OK -- "yes" --> RESP["Response"]
+    OK -- "no, retries left" --> GEN
+    OK -- "no, out of retries" --> RESP
+    RISK -- "no" --> RESP
+    RISK -. "no: fire and forget" .-> ASYNC["AsyncJudgeService (user does not wait)<br/>cascade: fast judge + all checks,<br/>escalate on check or reject"]
+    ASYNC --> OBS["Log verdict + stage<br/>LangSmith metrics, quality flag"]
+```
+
+#### Real-traffic evaluation (`scripts/judge-compare/judge_eval.py`, 29 vehicle golden-set questions)
+
+Same answers judged by both providers (Nemotron-generated from `/vehicles/ask` excerpts):
+
+| | gpt-oss-120b (`halo`, thorough only) | Nemotron cascade (`triton`) |
+|---|---|---|
+| Accept/reject agreement | 83% (24/29) | |
+| Latency p50 / avg / p95 | 2.2 s / 2.4 s / 4.5 s | 0.2 s / 1.3 s / 4.5 s |
+| Stages | 29 thorough | 12 fast_pass (170 ms) · 6 fast_reject · 11 escalated (3.1 s) |
+
+- Every case where the cascade looked wrong came from the **fast** stage (too-strict rejects,
+  invented non-numeric claims passed). Nemotron's **thorough** judge disagreed with gpt-oss once —
+  on invented mpg figures that the NumbersCheck proves are absent from the context, which gpt-oss missed.
+- Offline replay of the 29 cases: refining the checks (ignore list markers and "Entry N" citations,
+  add a quoted-text check and a short-answer check) and verifying fast rejects brings the cascade to
+  ~1 wrong of 29 — but at ~59% escalation, only ~20-25% faster than thorough-only. Hence the target
+  flow: thorough judge where the user waits, cascade for the async audit where it saves GPU time.
+
 
 ---
 
@@ -432,7 +537,7 @@ failure mode the system itself flagged.
 | LLM (default) | vLLM `meta-llama/Meta-Llama-3.1-8B-Instruct` via `VllmClient` |
 | LLM (pluggable) | `LlmRouter` → vLLM · Triton-vLLM · OpenAI · Claude · Ollama |
 | Judge (default) | `DefaultJudgeClient` reuses the active `LlmRouter` |
-| Judge (pluggable) | `JudgeRouter` → Claude · OpenAI · default |
+| Judge (pluggable) | `JudgeRouter` → Claude · OpenAI · default · halo (gpt-oss-120b) · triton (Nemotron cascade) |
 | Keyword search | PostgreSQL tsvector + ParadeDB BM25 |
 | Container | Docker (paradedb/paradedb:0.19.11-pg16) |
 | Observability | OpenTelemetry + LangSmith |
@@ -450,6 +555,8 @@ failure mode the system itself flagged.
 **Two-tier retrieval.** At 90K vehicles, scan summaries (90K rows) first, then detail chunks within candidates. Reduces fleet search from 500ms to ~6ms.
 
 **Auto-correct citations.** LLMs hallucinate chunk indices. Auto-correct `[vehicle:6]` to `[vehicle:2]` (same prefix, valid ID) instead of burning retries.
+
+**One verdict, cheap checks first.** The judge returns a single verdict instead of booleans that can contradict each other and the score. A deterministic NumbersCheck (every number in the answer must be in the context) catches invented figures that even a 120B judge missed, and decides when the fast judge must escalate to the reasoning judge.
 
 **Judge reason validation.** Don't blindly feed judge feedback into retry prompts. If the judge says "missing specs" but specs are in the context, the judge is wrong -- skip retry.
 
@@ -503,9 +610,17 @@ llm:
     model-name: llama-3.1-8b
 
 judge:
-  provider: vllm                  # claude | openai | default | vllm | ollama
+  provider: ${JUDGE_PROVIDER:halo} # halo | triton | claude | openai | default | vllm | ollama
                                   # default/vllm/ollama all go through DefaultJudgeClient
                                   # and inherit whichever LlmRouter provider is active
+  cascade:
+    enabled: true                 # only for clients with a fast mode (triton)
+    verify-fast-rejects: false
+  thorough-attempts: 2
+  triton:
+    model-name: nemotron
+    fast-max-tokens: 512          # reasoning off
+    thorough-max-tokens: 3072     # reasoning on (1024 cut reasoning off on hard cases)
 
 embedding:
   provider: triton                # triton | ollama
